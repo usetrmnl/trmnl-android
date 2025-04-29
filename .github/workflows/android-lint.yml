@@ -1,0 +1,31 @@
+name: Post Merge Check
+# Run extra build and checks to ensure `main` is functioning right.
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  android-post-check:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '22'
+          distribution: 'temurin'
+          cache: gradle
+
+      # Automatic gradle caching using `actions/cache@v4`
+      # https://github.com/gradle/actions/tree/main/setup-gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run Linter
+        run: ./gradlew lint
+
+      - name: Build with Gradle
+        run: ./gradlew build

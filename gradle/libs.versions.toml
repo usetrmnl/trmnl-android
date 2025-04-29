@@ -1,0 +1,182 @@
+[versions]
+activityCompose = "1.10.1"
+# https://developer.android.com/jetpack/androidx/releases/compose-material3-adaptive
+adaptive = "1.2.0-alpha03"
+agp = "8.9.1"
+anvil = "0.4.1"
+circuit = "0.27.0"
+composeBom = "2025.04.00"
+coreKtx = "1.16.0"
+dagger = "2.56.1"
+espressoCore = "3.6.1"
+googleFonts = "1.7.8"
+junit = "4.13.2"
+junitVersion = "1.2.1"
+kotlin = "2.1.10"
+kotlinxCoroutinesTest = "1.7.3"
+ksp = "2.1.10-1.0.31"
+lifecycleRuntimeKtx = "2.8.7"
+
+# Kotlin linter with built-in formatter
+# https://github.com/jeremymailen/kotlinter-gradle
+# https://github.com/pinterest/ktlint
+kotlinter = "5.0.2"
+
+# Http client for Android
+# https://square.github.io/okhttp/
+okhttp = "4.12.0"
+retrofit = "2.11.0"
+
+# https://github.com/JakeWharton/timber
+timber = "5.0.1"
+
+# A modern JSON library for Kotlin and Java.
+# https://github.com/square/moshi
+moshi = "1.15.2"
+
+kotlinxSerializationJson = "1.8.1"
+kotlinxSerializationProperties = "1.8.1"
+
+# API result type for modeling network API responses.
+# https://github.com/slackhq/EitherNet
+eithernet = "2.0.0"
+
+# https://developer.android.com/jetpack/androidx/releases/work
+workManager = "2.10.1"
+
+# Coil
+# https://github.com/coil-kt/coil
+coil = "3.1.0"
+
+mockk = "1.14.0"
+truth = "1.4.4"
+robolectric = "4.14.1"
+
+datastore = "1.1.4"
+security-crypto = "1.1.0-alpha07"
+
+# https://developer.android.com/jetpack/androidx/releases/window
+# https://developer.android.com/develop/ui/compose/layouts/adaptive
+androidx-window = "1.3.0"
+coreKtxVersion = "1.6.1"
+
+[libraries]
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-adaptive = { module = "androidx.compose.material3.adaptive:adaptive", version.ref = "adaptive" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-window = { module = "androidx.window:window", version.ref = "androidx-window" }
+androidx-window-core = { module = "androidx.window:window-core", version.ref = "androidx-window" }
+androidx-compose-materialWindow = { module = "androidx.compose.material3:material3-window-size-class" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+
+# Circuit - ⚡️A Compose-driven architecture for Kotlin and Android applications.
+# https://github.com/slackhq/circuit/releases
+circuit-codegen = { group = "com.slack.circuit", name = "circuit-codegen", version.ref = "circuit" }
+circuit-codegen-annotations = { group = "com.slack.circuit", name = "circuit-codegen-annotations", version.ref = "circuit" }
+circuit-foundation = { group = "com.slack.circuit", name = "circuit-foundation", version.ref = "circuit" }
+circuit-overlay = { group = "com.slack.circuit", name = "circuit-overlay", version.ref = "circuit" }
+circuitx-android = { group = "com.slack.circuit", name = "circuitx-android", version.ref = "circuit" }
+circuitx-effects = { group = "com.slack.circuit", name = "circuitx-effects", version.ref = "circuit" }
+circuitx-gestureNav = { group = "com.slack.circuit", name = "circuitx-gesture-navigation", version.ref = "circuit" }
+circuitx-overlays = { group = "com.slack.circuit", name = "circuitx-overlays", version.ref = "circuit" }
+
+# https://dagger.dev/
+# https://dagger.dev/dev-guide/ksp
+dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
+dagger = { module = "com.google.dagger:dagger", version.ref = "dagger" }
+
+# https://mvnrepository.com/artifact/com.squareup.anvil/annotations-optional
+# https://github.com/ZacSweers/anvil/blob/main/FORK.md
+anvil-annotations = { group = "dev.zacsweers.anvil", name = "annotations", version.ref = "anvil"}
+anvil-annotations-optional = { group = "dev.zacsweers.anvil", name = "annotations-optional", version.ref = "anvil"}
+
+# # https://developer.android.com/develop/ui/compose/text/fonts
+# https://mvnrepository.com/artifact/androidx.compose.ui/ui-text-google-fonts
+androidx-ui-text-google-fonts = { group = "androidx.compose.ui", name = "ui-text-google-fonts", version.ref = "googleFonts" }
+
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workManager" }
+
+# https://github.com/JakeWharton/timber
+timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber"}
+
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+retrofit-mock-server = { group = "com.squareup.retrofit2", name = "retrofit-mock", version.ref = "retrofit" }
+retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+retrofit-converter-moshi = { group = "com.squareup.retrofit2", name = "converter-moshi", version.ref = "retrofit" }
+
+# Kotlin multiplatform / multi-format serialization
+# https://github.com/Kotlin/kotlinx.serialization
+# https://kotlinlang.org/docs/serialization.html#example-json-serialization
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx",name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+kotlinx-serialization-properties = { group = "org.jetbrains.kotlinx",name = "kotlinx-serialization-properties", version.ref = "kotlinxSerializationProperties" }
+
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
+
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
+okhttp-mock-webserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
+
+# A modern JSON library for Kotlin and Java.
+# https://github.com/square/moshi
+moshi-kotlin = { group = "com.squareup.moshi", name = "moshi-kotlin", version.ref = "moshi" }
+moshi-kotlin-codegen = { group = "com.squareup.moshi", name = "moshi-kotlin-codegen", version.ref = "moshi" }
+
+# API result type for modeling network API responses.
+# https://github.com/slackhq/EitherNet
+eithernet = { group = "com.slack.eithernet", name = "eithernet", version.ref = "eithernet" }
+eithernet-integration-retrofit = { group = "com.slack.eithernet", name = "eithernet-integration-retrofit", version.ref = "eithernet" }
+
+# Coil
+# https://github.com/coil-kt/coil
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
+
+androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "security-crypto" }
+
+# mocking library for Kotlin
+# https://github.com/mockk/mockk
+test-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+
+# Truth - Fluent assertions for Java and Android
+# https://truth.dev/
+test-truth = { module = "com.google.truth:truth", version.ref = "truth" }
+core-ktx = { group = "androidx.test", name = "core-ktx", version.ref = "coreKtxVersion" }
+
+# https://robolectric.org/getting-started/#building-with-gradle-kotlin
+test-robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+
+# Add @Parcelize support
+# https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.parcelize
+kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
+
+# Kotlin Symbol Processing API
+# https://kotlinlang.org/docs/ksp-overview.html
+# https://github.com/google/ksp/releases
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp"}
+
+# Forked Anvil
+# https://github.com/ZacSweers/anvil/blob/main/FORK.md
+anvil = { id = "dev.zacsweers.anvil", version.ref = "anvil" }
+
+# Kotlin linter with built-in formatter
+# https://github.com/jeremymailen/kotlinter-gradle
+# https://github.com/pinterest/ktlint
+kotlinter = { id = "org.jmailen.kotlinter", version.ref = "kotlinter" }
