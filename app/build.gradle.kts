@@ -33,6 +33,28 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+        
+        create("release") {
+            // Uses the same debug keystore for release builds to enable CLI building
+            // ⚠️ This is temporary solution as app is still under development
+            //    It allows early testers to test drive the app without us worrying about signing
+            //    https://developer.android.com/studio/publish/app-signing
+            storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
+
+            // ℹ️ When time comes, these values should come from `secret.properties` file or CI/CD secrets.
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -40,6 +62,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfig = signingConfigs.getByName("release")
+        }
+        
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 

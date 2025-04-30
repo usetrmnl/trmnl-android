@@ -1,0 +1,36 @@
+name: Android Release Build
+
+# Workflow that builds release APK each time code changes.
+# This allows developers and testers to easily download the latest release APK.
+# This is also useful to download the APK and add to to the GitHub release.
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '23'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: trmnl-display-app
+          path: app/build/outputs/apk/release/app-release.apk
+          retention-days: 7
