@@ -47,6 +47,8 @@ android {
             //    It allows early testers to test drive the app without us worrying about signing
             //    https://developer.android.com/studio/publish/app-signing
             storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
+
+            // ℹ️ When time comes, these values should come from `secret.properties` file or CI/CD secrets.
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
