@@ -1,6 +1,6 @@
 [![Android CI](https://github.com/usetrmnl/trmnl-android/actions/workflows/android.yml/badge.svg)](https://github.com/usetrmnl/trmnl-android/actions/workflows/android.yml)
 
-# Android - TRMNL Display
+# Android - TRMNL Display Mirror 🪞
 A simple app to mirror existing TRMNL's content to your Android device (preferably e-ink display).
 
 ## 📜 Preconditions
@@ -15,8 +15,8 @@ Here are some of the known ways you can get access to the `access-token`.
 
 ## How to try
 ⬇️ Install the APK on your Android device.
-
-1. Configure the API `access-token` in the app settings
+<img src="https://github.com/user-attachments/assets/6ec04cf5-b72c-429a-a435-406f0051d221" align="right" width="150">
+1. Configure the API `access-token` in the app settings  
     i. 📝 NOTE: Right now only `https://trmnl.app/api/` service API is supported, custom service URL support will be added later
 2. Save the token and keep the app always-on with the TRMNL's display image showing.
 
@@ -50,7 +50,7 @@ The TRMNL Display Mirror app serves as a digital display mirror for TRMNL e-ink 
 
 ## Android Developer Guide
 
-This guide will help you get started with the TRMNL Display Android application development.
+This guide will help you get started with the TRMNL Display Mirror Android application development.
 
 <details>
 
