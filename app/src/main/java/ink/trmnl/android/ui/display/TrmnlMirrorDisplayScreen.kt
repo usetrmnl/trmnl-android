@@ -458,7 +458,7 @@ fun PreviewTrmnlMirrorDisplayErrorContent() {
         TrmnlMirrorDisplayContent(
             state =
                 TrmnlMirrorDisplayScreen.State(
-                    imageUrl = "https://usetrmnl.com/assets/developers-6f60839ed235c9a82e12517b8d11597a8697aa3a0d1c9f4694a58b0416721026.jpg",
+                    imageUrl = "https://picsum.photos/200",
                     overlayControlsVisible = false,
                     nextImageRefreshIn = "5 minutes",
                     isLoading = false,
