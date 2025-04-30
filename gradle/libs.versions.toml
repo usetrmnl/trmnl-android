@@ -4,12 +4,12 @@ activityCompose = "1.10.1"
 adaptive = "1.2.0-alpha03"
 agp = "8.9.1"
 anvil = "0.4.1"
-circuit = "0.27.0"
-composeBom = "2025.04.00"
+circuit = "0.27.1"
+composeBom = "2025.04.01"
 coreKtx = "1.16.0"
-dagger = "2.56.1"
+dagger = "2.56.2"
 espressoCore = "3.6.1"
-googleFonts = "1.7.8"
+googleFonts = "1.8.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 kotlin = "2.1.10"
@@ -34,9 +34,6 @@ timber = "5.0.1"
 # https://github.com/square/moshi
 moshi = "1.15.2"
 
-kotlinxSerializationJson = "1.8.1"
-kotlinxSerializationProperties = "1.8.1"
-
 # API result type for modeling network API responses.
 # https://github.com/slackhq/EitherNet
 eithernet = "2.0.0"
@@ -53,7 +50,6 @@ truth = "1.4.4"
 robolectric = "4.14.1"
 
 datastore = "1.1.4"
-security-crypto = "1.1.0-alpha07"
 
 # https://developer.android.com/jetpack/androidx/releases/window
 # https://developer.android.com/develop/ui/compose/layouts/adaptive
@@ -111,21 +107,13 @@ androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx"
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber"}
 
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
-retrofit-mock-server = { group = "com.squareup.retrofit2", name = "retrofit-mock", version.ref = "retrofit" }
 retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
 retrofit-converter-moshi = { group = "com.squareup.retrofit2", name = "converter-moshi", version.ref = "retrofit" }
-
-# Kotlin multiplatform / multi-format serialization
-# https://github.com/Kotlin/kotlinx.serialization
-# https://kotlinlang.org/docs/serialization.html#example-json-serialization
-kotlinx-serialization-json = { group = "org.jetbrains.kotlinx",name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
-kotlinx-serialization-properties = { group = "org.jetbrains.kotlinx",name = "kotlinx-serialization-properties", version.ref = "kotlinxSerializationProperties" }
 
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
-okhttp-mock-webserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
 
 # A modern JSON library for Kotlin and Java.
 # https://github.com/square/moshi
@@ -143,7 +131,6 @@ coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref 
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
-androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "security-crypto" }
 
 # mocking library for Kotlin
 # https://github.com/mockk/mockk
