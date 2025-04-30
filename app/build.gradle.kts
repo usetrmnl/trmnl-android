@@ -12,11 +12,11 @@ plugins {
 }
 
 android {
-    namespace = "dev.hossain.trmnl"
+    namespace = "ink.trmnl.android"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "dev.hossain.trmnl"
+        applicationId = "ink.trmnl.android"
         minSdk = 30
         targetSdk = 35
         versionCode = 9
