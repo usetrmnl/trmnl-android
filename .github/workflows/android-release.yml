@@ -28,9 +28,21 @@ jobs:
       - name: Build Release APK
         run: ./gradlew assembleRelease
 
+      - name: Extract version name
+        id: version
+        run: |
+          VERSION_NAME=$(grep -o 'versionName = "[^"]*"' app/build.gradle.kts | cut -d'"' -f2)
+          echo "VERSION=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "App version name extracted: $VERSION_NAME"
+
+      - name: Rename APK
+        run: |
+          mkdir -p artifact
+          cp app/build/outputs/apk/release/app-release.apk artifact/trmnl-display-v${{ steps.version.outputs.VERSION }}.apk
+
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
           name: trmnl-display-app
-          path: app/build/outputs/apk/release/app-release.apk
+          path: artifact/trmnl-display-v${{ steps.version.outputs.VERSION }}.apk
           retention-days: 7
