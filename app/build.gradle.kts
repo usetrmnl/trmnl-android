@@ -1,5 +1,3 @@
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -21,15 +19,6 @@ android {
         targetSdk = 35
         versionCode = 2
         versionName = "1.1.0"
-
-        // Read key or other properties from local.properties
-        val localProperties =
-            project.rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use {
-                Properties().apply { load(it) }
-            }
-        val apiKey = localProperties?.getProperty("SERVICE_API_KEY") ?: "MISSING-KEY"
-        buildConfigField("String", "SERVICE_API_KEY", "\"$apiKey\"")
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -57,6 +46,10 @@ android {
 
     buildTypes {
         release {
+            // Always force `USE_FAKE_API` to `false` for release builds
+            // See https://github.com/usetrmnl/trmnl-android/issues/16
+            buildConfigField("Boolean", "USE_FAKE_API", "false")
+
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -66,6 +59,10 @@ android {
         }
         
         debug {
+            // Allow developers to configure this value for debug builds
+            // Use fake API response for local development and testing purposes.
+            buildConfigField("Boolean", "USE_FAKE_API", "true")
+
             signingConfig = signingConfigs.getByName("debug")
         }
     }

@@ -1,5 +1,6 @@
 package ink.trmnl.android.data
 
+import ink.trmnl.android.BuildConfig
 import javax.inject.Inject
 
 /**
@@ -12,10 +13,12 @@ class RepositoryConfigProvider
         /**
          * Indicates if the app should use fake data instead of real API responses.
          *
-         * @return Boolean value from [DevConfig.FAKE_API_RESPONSE]
+         * @return Boolean value from [BuildConfig.USE_FAKE_API]
          */
         val shouldUseFakeData: Boolean
             get() {
-                return DevConfig.FAKE_API_RESPONSE
+                // To change this value, update the `buildConfigField` in the app's build.gradle file
+                // Or, change the value here for local development. Do not commit this change.
+                return BuildConfig.USE_FAKE_API
             }
     }

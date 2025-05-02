@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
@@ -82,7 +81,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import ink.trmnl.android.R
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
-import ink.trmnl.android.data.DevConfig
+import ink.trmnl.android.data.RepositoryConfigProvider
 import ink.trmnl.android.data.TrmnlDisplayRepository
 import ink.trmnl.android.data.TrmnlTokenDataStore
 import ink.trmnl.android.di.AppScope
@@ -123,6 +122,7 @@ data class AppSettingsScreen(
 ) : Screen {
     data class State(
         val accessToken: String,
+        val usesFakeApiData: Boolean,
         val isLoading: Boolean = false,
         val validationResult: ValidationResult? = null,
         val nextRefreshJobInfo: NextImageRefreshDisplayInfo? = null,
@@ -186,12 +186,14 @@ class AppSettingsPresenter
         private val trmnlTokenDataStore: TrmnlTokenDataStore,
         private val trmnlWorkScheduler: TrmnlWorkScheduler,
         private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
+        private val repositoryConfigProvider: RepositoryConfigProvider,
     ) : Presenter<AppSettingsScreen.State> {
         @Composable
         override fun present(): AppSettingsScreen.State {
             var accessToken by remember { mutableStateOf("") }
             var isLoading by remember { mutableStateOf(false) }
             var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
+            val usesFakeApiData by remember { mutableStateOf(repositoryConfigProvider.shouldUseFakeData) }
             val scope = rememberCoroutineScope()
             val focusManager = LocalFocusManager.current
 
@@ -212,6 +214,7 @@ class AppSettingsPresenter
 
             return AppSettingsScreen.State(
                 accessToken = accessToken,
+                usesFakeApiData = usesFakeApiData,
                 isLoading = isLoading,
                 validationResult = validationResult,
                 nextRefreshJobInfo = nextRefreshInfo,
@@ -352,8 +355,7 @@ fun AppSettingsContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            if (DevConfig.FAKE_API_RESPONSE) {
-                // Show fake API banner when DevConfig.FAKE_API_RESPONSE is `true`
+            if (state.usesFakeApiData) {
                 FakeApiInfoBanner(
                     modifier =
                         Modifier
@@ -655,7 +657,7 @@ private fun FakeApiInfoBanner(modifier: Modifier = Modifier) {
                 )
 
                 Text(
-                    text = "Set `DevConfig.FAKE_API_RESPONSE` to `false` to use real API.",
+                    text = "Set `BuildConfig.USE_FAKE_API` to `false` using build.gradle to use real API.",
                     style = MaterialTheme.typography.bodySmall,
                     fontStyle = FontStyle.Italic,
                 )
@@ -727,6 +729,7 @@ private fun PreviewAppSettingsContentInitial() {
             state =
                 AppSettingsScreen.State(
                     accessToken = "",
+                    usesFakeApiData = true,
                     isLoading = false,
                     validationResult = null,
                     nextRefreshJobInfo = null,
@@ -744,6 +747,7 @@ private fun PreviewAppSettingsContentLoading() {
             state =
                 AppSettingsScreen.State(
                     accessToken = "some-token",
+                    usesFakeApiData = false,
                     isLoading = true,
                     validationResult = null,
                     nextRefreshJobInfo = null,
@@ -761,6 +765,7 @@ private fun PreviewAppSettingsContentSuccess() {
             state =
                 AppSettingsScreen.State(
                     accessToken = "valid-token-123",
+                    usesFakeApiData = false,
                     isLoading = false,
                     validationResult =
                         ValidationResult.Success(
@@ -782,6 +787,7 @@ private fun PreviewAppSettingsContentFailure() {
             state =
                 AppSettingsScreen.State(
                     accessToken = "invalid-token",
+                    usesFakeApiData = false,
                     isLoading = false,
                     validationResult =
                         ValidationResult.Failure(
@@ -806,6 +812,7 @@ private fun PreviewAppSettingsContentWithWork() {
             state =
                 AppSettingsScreen.State(
                     accessToken = "valid-token-123",
+                    usesFakeApiData = false,
                     isLoading = false,
                     validationResult = null, // Can also be Success state
                     nextRefreshJobInfo =
@@ -833,6 +840,7 @@ private fun PreviewWorkScheduleStatusCardScheduled() {
             state =
                 AppSettingsScreen.State(
                     accessToken = "some-token",
+                    usesFakeApiData = false,
                     nextRefreshJobInfo =
                         NextImageRefreshDisplayInfo(
                             workerState = WorkInfo.State.ENQUEUED,
@@ -854,6 +862,7 @@ private fun PreviewWorkScheduleStatusCardNoWork() {
             state =
                 AppSettingsScreen.State(
                     accessToken = "some-token",
+                    usesFakeApiData = false,
                     nextRefreshJobInfo = null,
                     eventSink = {},
                 ),
