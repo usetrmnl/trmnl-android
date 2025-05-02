@@ -193,7 +193,7 @@ class AppSettingsPresenter
             var accessToken by remember { mutableStateOf("") }
             var isLoading by remember { mutableStateOf(false) }
             var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
-            val usesFakeApiData by remember { mutableStateOf(repositoryConfigProvider.shouldUseFakeData) }
+            val usesFakeApiData = repositoryConfigProvider.shouldUseFakeData
             val scope = rememberCoroutineScope()
             val focusManager = LocalFocusManager.current
 
