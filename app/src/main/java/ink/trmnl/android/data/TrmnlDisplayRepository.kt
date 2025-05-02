@@ -2,7 +2,7 @@ package ink.trmnl.android.data
 
 import com.slack.eithernet.successOrNull
 import com.squareup.anvil.annotations.optional.SingleIn
-import ink.trmnl.android.data.DevConfig.FAKE_API_RESPONSE
+import ink.trmnl.android.BuildConfig.USE_FAKE_API
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.network.TrmnlApiService
 import ink.trmnl.android.util.HTTP_200
@@ -14,11 +14,11 @@ import javax.inject.Inject
 /**
  * Repository class responsible for fetching and mapping display data.
  *
- * ⚠️ NOTE: [FAKE_API_RESPONSE] is set to `true` in debug builds, meaning it will
+ * ⚠️ NOTE: [USE_FAKE_API] is set to `true` in debug builds, meaning it will
  * use mock data and avoid network calls. In release builds, it is set to `false`
  * to enable real API calls.
  *
- * You can override this behavior by updating [DevConfig.FAKE_API_RESPONSE] for local development.
+ * You can override this behavior by updating [RepositoryConfigProvider.shouldUseFakeData] for local development.
  */
 @SingleIn(AppScope::class)
 class TrmnlDisplayRepository
@@ -118,7 +118,7 @@ class TrmnlDisplayRepository
         /**
          * Generates fake display info for debugging purposes without wasting an API request.
          *
-         * ℹ️ This is only used when [FAKE_API_RESPONSE] is set to `true`.
+         * ℹ️ This is only used when [RepositoryConfigProvider.shouldUseFakeData] is true.
          */
         private suspend fun fakeTrmnlDisplayInfo(apiUsed: String): TrmnlDisplayInfo {
             Timber.d("DEBUG: Using mock data for display info")

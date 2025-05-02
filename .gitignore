@@ -34,3 +34,4 @@ google-services.json
 .DS_Store
 app/debug/
 app/release/
+*.salive

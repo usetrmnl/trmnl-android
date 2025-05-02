@@ -8,6 +8,9 @@ import timber.log.Timber
 import java.io.InputStream
 import java.io.OutputStream
 
+/**
+ * Serializer for [TrmnlRefreshLogs] using Moshi.
+ */
 object TrmnlRefreshLogSerializer : Serializer<TrmnlRefreshLogs> {
     private val moshi = Moshi.Builder().build()
     private val adapter = moshi.adapter(TrmnlRefreshLogs::class.java)
@@ -27,12 +30,12 @@ object TrmnlRefreshLogSerializer : Serializer<TrmnlRefreshLogs> {
         }
 
     override suspend fun writeTo(
-        t: TrmnlRefreshLogs,
+        refreshLogs: TrmnlRefreshLogs,
         output: OutputStream,
     ) {
         withContext(Dispatchers.IO) {
             try {
-                val jsonString = adapter.toJson(t)
+                val jsonString = adapter.toJson(refreshLogs)
                 output.write(jsonString.toByteArray())
             } catch (e: Exception) {
                 Timber.e(e, "Error writing activity logs")
