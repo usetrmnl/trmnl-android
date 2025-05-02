@@ -3,6 +3,11 @@ name: Android Release Build
 # Workflow that builds release APK each time code changes.
 # This allows developers and testers to easily download the latest release APK.
 # This is also useful to download the APK and add to to the GitHub release.
+#
+# See:
+# - https://github.com/usetrmnl/trmnl-android/tree/main/keystore
+# - https://github.com/usetrmnl/trmnl-android/blob/main/app/build.gradle.kts#L44-L55
+
 
 on:
   push:
@@ -38,11 +43,11 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p artifact
-          cp app/build/outputs/apk/release/app-release.apk artifact/trmnl-display-v${{ steps.version.outputs.VERSION }}.apk
+          cp app/build/outputs/apk/release/app-release.apk artifact/trmnl-mirror-v${{ steps.version.outputs.VERSION }}.apk
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: trmnl-display-app
-          path: artifact/trmnl-display-v${{ steps.version.outputs.VERSION }}.apk
+          name: trmnl-mirror-app
+          path: artifact/trmnl-mirror-v${{ steps.version.outputs.VERSION }}.apk
           retention-days: 7
