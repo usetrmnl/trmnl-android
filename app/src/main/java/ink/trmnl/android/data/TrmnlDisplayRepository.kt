@@ -118,7 +118,7 @@ class TrmnlDisplayRepository
         /**
          * Generates fake display info for debugging purposes without wasting an API request.
          *
-         * ℹ️ This is only used when [RepositoryConfigProvider.shouldUseFakeData] is returns `true`.
+         * ℹ️ This is only used when [RepositoryConfigProvider.shouldUseFakeData] is true.
          */
         private suspend fun fakeTrmnlDisplayInfo(apiUsed: String): TrmnlDisplayInfo {
             Timber.d("DEBUG: Using mock data for display info")
