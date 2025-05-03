@@ -48,64 +48,8 @@ The TRMNL Display Mirror app serves as a digital display mirror for TRMNL e-ink 
 - [x] Refresh history logging for tracking & validation
 
 
-## Android Developer Guide
-
-This guide will help you get started with the TRMNL Display Mirror Android application development.
-
-<details>
-
-<summary>See technical details on the project</summary>
-
-## Prerequisites
-
-- Android Studio Meerkat or latest Android Studio (https://developer.android.com/studio)
-- JDK 17+
-- Git
-
-### Getting Started
-
-#### Clone the Repository
-
-```bash
-git clone https://github.com/usetrmnl/trmnl-android.git
-cd trmnl-android
-```
-
-#### Open Project in Android Studio
-
-1. Start Android Studio
-2. Select "Open an existing project"
-3. Navigate to and select the cloned repository folder
-
-#### Build the Project
-
-- Wait for the Gradle sync to complete
-- Build the project by selecting **Build > Make Project** or pressing **Ctrl+F9** (Windows/Linux) or **Cmd+F9** (macOS)
-
-#### Run the App
-
-- Connect an Android device or start an emulator
-- Click the Run button (green triangle) in the toolbar
-- Select your target device and click OK
-
-### Project Structure
-
-The app uses a modern Android architecture with the following components:
-
-- **UI**: Jetpack Compose with Circuit UI architecture
-- **Background Processing**: WorkManager for scheduled image (re)loading
-- **Networking**: Retrofit and OkHttp for API communication
-- **DI**: Dagger with Anvil for dependency injection
-- **Data Storage**: DataStore for preferences and token storage
-
-#### Key Features/Screens
-
-- Main TRMNL Mirror Display visualization in `TrmnlMirrorDisplayScreen`
-- Settings management via `AppSettingsScreen`
-- Image refresh log/history in `DisplayRefreshLogScreen`
-- Background refresh scheduling with `TrmnlWorkScheduler` & `TrmnlImageRefreshWorker`
-
-</details>
+## Android Development & Contribution Guide
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on how to get started and contribute to the project.
 
 ---
 
