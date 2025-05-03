@@ -135,7 +135,7 @@ class TrmnlMirrorDisplayPresenter
                         // Only set error state if we have a non-null imageMetadata with an error
                         if (imageMetadata != null) {
                             isLoading = false
-                            error = imageMetadata.errorMessage
+                            error = imageMetadata.errorMessage ?: "An unknown error occurred."
                         }
                     }
                 }
