@@ -3,7 +3,6 @@ package ink.trmnl.android.network
 import com.slack.eithernet.ApiResult
 import ink.trmnl.android.network.model.TrmnlCurrentImageResponse
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
-import ink.trmnl.android.network.model.TrmnlLogResponse
 import retrofit2.http.GET
 import retrofit2.http.Header
 
@@ -39,10 +38,4 @@ interface TrmnlApiService {
     suspend fun getCurrentDisplayData(
         @Header("access-token") accessToken: String,
     ): ApiResult<TrmnlCurrentImageResponse, Unit>
-
-    @GET("api/log")
-    suspend fun getLog(
-        @Header("ID") id: String,
-        @Header("Access-Token") accessToken: String,
-    ): ApiResult<TrmnlLogResponse, Unit>
 }

@@ -105,17 +105,6 @@ class TrmnlDisplayRepository
         }
 
         /**
-         * Check the server status by making a request to the log endpoint.
-         */
-        suspend fun checkServerStatus(): Boolean {
-            val response = apiService.getLog("RANDOM-ID", "RANDOM-TOKEN").successOrNull()
-            Timber.d("Device log status response: $response")
-
-            // If we got 200 OK, we assume the server is up
-            return response != null
-        }
-
-        /**
          * Generates fake display info for debugging purposes without wasting an API request.
          *
          * ℹ️ This is only used when [RepositoryConfigProvider.shouldUseFakeData] is true.
