@@ -8,9 +8,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -214,6 +215,9 @@ fun DisplayRefreshLogContent(
                         Icon(Icons.Default.Clear, contentDescription = "Clear logs")
                     }
                 },
+                // Material 3 TopAppBar handles top insets automatically
+                // but we need to ensure it respects the status bar
+                windowInsets = WindowInsets.statusBars,
             )
         },
         bottomBar = {
@@ -229,14 +233,16 @@ fun DisplayRefreshLogContent(
                     onStartRefreshWorker = {
                         state.eventSink(DisplayRefreshLogScreen.Event.StartRefreshWorker)
                     },
-                    // Use a modifier that takes navigation bar padding into account
+                    // Use navigationBarsPadding to respect navigation bars
                     modifier = Modifier.navigationBarsPadding(),
                 )
             }
         },
-        // Use WindowInsets.navigationBars to ensure content doesn't overlap with the navigation bar
-        contentWindowInsets = WindowInsets.navigationBars,
+        // Use safeDrawing insets to handle safe areas including display cutouts
+        contentWindowInsets = WindowInsets.safeDrawing,
     ) { innerPadding ->
+        // We need to consume the innerPadding from the scaffold
+        // to ensure proper edge-to-edge layout
         Box(
             modifier =
                 Modifier
@@ -252,6 +258,7 @@ fun DisplayRefreshLogContent(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
+                    // Use contentPadding instead of padding modifier for LazyColumn
                     contentPadding = PaddingValues(16.dp),
                 ) {
                     items(state.logs) { log ->
