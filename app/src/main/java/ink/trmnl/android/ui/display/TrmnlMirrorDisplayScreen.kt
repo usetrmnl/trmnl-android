@@ -131,8 +131,12 @@ class TrmnlMirrorDisplayPresenter
                         error = null
                     } else {
                         Timber.w("Failed to get cached image URL from TRMNL Image Update Manager `imageUpdateFlow`")
-                        isLoading = false
-                        error = imageMetadata?.errorMessage ?: "Failed to load image. Please re-validate token."
+                        // Keep showing loading state until we have a valid response from the server
+                        // Only set error state if we have a non-null imageMetadata with an error
+                        if (imageMetadata != null) {
+                            isLoading = false
+                            error = imageMetadata.errorMessage ?: "An unknown error occurred."
+                        }
                     }
                 }
             }
@@ -169,8 +173,11 @@ class TrmnlMirrorDisplayPresenter
                     Timber.d("Valid cached image URL exists in ImageMetadataStore")
                     trmnlImageUpdateManager.initialize()
                 } else {
-                    // No valid image, start a refresh work
                     Timber.d("No valid cached image, starting one-time refresh work")
+                    // Always keep in loading state until we get a valid result
+                    isLoading = true
+                    error = null
+                    // No valid image, start a refresh work
                     trmnlWorkScheduler.startOneTimeImageRefreshWork()
                 }
             }
