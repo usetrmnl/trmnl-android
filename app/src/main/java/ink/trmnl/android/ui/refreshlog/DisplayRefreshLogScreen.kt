@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -35,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -57,6 +59,7 @@ import ink.trmnl.android.data.log.TrmnlRefreshLog
 import ink.trmnl.android.data.log.TrmnlRefreshLogManager
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
+import ink.trmnl.android.util.exportLogsAndShare
 import ink.trmnl.android.util.getTimeElapsedString
 import ink.trmnl.android.work.RefreshWorkType
 import ink.trmnl.android.work.TrmnlWorkScheduler
@@ -115,6 +118,11 @@ data object DisplayRefreshLogScreen : Screen {
          * Event triggered when the refresh worker should be started (debug only).
          */
         data object StartRefreshWorker : Event()
+
+        /**
+         * Event triggered when the user wants to export and share logs.
+         */
+        data object ExportLogs : Event()
     }
 }
 
@@ -139,6 +147,7 @@ class DisplayRefreshLogPresenter
         override fun present(): DisplayRefreshLogScreen.State {
             val logs by activityLogManager.logsFlow.collectAsState(initial = emptyList())
             val scope = rememberCoroutineScope()
+            val context = LocalContext.current
 
             return DisplayRefreshLogScreen.State(
                 logs = logs,
@@ -173,6 +182,11 @@ class DisplayRefreshLogPresenter
 
                         DisplayRefreshLogScreen.Event.StartRefreshWorker -> {
                             trmnlWorkScheduler.startOneTimeImageRefreshWork()
+                        }
+                        DisplayRefreshLogScreen.Event.ExportLogs -> {
+                            scope.launch {
+                                exportLogsAndShare(context, logs)
+                            }
                         }
                     }
                 },
@@ -211,6 +225,24 @@ fun DisplayRefreshLogContent(
                     }
                 },
                 actions = {
+                    // Add share button - only enable if there are logs
+                    IconButton(
+                        onClick = { state.eventSink(DisplayRefreshLogScreen.Event.ExportLogs) },
+                        enabled = state.logs.isNotEmpty(),
+                    ) {
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = "Export Logs",
+                            tint =
+                                if (state.logs.isEmpty()) {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                        )
+                    }
+
+                    // Keep the existing clear button
                     IconButton(onClick = { state.eventSink(DisplayRefreshLogScreen.Event.ClearLogs) }) {
                         Icon(Icons.Default.Clear, contentDescription = "Clear logs")
                     }
