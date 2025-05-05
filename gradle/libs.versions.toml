@@ -2,7 +2,7 @@
 activityCompose = "1.10.1"
 # https://developer.android.com/jetpack/androidx/releases/compose-material3-adaptive
 adaptive = "1.2.0-alpha04"
-agp = "8.9.1"
+agp = "8.9.2"
 anvil = "0.4.1"
 circuit = "0.27.1"
 composeBom = "2025.04.01"
