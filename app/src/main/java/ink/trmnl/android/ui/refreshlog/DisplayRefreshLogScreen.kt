@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -53,6 +54,7 @@ import dagger.assisted.AssistedInject
 import ink.trmnl.android.BuildConfig
 import ink.trmnl.android.R
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
+import ink.trmnl.android.data.log.RefreshLogExporter
 import ink.trmnl.android.data.log.TrmnlRefreshLog
 import ink.trmnl.android.data.log.TrmnlRefreshLogManager
 import ink.trmnl.android.di.AppScope
@@ -115,6 +117,11 @@ data object DisplayRefreshLogScreen : Screen {
          * Event triggered when the refresh worker should be started (debug only).
          */
         data object StartRefreshWorker : Event()
+
+        /**
+         * Event triggered when the user wants to export and share logs.
+         */
+        data object ExportLogs : Event()
     }
 }
 
@@ -126,7 +133,8 @@ class DisplayRefreshLogPresenter
     @AssistedInject
     constructor(
         @Assisted private val navigator: Navigator,
-        private val activityLogManager: TrmnlRefreshLogManager,
+        private val refreshLogManager: TrmnlRefreshLogManager,
+        private val refreshLogExporter: RefreshLogExporter,
         private val trmnlWorkScheduler: TrmnlWorkScheduler,
     ) : Presenter<DisplayRefreshLogScreen.State> {
         /**
@@ -137,7 +145,7 @@ class DisplayRefreshLogPresenter
          */
         @Composable
         override fun present(): DisplayRefreshLogScreen.State {
-            val logs by activityLogManager.logsFlow.collectAsState(initial = emptyList())
+            val logs by refreshLogManager.logsFlow.collectAsState(initial = emptyList())
             val scope = rememberCoroutineScope()
 
             return DisplayRefreshLogScreen.State(
@@ -147,20 +155,20 @@ class DisplayRefreshLogPresenter
                         DisplayRefreshLogScreen.Event.BackPressed -> navigator.pop()
                         DisplayRefreshLogScreen.Event.ClearLogs -> {
                             scope.launch {
-                                activityLogManager.clearLogs()
+                                refreshLogManager.clearLogs()
                             }
                         }
 
                         DisplayRefreshLogScreen.Event.AddFailLog -> {
                             scope.launch {
-                                activityLogManager.addLog(
+                                refreshLogManager.addLog(
                                     TrmnlRefreshLog.createFailure(error = "Test failure"),
                                 )
                             }
                         }
                         DisplayRefreshLogScreen.Event.AddSuccessLog -> {
                             scope.launch {
-                                activityLogManager.addLog(
+                                refreshLogManager.addLog(
                                     TrmnlRefreshLog.createSuccess(
                                         imageUrl = "https://debug.example.com/image.png",
                                         imageName = "test-image.png",
@@ -173,6 +181,11 @@ class DisplayRefreshLogPresenter
 
                         DisplayRefreshLogScreen.Event.StartRefreshWorker -> {
                             trmnlWorkScheduler.startOneTimeImageRefreshWork()
+                        }
+                        DisplayRefreshLogScreen.Event.ExportLogs -> {
+                            scope.launch {
+                                refreshLogExporter.exportLogsAndShare(logs)
+                            }
                         }
                     }
                 },
@@ -211,6 +224,24 @@ fun DisplayRefreshLogContent(
                     }
                 },
                 actions = {
+                    // Add share button - only enable if there are logs
+                    IconButton(
+                        onClick = { state.eventSink(DisplayRefreshLogScreen.Event.ExportLogs) },
+                        enabled = state.logs.isNotEmpty(),
+                    ) {
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = "Export Logs",
+                            tint =
+                                if (state.logs.isEmpty()) {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                        )
+                    }
+
+                    // Keep the existing clear button
                     IconButton(onClick = { state.eventSink(DisplayRefreshLogScreen.Event.ClearLogs) }) {
                         Icon(Icons.Default.Clear, contentDescription = "Clear logs")
                     }
