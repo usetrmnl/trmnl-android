@@ -71,6 +71,12 @@ To build a debug APK:
 ./gradlew assembleDebug
 ```
 
+### Snapshot Builds
+Automatic snapshot release builds are available in the [release workflow](https://github.com/usetrmnl/trmnl-android/actions/workflows/android-release.yml) artifacts.
+
+<img width="823" alt="trmnl-artifacts-light" src="https://github.com/user-attachments/assets/da6a4171-7e6a-41c7-915e-de4cf5c18e65#gh-light-mode-only" />
+<img width="819" alt="trmnl-artifacts-dark" src="https://github.com/user-attachments/assets/3740917c-a42f-402e-938a-408c0940391b#gh-dark-mode-only" />
+
 ## Issues
 
 - For bug reports, include steps to reproduce, expected behavior, and actual behavior
