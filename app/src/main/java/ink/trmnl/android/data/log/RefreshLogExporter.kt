@@ -2,6 +2,7 @@ package ink.trmnl.android.data.log
 
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.squareup.moshi.Moshi
 import ink.trmnl.android.di.ApplicationContext
@@ -14,6 +15,9 @@ import java.time.Instant
 import java.util.Locale
 import javax.inject.Inject
 
+/**
+ * Handles exporting refresh logs to a JSON file and sharing it via Android's share intent.
+ */
 class RefreshLogExporter
     @Inject
     constructor(
@@ -75,6 +79,17 @@ class RefreshLogExporter
                     context.startActivity(chooserIntent)
                 } catch (e: Exception) {
                     Timber.e(e, "Error exporting logs")
+
+                    // Show error toast with the exception message on the main thread
+                    withContext(Dispatchers.Main) {
+                        val errorMessage = e.localizedMessage ?: "Unknown error while exporting logs"
+                        Toast
+                            .makeText(
+                                context,
+                                "Failed to export logs: $errorMessage",
+                                Toast.LENGTH_LONG,
+                            ).show()
+                    }
                 }
             }
         }
