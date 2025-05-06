@@ -54,11 +54,11 @@ import dagger.assisted.AssistedInject
 import ink.trmnl.android.BuildConfig
 import ink.trmnl.android.R
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
+import ink.trmnl.android.data.log.RefreshLogExporter
 import ink.trmnl.android.data.log.TrmnlRefreshLog
 import ink.trmnl.android.data.log.TrmnlRefreshLogManager
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
-import ink.trmnl.android.util.RefreshLogExporter
 import ink.trmnl.android.util.getTimeElapsedString
 import ink.trmnl.android.work.RefreshWorkType
 import ink.trmnl.android.work.TrmnlWorkScheduler

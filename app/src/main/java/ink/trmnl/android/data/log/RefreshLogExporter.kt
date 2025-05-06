@@ -1,11 +1,9 @@
-package ink.trmnl.android.util
+package ink.trmnl.android.data.log
 
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
 import com.squareup.moshi.Moshi
-import ink.trmnl.android.data.log.TrmnlRefreshLog
-import ink.trmnl.android.data.log.TrmnlRefreshLogs
 import ink.trmnl.android.di.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -32,7 +30,10 @@ class RefreshLogExporter
             withContext(Dispatchers.IO) {
                 try {
                     // Create timestamp for filename
-                    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Instant.now().toEpochMilli())
+                    val timestamp =
+                        SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(
+                            Instant.now().toEpochMilli(),
+                        )
                     val filename = "trmnl_refresh_logs_$timestamp.json"
 
                     // Create cache directory if it doesn't exist
@@ -69,7 +70,7 @@ class RefreshLogExporter
                         }
 
                     // Launch the share dialog
-                    val chooserIntent = Intent.createChooser(shareIntent, "Share TRMNL Refresh Logs")
+                    val chooserIntent = Intent.createChooser(shareIntent, "Share TRMNL Display Image Refresh Logs")
                     chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     context.startActivity(chooserIntent)
                 } catch (e: Exception) {
