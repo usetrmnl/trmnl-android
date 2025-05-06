@@ -50,6 +50,6 @@ object CoilRequestUtils {
             // See https://discord.com/channels/1281055965508141100/1284986536357662740/1369152339084316754
             .memoryCachePolicy(CachePolicy.DISABLED)
             .diskCachePolicy(CachePolicy.DISABLED)
-            .networkCachePolicy(CachePolicy.DISABLED)
+            .networkCachePolicy(CachePolicy.ENABLED)
             .build()
 }
