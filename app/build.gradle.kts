@@ -50,7 +50,12 @@ android {
             // See https://github.com/usetrmnl/trmnl-android/issues/16
             buildConfigField("Boolean", "USE_FAKE_API", "false")
 
-            isMinifyEnabled = false
+            // Enables code shrinking, obfuscation, and optimization
+            isMinifyEnabled = true
+
+            // Enables resource shrinking, which is performed by the Android Gradle plugin.
+            isShrinkResources = true
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
