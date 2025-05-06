@@ -45,8 +45,11 @@ object CoilRequestUtils {
                 if (enableCrossfade) {
                     crossfade(true)
                 }
-            }.memoryCachePolicy(CachePolicy.ENABLED)
-            .diskCachePolicy(CachePolicy.ENABLED)
-            .networkCachePolicy(CachePolicy.ENABLED)
+            }
+            // ℹ️ URL based caching is disabled because URL stays the same based on current design
+            // See https://discord.com/channels/1281055965508141100/1284986536357662740/1369152339084316754
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .diskCachePolicy(CachePolicy.DISABLED)
+            .networkCachePolicy(CachePolicy.DISABLED)
             .build()
 }
