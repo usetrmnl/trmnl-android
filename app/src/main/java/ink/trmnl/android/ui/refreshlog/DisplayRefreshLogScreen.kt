@@ -36,7 +36,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -59,7 +58,7 @@ import ink.trmnl.android.data.log.TrmnlRefreshLog
 import ink.trmnl.android.data.log.TrmnlRefreshLogManager
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
-import ink.trmnl.android.util.exportLogsAndShare
+import ink.trmnl.android.util.RefreshLogExporter
 import ink.trmnl.android.util.getTimeElapsedString
 import ink.trmnl.android.work.RefreshWorkType
 import ink.trmnl.android.work.TrmnlWorkScheduler
@@ -134,7 +133,8 @@ class DisplayRefreshLogPresenter
     @AssistedInject
     constructor(
         @Assisted private val navigator: Navigator,
-        private val activityLogManager: TrmnlRefreshLogManager,
+        private val refreshLogManager: TrmnlRefreshLogManager,
+        private val refreshLogExporter: RefreshLogExporter,
         private val trmnlWorkScheduler: TrmnlWorkScheduler,
     ) : Presenter<DisplayRefreshLogScreen.State> {
         /**
@@ -145,9 +145,8 @@ class DisplayRefreshLogPresenter
          */
         @Composable
         override fun present(): DisplayRefreshLogScreen.State {
-            val logs by activityLogManager.logsFlow.collectAsState(initial = emptyList())
+            val logs by refreshLogManager.logsFlow.collectAsState(initial = emptyList())
             val scope = rememberCoroutineScope()
-            val context = LocalContext.current
 
             return DisplayRefreshLogScreen.State(
                 logs = logs,
@@ -156,20 +155,20 @@ class DisplayRefreshLogPresenter
                         DisplayRefreshLogScreen.Event.BackPressed -> navigator.pop()
                         DisplayRefreshLogScreen.Event.ClearLogs -> {
                             scope.launch {
-                                activityLogManager.clearLogs()
+                                refreshLogManager.clearLogs()
                             }
                         }
 
                         DisplayRefreshLogScreen.Event.AddFailLog -> {
                             scope.launch {
-                                activityLogManager.addLog(
+                                refreshLogManager.addLog(
                                     TrmnlRefreshLog.createFailure(error = "Test failure"),
                                 )
                             }
                         }
                         DisplayRefreshLogScreen.Event.AddSuccessLog -> {
                             scope.launch {
-                                activityLogManager.addLog(
+                                refreshLogManager.addLog(
                                     TrmnlRefreshLog.createSuccess(
                                         imageUrl = "https://debug.example.com/image.png",
                                         imageName = "test-image.png",
@@ -185,7 +184,7 @@ class DisplayRefreshLogPresenter
                         }
                         DisplayRefreshLogScreen.Event.ExportLogs -> {
                             scope.launch {
-                                exportLogsAndShare(context, logs)
+                                refreshLogExporter.exportLogsAndShare(logs)
                             }
                         }
                     }
