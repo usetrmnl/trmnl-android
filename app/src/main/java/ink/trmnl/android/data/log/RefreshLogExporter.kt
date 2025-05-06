@@ -65,12 +65,12 @@ class RefreshLogExporter
                         Intent(Intent.ACTION_SEND).apply {
                             type = "application/json"
                             putExtra(Intent.EXTRA_STREAM, fileUri)
-                            putExtra(Intent.EXTRA_SUBJECT, "TRMNL Display Refresh Logs")
+                            putExtra(Intent.EXTRA_SUBJECT, "Share TRMNL Display Image Refresh Logs")
                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                         }
 
                     // Launch the share dialog
-                    val chooserIntent = Intent.createChooser(shareIntent, "Share TRMNL Display Image Refresh Logs")
+                    val chooserIntent = Intent.createChooser(shareIntent, "TRMNL Image Refresh Logs")
                     chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     context.startActivity(chooserIntent)
                 } catch (e: Exception) {
