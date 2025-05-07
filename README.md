@@ -48,7 +48,7 @@ The TRMNL Display Mirror app serves as a digital display mirror for TRMNL e-ink 
 - [x] Refresh history logging for tracking & validation
 
 
-## Android Development & Contribution Guide
+## <img src="project-resources/logo/android-logo-head.svg" width="60" alt="android logo"/>Android Development & Contribution Guide
 See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on how to get started and contribute to the project.
 
 ---
