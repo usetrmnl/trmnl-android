@@ -241,6 +241,7 @@ class AppSettingsPresenter
                 deviceConfigStore.deviceConfigFlow.filterNotNull().collect {
                     deviceType = it.type
                     serverBaseUrl = it.apiBaseUrl
+                    accessToken = it.apiAccessToken
                 }
             }
 
@@ -275,7 +276,14 @@ class AppSettingsPresenter
                                     }
                                 }
 
-                                val response = displayRepository.getCurrentDisplayData(accessToken)
+                                val response =
+                                    displayRepository.getCurrentDisplayData(
+                                        TrmnlDeviceConfig(
+                                            type = deviceType,
+                                            apiBaseUrl = serverBaseUrl,
+                                            apiAccessToken = accessToken,
+                                        ),
+                                    )
 
                                 if (response.status.isHttpError()) {
                                     // Handle explicit error response

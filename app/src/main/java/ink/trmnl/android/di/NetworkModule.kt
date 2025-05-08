@@ -9,7 +9,6 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
 import dagger.Provides
-import ink.trmnl.android.data.AppConfig.TRMNL_API_SERVER_BASE_URL
 import ink.trmnl.android.network.TrmnlApiService
 import okhttp3.Cache
 import okhttp3.OkHttpClient
@@ -81,7 +80,10 @@ object NetworkModule {
     ): Retrofit =
         Retrofit
             .Builder()
-            .baseUrl(TRMNL_API_SERVER_BASE_URL)
+            // This `baseUrl` won't be used for actual requests
+            // Instead we use `@Url` to construct the API URL dynamically
+            // This allows us to use different base URLs for TRMNL, BYOD/S
+            .baseUrl("https://dummy-base-url.com/")
             .client(okHttpClient)
             .addConverterFactory(ApiResultConverterFactory)
             .addConverterFactory(MoshiConverterFactory.create(moshi))

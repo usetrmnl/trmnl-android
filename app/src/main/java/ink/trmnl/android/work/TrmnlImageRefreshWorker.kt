@@ -9,6 +9,7 @@ import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.data.TrmnlDisplayRepository
 import ink.trmnl.android.data.log.TrmnlRefreshLogManager
 import ink.trmnl.android.di.WorkerModule
+import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
 import ink.trmnl.android.util.isHttpError
 import ink.trmnl.android.util.isHttpOk
@@ -57,16 +58,16 @@ class TrmnlImageRefreshWorker(
 
         Timber.tag(TAG).d("Work type: $workTypeValue, loadNextPluginImage: $loadNextPluginImage")
 
-        // Get current token
-        val token = trmnlDeviceConfigDataStore.accessTokenFlow.firstOrNull()
+        // Get device config
+        val deviceConfig: TrmnlDeviceConfig? = trmnlDeviceConfigDataStore.deviceConfigFlow.firstOrNull()
 
-        if (token.isNullOrBlank()) {
-            Timber.tag(TAG).w("Token is not set, skipping image refresh")
-            refreshLogManager.addFailureLog("No access token found")
+        if (deviceConfig == null) {
+            Timber.tag(TAG).w("Device config and token is not set, skipping image refresh")
+            refreshLogManager.addFailureLog("No device config with API token found")
             return Result.failure(
                 workDataOf(
                     KEY_REFRESH_RESULT to FAILURE.name,
-                    KEY_ERROR_MESSAGE to "No access token found",
+                    KEY_ERROR_MESSAGE to "No device config with API token found",
                 ),
             )
         }
@@ -74,9 +75,9 @@ class TrmnlImageRefreshWorker(
         // Fetch TRMNL display image - current or next from playlist based on request type
         val trmnlDisplayInfo =
             if (loadNextPluginImage) {
-                displayRepository.getNextDisplayData(token)
+                displayRepository.getNextDisplayData(deviceConfig)
             } else {
-                displayRepository.getCurrentDisplayData(token)
+                displayRepository.getCurrentDisplayData(deviceConfig)
             }
 
         // Check for errors
