@@ -1,6 +1,7 @@
 package ink.trmnl.android.model
 
 import androidx.annotation.Keep
+import com.squareup.moshi.JsonClass
 import ink.trmnl.android.data.AppConfig.TRMNL_API_SERVER_BASE_URL
 
 /**
@@ -28,6 +29,7 @@ sealed interface TrmnlDeviceConfig {
      */
     val refreshRateSecs: Long
 
+    @JsonClass(generateAdapter = true)
     data class TrmnlHardware(
         override val type: TrmnlDeviceType,
         override val apiAccessToken: String,
@@ -35,6 +37,7 @@ sealed interface TrmnlDeviceConfig {
         override val refreshRateSecs: Long,
     ) : TrmnlDeviceConfig
 
+    @JsonClass(generateAdapter = true)
     data class ByodHardware(
         override val type: TrmnlDeviceType,
         override val apiAccessToken: String,
@@ -42,6 +45,7 @@ sealed interface TrmnlDeviceConfig {
         override val refreshRateSecs: Long,
     ) : TrmnlDeviceConfig
 
+    @JsonClass(generateAdapter = true)
     data class ByosHardware(
         override val type: TrmnlDeviceType,
         override val apiAccessToken: String,
