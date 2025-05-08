@@ -14,27 +14,30 @@ sealed interface TrmnlDeviceConfig {
     val type: TrmnlDeviceType
 
     /**
+     * API access token for server with [apiBaseUrl].
+     */
+    val apiAccessToken: String
+
+    /**
      * Provides API service base URL for the device based on device type.
      */
     val apiBaseUrl: String
-        get() {
-            return when (this) {
-                is TrmnlHardware -> TRMNL_API_SERVER_BASE_URL
-                is ByodHardware -> TRMNL_API_SERVER_BASE_URL
-                is ByosHardware -> serviceBaseUrl
-            }
-        }
 
     data class TrmnlHardware(
         override val type: TrmnlDeviceType,
+        override val apiAccessToken: String,
+        override val apiBaseUrl: String = TRMNL_API_SERVER_BASE_URL,
     ) : TrmnlDeviceConfig
 
     data class ByodHardware(
         override val type: TrmnlDeviceType,
+        override val apiAccessToken: String,
+        override val apiBaseUrl: String = TRMNL_API_SERVER_BASE_URL,
     ) : TrmnlDeviceConfig
 
     data class ByosHardware(
         override val type: TrmnlDeviceType,
-        val serviceBaseUrl: String,
+        override val apiAccessToken: String,
+        override val apiBaseUrl: String,
     ) : TrmnlDeviceConfig
 }
