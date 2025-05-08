@@ -23,21 +23,29 @@ sealed interface TrmnlDeviceConfig {
      */
     val apiBaseUrl: String
 
+    /**
+     * TRMNL device image refresh rate in seconds.
+     */
+    val refreshRateSecs: Long
+
     data class TrmnlHardware(
         override val type: TrmnlDeviceType,
         override val apiAccessToken: String,
         override val apiBaseUrl: String = TRMNL_API_SERVER_BASE_URL,
+        override val refreshRateSecs: Long,
     ) : TrmnlDeviceConfig
 
     data class ByodHardware(
         override val type: TrmnlDeviceType,
         override val apiAccessToken: String,
         override val apiBaseUrl: String = TRMNL_API_SERVER_BASE_URL,
+        override val refreshRateSecs: Long,
     ) : TrmnlDeviceConfig
 
     data class ByosHardware(
         override val type: TrmnlDeviceType,
         override val apiAccessToken: String,
         override val apiBaseUrl: String,
+        override val refreshRateSecs: Long,
     ) : TrmnlDeviceConfig
 }
