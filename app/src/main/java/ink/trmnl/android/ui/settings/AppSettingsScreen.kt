@@ -101,6 +101,7 @@ import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.Failure
+import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.InvalidServerUrl
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.Success
 import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
 import ink.trmnl.android.util.CoilRequestUtils
@@ -117,6 +118,7 @@ import kotlinx.parcelize.Parcelize
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.regex.Pattern
 
 /**
  * Screen for configuring the TRMNL mirror app settings.
@@ -148,6 +150,10 @@ data class AppSettingsScreen(
         data class Success(
             val imageUrl: String,
             val refreshRateSecs: Long,
+        ) : ValidationResult()
+
+        data class InvalidServerUrl(
+            val message: String,
         ) : ValidationResult()
 
         data class Failure(
@@ -214,7 +220,7 @@ class AppSettingsPresenter
         @Composable
         override fun present(): AppSettingsScreen.State {
             var deviceType by remember { mutableStateOf(TrmnlDeviceType.TRMNL) }
-            var serverUrl by remember { mutableStateOf("") }
+            var serverBaseUrl by remember { mutableStateOf("") }
             var accessToken by remember { mutableStateOf("") }
             var isLoading by remember { mutableStateOf(false) }
             var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
@@ -239,7 +245,7 @@ class AppSettingsPresenter
 
             return AppSettingsScreen.State(
                 deviceType = deviceType,
-                serverBaseUrl = serverUrl,
+                serverBaseUrl = serverBaseUrl,
                 accessToken = accessToken,
                 usesFakeApiData = usesFakeApiData,
                 isLoading = isLoading,
@@ -258,6 +264,15 @@ class AppSettingsPresenter
                                 focusManager.clearFocus()
                                 isLoading = true
                                 validationResult = null
+
+                                // First validate server URL if device type is BYOS
+                                if (deviceType == TrmnlDeviceType.BYOS) {
+                                    if (!isValidUrl(serverBaseUrl)) {
+                                        isLoading = false
+                                        validationResult = InvalidServerUrl("Please enter a valid URL (e.g. https://example.com)")
+                                        return@launch
+                                    }
+                                }
 
                                 val response = displayRepository.getCurrentDisplayData(accessToken)
 
@@ -309,14 +324,29 @@ class AppSettingsPresenter
 
                         is AppSettingsScreen.Event.DeviceTypeChanged -> {
                             deviceType = event.type
+                            // Clear validation result when device type changes
+                            validationResult = null
                         }
 
                         is AppSettingsScreen.Event.ServerUrlChanged -> {
-                            serverUrl = event.url
+                            serverBaseUrl = event.url
+                            // Clear validation result when server URL changes
+                            if (validationResult is InvalidServerUrl) {
+                                validationResult = null
+                            }
                         }
                     }
                 },
             )
+        }
+
+        private fun isValidUrl(url: String): Boolean {
+            val urlRegex =
+                Pattern.compile(
+                    "^(https?)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]",
+                    Pattern.CASE_INSENSITIVE,
+                )
+            return urlRegex.matcher(url).matches()
         }
 
         @CircuitInject(AppSettingsScreen::class, AppScope::class)
@@ -431,6 +461,8 @@ fun AppSettingsContent(
                 serverUrl = state.serverBaseUrl,
                 onTypeSelected = { state.eventSink(AppSettingsScreen.Event.DeviceTypeChanged(it)) },
                 onServerUrlChanged = { state.eventSink(AppSettingsScreen.Event.ServerUrlChanged(it)) },
+                isServerUrlError = state.validationResult is InvalidServerUrl,
+                serverUrlError = (state.validationResult as? InvalidServerUrl)?.message,
                 modifier = Modifier.padding(bottom = 16.dp),
             )
 
@@ -522,6 +554,24 @@ fun AppSettingsContent(
                                 }
                             }
                         }
+                        is ValidationResult.InvalidServerUrl -> {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    "❌ Server URL Invalid",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    result.message,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
                         is ValidationResult.Failure -> {
                             // Error state remains the same
                             Column(
@@ -562,6 +612,8 @@ private fun DeviceTypeSelectorConfig(
     serverUrl: String = "",
     onTypeSelected: (TrmnlDeviceType) -> Unit,
     onServerUrlChanged: (String) -> Unit,
+    isServerUrlError: Boolean = false,
+    serverUrlError: String? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -604,6 +656,12 @@ private fun DeviceTypeSelectorConfig(
                 onValueChange = onServerUrlChanged,
                 label = { Text("API Server Base URL") },
                 placeholder = { Text("https://your-trmnl-server.com") },
+                isError = isServerUrlError,
+                supportingText = {
+                    if (isServerUrlError && serverUrlError != null) {
+                        Text(serverUrlError)
+                    }
+                },
                 modifier =
                     Modifier
                         .fillMaxWidth()
