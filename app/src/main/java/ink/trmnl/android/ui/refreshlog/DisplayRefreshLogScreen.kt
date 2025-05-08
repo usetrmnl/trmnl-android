@@ -58,6 +58,7 @@ import ink.trmnl.android.data.log.RefreshLogExporter
 import ink.trmnl.android.data.log.TrmnlRefreshLog
 import ink.trmnl.android.data.log.TrmnlRefreshLogManager
 import ink.trmnl.android.di.AppScope
+import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
 import ink.trmnl.android.util.getTimeElapsedString
 import ink.trmnl.android.work.RefreshWorkType
@@ -170,6 +171,7 @@ class DisplayRefreshLogPresenter
                             scope.launch {
                                 refreshLogManager.addLog(
                                     TrmnlRefreshLog.createSuccess(
+                                        trmnlDeviceType = TrmnlDeviceType.TRMNL,
                                         imageUrl = "https://debug.example.com/image.png",
                                         imageName = "test-image.png",
                                         refreshIntervalSeconds = 300L,
@@ -528,6 +530,7 @@ private fun PreviewDisplayRefreshLogContentWithLogs() {
         listOf(
             TrmnlRefreshLog(
                 timestamp = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(5),
+                trmnlDeviceType = TrmnlDeviceType.TRMNL,
                 success = true,
                 imageUrl = "https://example.com/image1.png",
                 imageName = "preview-image.bmp",
@@ -537,6 +540,7 @@ private fun PreviewDisplayRefreshLogContentWithLogs() {
             ),
             TrmnlRefreshLog(
                 timestamp = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1),
+                trmnlDeviceType = TrmnlDeviceType.BYOD,
                 success = false,
                 imageUrl = null,
                 imageName = "preview-image.bmp",
@@ -546,6 +550,7 @@ private fun PreviewDisplayRefreshLogContentWithLogs() {
             ),
             TrmnlRefreshLog(
                 timestamp = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1),
+                trmnlDeviceType = TrmnlDeviceType.BYOS,
                 success = true,
                 imageUrl = "https://example.com/image2.png",
                 imageName = "preview-image.bmp",
@@ -571,6 +576,7 @@ private fun PreviewLogItemViewSuccess() {
     val log =
         TrmnlRefreshLog(
             timestamp = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(10),
+            trmnlDeviceType = TrmnlDeviceType.BYOD,
             success = true,
             imageUrl = "https://images.unsplash.com/photo-1617591897383-14876a3e6d1a",
             imageName = "preview-image.bmp",
@@ -589,6 +595,7 @@ private fun PreviewLogItemViewFailure() {
     val log =
         TrmnlRefreshLog(
             timestamp = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(30),
+            trmnlDeviceType = TrmnlDeviceType.BYOD,
             success = false,
             imageUrl = null,
             imageName = "preview-image.bmp",

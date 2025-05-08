@@ -5,6 +5,7 @@ import com.squareup.anvil.annotations.optional.SingleIn
 import ink.trmnl.android.BuildConfig.USE_FAKE_API
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.model.TrmnlDeviceConfig
+import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.network.TrmnlApiService
 import ink.trmnl.android.network.TrmnlApiService.Companion.CURRENT_SCREEN_ENDPOINT
 import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_DISPLAY_ENDPOINT
@@ -57,6 +58,7 @@ class TrmnlDisplayRepository
             val displayInfo =
                 TrmnlDisplayInfo(
                     status = response?.status ?: HTTP_500,
+                    trmnlDeviceType = trmnlDeviceConfig.type,
                     imageUrl = response?.imageUrl ?: "",
                     imageName = response?.imageName ?: "",
                     error = response?.error,
@@ -100,6 +102,7 @@ class TrmnlDisplayRepository
             val displayInfo =
                 TrmnlDisplayInfo(
                     status = response?.status ?: HTTP_500,
+                    trmnlDeviceType = trmnlDeviceConfig.type,
                     imageUrl = response?.imageUrl ?: "",
                     imageName = response?.filename ?: "",
                     error = response?.error,
@@ -133,6 +136,7 @@ class TrmnlDisplayRepository
 
             return TrmnlDisplayInfo(
                 status = HTTP_200,
+                trmnlDeviceType = TrmnlDeviceType.TRMNL,
                 imageUrl = mockImageUrl,
                 imageName = "mocked-image-" + mockImageUrl.substringAfterLast('?'),
                 error = null,
