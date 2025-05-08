@@ -125,42 +125,16 @@ class TrmnlDeviceConfigDataStore
                     val refreshRate = preferences[REFRESH_RATE_SEC_KEY] ?: DEFAULT_REFRESH_INTERVAL_SEC
 
                     if (token != null) {
-                        createDeviceConfig(type, token, url, refreshRate)
+                        TrmnlDeviceConfig(
+                            type = type,
+                            apiBaseUrl = url,
+                            apiAccessToken = token,
+                            refreshRateSecs = refreshRate,
+                        )
                     } else {
                         null
                     }
                 }
-            }
-
-        /**
-         * Creates a device config based on the provided parameters
-         */
-        private fun createDeviceConfig(
-            type: TrmnlDeviceType,
-            token: String,
-            serverUrl: String,
-            refreshRate: Long,
-        ): TrmnlDeviceConfig =
-            when (type) {
-                TrmnlDeviceType.TRMNL ->
-                    TrmnlDeviceConfig.TrmnlHardware(
-                        type = type,
-                        apiAccessToken = token,
-                        refreshRateSecs = refreshRate,
-                    )
-                TrmnlDeviceType.BYOD ->
-                    TrmnlDeviceConfig.ByodHardware(
-                        type = type,
-                        apiAccessToken = token,
-                        refreshRateSecs = refreshRate,
-                    )
-                TrmnlDeviceType.BYOS ->
-                    TrmnlDeviceConfig.ByosHardware(
-                        type = type,
-                        apiAccessToken = token,
-                        apiBaseUrl = serverUrl,
-                        refreshRateSecs = refreshRate,
-                    )
             }
 
         /**

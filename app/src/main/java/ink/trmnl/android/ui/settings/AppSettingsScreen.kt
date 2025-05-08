@@ -94,9 +94,10 @@ import dagger.assisted.AssistedInject
 import ink.trmnl.android.R
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
 import ink.trmnl.android.data.RepositoryConfigProvider
+import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.data.TrmnlDisplayRepository
-import ink.trmnl.android.data.TrmnlTokenDataStore
 import ink.trmnl.android.di.AppScope
+import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult
@@ -113,6 +114,7 @@ import ink.trmnl.android.util.toDisplayString
 import ink.trmnl.android.util.toIcon
 import ink.trmnl.android.work.TrmnlImageUpdateManager
 import ink.trmnl.android.work.TrmnlWorkScheduler
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import java.time.Instant
@@ -212,7 +214,7 @@ class AppSettingsPresenter
         @Assisted private val navigator: Navigator,
         @Assisted private val screen: AppSettingsScreen,
         private val displayRepository: TrmnlDisplayRepository,
-        private val trmnlTokenDataStore: TrmnlTokenDataStore,
+        private val deviceConfigStore: TrmnlDeviceConfigDataStore,
         private val trmnlWorkScheduler: TrmnlWorkScheduler,
         private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
         private val repositoryConfigProvider: RepositoryConfigProvider,
@@ -236,10 +238,9 @@ class AppSettingsPresenter
 
             // Load saved token if available
             LaunchedEffect(Unit) {
-                trmnlTokenDataStore.accessTokenFlow.collect { savedToken ->
-                    if (!savedToken.isNullOrBlank()) {
-                        accessToken = savedToken
-                    }
+                deviceConfigStore.deviceConfigFlow.filterNotNull().collect {
+                    deviceType = it.type
+                    serverBaseUrl = it.apiBaseUrl
                 }
             }
 
@@ -302,7 +303,14 @@ class AppSettingsPresenter
                             val result = validationResult
                             if (result is Success) {
                                 scope.launch {
-                                    trmnlTokenDataStore.saveAccessToken(accessToken)
+                                    deviceConfigStore.saveDeviceConfig(
+                                        TrmnlDeviceConfig(
+                                            type = deviceType,
+                                            apiBaseUrl = serverBaseUrl,
+                                            apiAccessToken = accessToken,
+                                            refreshRateSecs = result.refreshRateSecs,
+                                        ),
+                                    )
                                     trmnlWorkScheduler.updateRefreshInterval(result.refreshRateSecs)
 
                                     if (screen.returnToMirrorAfterSave) {
@@ -374,7 +382,6 @@ fun AppSettingsContent(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val hasToken = state.accessToken.isNotBlank()
-    val trmnlWorkScheduler = remember { TrmnlWorkScheduler(context, TrmnlTokenDataStore(context)) }
 
     // Control password visibility
     var passwordVisible by remember { mutableStateOf(false) }
