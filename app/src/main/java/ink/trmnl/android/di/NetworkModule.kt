@@ -9,6 +9,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
 import dagger.Provides
+import ink.trmnl.android.data.AppConfig.TRMNL_API_SERVER_BASE_URL
 import ink.trmnl.android.network.TrmnlApiService
 import okhttp3.Cache
 import okhttp3.OkHttpClient
@@ -23,12 +24,6 @@ import java.util.concurrent.TimeUnit
 object NetworkModule {
     // Cache size for OkHttp (10 MB)
     private const val CACHE_SIZE = 10 * 1024 * 1024L
-
-    /**
-     * New base URL for the TRMNL API server.
-     * Ref: https://discord.com/channels/1281055965508141100/1284986536357662740/1364623667337760910
-     */
-    private const val TRMNL_API_SERVER_BASE_URL = "https://trmnl.app/"
 
     @Provides
     @SingleIn(AppScope::class)
