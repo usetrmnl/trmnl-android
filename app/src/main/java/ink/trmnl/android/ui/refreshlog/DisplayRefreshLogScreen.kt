@@ -359,6 +359,31 @@ private fun LogItemView(
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             if (log.success) {
+                // Display device type above the image name
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 4.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.devices_24dp),
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 4.dp),
+                        tint = MaterialTheme.colorScheme.secondary,
+                    )
+
+                    Text(
+                        text = "Device Type:",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+
+                    Text(
+                        text = " ${log.trmnlDeviceType}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                }
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(bottom = 4.dp),
@@ -437,6 +462,31 @@ private fun LogItemView(
                     }
                 }
             } else {
+                // Also show device type for error logs
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 4.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.devices_24dp),
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 4.dp),
+                        tint = MaterialTheme.colorScheme.secondary,
+                    )
+
+                    Text(
+                        text = "Device Type:",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+
+                    Text(
+                        text = " ${log.trmnlDeviceType}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                }
+
                 Text(
                     text = "Error:",
                     fontWeight = FontWeight.Bold,
