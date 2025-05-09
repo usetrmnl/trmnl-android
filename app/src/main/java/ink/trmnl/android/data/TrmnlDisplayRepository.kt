@@ -7,8 +7,8 @@ import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.network.TrmnlApiService
-import ink.trmnl.android.network.TrmnlApiService.Companion.CURRENT_SCREEN_ENDPOINT
-import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_DISPLAY_ENDPOINT
+import ink.trmnl.android.network.TrmnlApiService.Companion.CURRENT_PLAYLIST_SCREEN_API_PATH
+import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_PLAYLIST_SCREEN_API_PATH
 import ink.trmnl.android.util.HTTP_200
 import ink.trmnl.android.util.HTTP_500
 import ink.trmnl.android.util.isHttpOk
@@ -50,7 +50,7 @@ class TrmnlDisplayRepository
             val response =
                 apiService
                     .getNextDisplayData(
-                        fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, NEXT_DISPLAY_ENDPOINT),
+                        fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, NEXT_PLAYLIST_SCREEN_API_PATH),
                         accessToken = trmnlDeviceConfig.apiAccessToken,
                     ).successOrNull()
 
@@ -94,7 +94,7 @@ class TrmnlDisplayRepository
             val response =
                 apiService
                     .getCurrentDisplayData(
-                        fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, CURRENT_SCREEN_ENDPOINT),
+                        fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, CURRENT_PLAYLIST_SCREEN_API_PATH),
                         accessToken = trmnlDeviceConfig.apiAccessToken,
                     ).successOrNull()
 
