@@ -3,6 +3,19 @@
 # Android - TRMNL Display Mirror 🪞
 A simple app to mirror existing TRMNL's content to your Android devices like Phone, Tablet, e-Ink Display.
 
+## Application Overview
+
+The TRMNL Display Mirror app serves as a digital display mirror for TRMNL e-ink devices. The app connects to the TRMNL API, fetches display data, and shows it on Android devices.
+
+### Key Features
+
+- [x] Token-based authentication with the TRMNL API
+- [x] Automatic periodic image refresh from the server
+- [x] Adaptive refresh rate based on server response config
+- [x] Manual refresh capabilities and option to load next playlist image
+- [x] Support for custom server URLs for your BYOS installations
+- [x] Refresh history logging for tracking & validation
+
 ## 📜 Preconditions
 You must have a **valid** `access-token` to access the [screen content](https://docs.usetrmnl.com/go/private-api/fetch-screen-content) using TRMNL server API.
 
@@ -34,19 +47,6 @@ Check installable APK from Assets in [latest release](https://github.com/usetrmn
     * This can be overcome by using some clever logic or not using `WorkManager`. However, this is a OS optimized and reliable way to refresh image periodically.
     * Imagine a user running the app on an Android phone or tablet. When the app is in the background (e.g., the screen is off), it avoids unnecessary image refresh calls, conserving the user's battery. These optimizations are built into `WorkManager`.
 
-
-## Application Overview
-
-The TRMNL Display Mirror app serves as a digital display mirror for TRMNL e-ink devices. The app connects to the TRMNL API, fetches display data, and shows it on Android devices.
-
-### Key Features
-
-- [x] Token-based authentication with the TRMNL API
-- [x] Automatic periodic image refresh from the server
-- [x] Adaptive refresh rate based on server response config
-- [x] Manual refresh capabilities and option to load next playlist image
-- [x] Support for custom server URLs for your BYOS installations
-- [x] Refresh history logging for tracking & validation
 
 
 ## <img src="project-resources/logo/android-logo-head.svg" width="60" alt="android logo"/>Android Development & Contribution Guide
