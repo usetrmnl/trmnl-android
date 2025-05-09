@@ -93,6 +93,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import ink.trmnl.android.R
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
+import ink.trmnl.android.data.AppConfig.TRMNL_API_SERVER_BASE_URL
 import ink.trmnl.android.data.RepositoryConfigProvider
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.data.TrmnlDisplayRepository
@@ -280,7 +281,7 @@ class AppSettingsPresenter
                                     displayRepository.getCurrentDisplayData(
                                         TrmnlDeviceConfig(
                                             type = deviceType,
-                                            apiBaseUrl = serverBaseUrl,
+                                            apiBaseUrl = serverBaseUrl.forDevice(deviceType),
                                             apiAccessToken = accessToken,
                                         ),
                                     )
@@ -314,7 +315,7 @@ class AppSettingsPresenter
                                     deviceConfigStore.saveDeviceConfig(
                                         TrmnlDeviceConfig(
                                             type = deviceType,
-                                            apiBaseUrl = serverBaseUrl,
+                                            apiBaseUrl = serverBaseUrl.forDevice(deviceType),
                                             apiAccessToken = accessToken,
                                             refreshRateSecs = result.refreshRateSecs,
                                         ),
@@ -355,6 +356,18 @@ class AppSettingsPresenter
                 },
             )
         }
+
+        /**
+         * Returns the server base URL for the [deviceType] (custom or TRMNL server).
+         */
+        private fun String.forDevice(deviceType: TrmnlDeviceType): String =
+            if (deviceType == TrmnlDeviceType.BYOS) {
+                // For BYOS, use the provided custom server URL
+                this
+            } else {
+                // For any other device type, use the default TRMNL API server URL
+                TRMNL_API_SERVER_BASE_URL
+            }
 
         private fun isValidUrl(url: String): Boolean {
             val urlRegex =
@@ -478,7 +491,6 @@ fun AppSettingsContent(
                 onServerUrlChanged = { state.eventSink(AppSettingsScreen.Event.ServerUrlChanged(it)) },
                 isServerUrlError = state.validationResult is InvalidServerUrl,
                 serverUrlError = (state.validationResult as? InvalidServerUrl)?.message,
-                modifier = Modifier.padding(bottom = 16.dp),
             )
 
             // Password field with toggle visibility button
