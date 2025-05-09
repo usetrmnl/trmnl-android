@@ -15,24 +15,29 @@ import retrofit2.http.Url
  *
  * See:
  * - https://docs.usetrmnl.com/go
+ * - https://docs.usetrmnl.com/go/private-api/introduction
  *
  * @see TrmnlDisplayRepository
  */
 interface TrmnlApiService {
     companion object {
         /**
+         * https://docs.usetrmnl.com/go/private-api/fetch-screen-content#auto-advance-content
+         *
          * @see getNextDisplayData
          */
-        internal const val NEXT_DISPLAY_ENDPOINT = "api/display"
+        internal const val NEXT_PLAYLIST_SCREEN_API_PATH = "api/display"
 
         /**
+         * https://docs.usetrmnl.com/go/private-api/fetch-screen-content#current-screen
+         *
          * @see getCurrentDisplayData
          */
-        internal const val CURRENT_SCREEN_ENDPOINT = "api/current_screen"
+        internal const val CURRENT_PLAYLIST_SCREEN_API_PATH = "api/current_screen"
     }
 
     /**
-     * Retrieve TRMNL image data, device-free using [NEXT_DISPLAY_ENDPOINT].
+     * Retrieve TRMNL image data, device-free using [NEXT_PLAYLIST_SCREEN_API_PATH].
      *
      * NOTE: This API always loads the next plugin image from the playlist.
      *
@@ -45,7 +50,7 @@ interface TrmnlApiService {
     ): ApiResult<TrmnlDisplayResponse, Unit>
 
     /**
-     * Retrieve TRMNL image that is currently being displayed using [CURRENT_SCREEN_ENDPOINT].
+     * Retrieve TRMNL image that is currently being displayed using [CURRENT_PLAYLIST_SCREEN_API_PATH].
      *
      * NOTE: This API always loads the current plugin image from the playlist.
      *
