@@ -241,8 +241,12 @@ class AppSettingsPresenter
             LaunchedEffect(Unit) {
                 deviceConfigStore.deviceConfigFlow.filterNotNull().collect {
                     deviceType = it.type
-                    serverBaseUrl = it.apiBaseUrl
                     accessToken = it.apiAccessToken
+
+                    if (it.type == TrmnlDeviceType.BYOS) {
+                        // On initial load, prefill only if the device type is BYOS
+                        serverBaseUrl = it.apiBaseUrl
+                    }
                 }
             }
 
