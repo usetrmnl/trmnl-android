@@ -174,13 +174,20 @@ class TrmnlDisplayRepository
             }
 
         /**
-         * Converts API failure results into a [TrmnlDisplayInfo] object with proper error info.
+         * Converts an API failure result into a [TrmnlDisplayInfo] object with appropriate error details.
+         *
+         * This function handles different types of API failures and maps them to a standardized
+         * [TrmnlDisplayInfo] object. The returned object contains error information and default values
+         * for other fields.
          */
         private fun failedTrmnlDisplayInfo(
             trmnlDeviceConfig: TrmnlDeviceConfig,
             failure: ApiResult.Failure<Unit>,
         ): TrmnlDisplayInfo =
             when (failure) {
+                /**
+                 * Handles API-specific failures, returning a [TrmnlDisplayInfo] with a generic API failure message.
+                 */
                 is ApiResult.Failure.ApiFailure -> {
                     TrmnlDisplayInfo(
                         status = HTTP_500,
@@ -192,6 +199,9 @@ class TrmnlDisplayRepository
                     )
                 }
 
+                /**
+                 * Handles HTTP failures, including the HTTP status code and error message in the result.
+                 */
                 is ApiResult.Failure.HttpFailure -> {
                     TrmnlDisplayInfo(
                         status = HTTP_500,
@@ -203,6 +213,9 @@ class TrmnlDisplayRepository
                     )
                 }
 
+                /**
+                 * Handles network-related failures, including the localized error message in the result.
+                 */
                 is ApiResult.Failure.NetworkFailure -> {
                     TrmnlDisplayInfo(
                         status = HTTP_500,
@@ -214,6 +227,9 @@ class TrmnlDisplayRepository
                     )
                 }
 
+                /**
+                 * Handles unknown failures, including the localized error message in the result.
+                 */
                 is ApiResult.Failure.UnknownFailure -> {
                     TrmnlDisplayInfo(
                         status = HTTP_500,
