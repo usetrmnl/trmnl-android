@@ -5,10 +5,11 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import ink.trmnl.android.MainActivity
+import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.data.TrmnlDisplayRepository
-import ink.trmnl.android.data.TrmnlTokenDataStore
 import ink.trmnl.android.data.log.TrmnlRefreshLogManager
 import ink.trmnl.android.di.WorkerModule
+import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
 import ink.trmnl.android.util.isHttpError
 import ink.trmnl.android.util.isHttpOk
@@ -33,7 +34,7 @@ class TrmnlImageRefreshWorker(
     appContext: Context,
     params: WorkerParameters,
     private val displayRepository: TrmnlDisplayRepository,
-    private val trmnlTokenDataStore: TrmnlTokenDataStore,
+    private val trmnlDeviceConfigDataStore: TrmnlDeviceConfigDataStore,
     private val refreshLogManager: TrmnlRefreshLogManager,
     private val trmnlWorkScheduler: TrmnlWorkScheduler,
     private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
@@ -57,16 +58,16 @@ class TrmnlImageRefreshWorker(
 
         Timber.tag(TAG).d("Work type: $workTypeValue, loadNextPluginImage: $loadNextPluginImage")
 
-        // Get current token
-        val token = trmnlTokenDataStore.accessTokenFlow.firstOrNull()
+        // Get device config
+        val deviceConfig: TrmnlDeviceConfig? = trmnlDeviceConfigDataStore.deviceConfigFlow.firstOrNull()
 
-        if (token.isNullOrBlank()) {
-            Timber.tag(TAG).w("Token is not set, skipping image refresh")
-            refreshLogManager.addFailureLog("No access token found")
+        if (deviceConfig == null) {
+            Timber.tag(TAG).w("Device config and token is not set, skipping image refresh")
+            refreshLogManager.addFailureLog("No device config with API token found")
             return Result.failure(
                 workDataOf(
                     KEY_REFRESH_RESULT to FAILURE.name,
-                    KEY_ERROR_MESSAGE to "No access token found",
+                    KEY_ERROR_MESSAGE to "No device config with API token found",
                 ),
             )
         }
@@ -74,9 +75,9 @@ class TrmnlImageRefreshWorker(
         // Fetch TRMNL display image - current or next from playlist based on request type
         val trmnlDisplayInfo =
             if (loadNextPluginImage) {
-                displayRepository.getNextDisplayData(token)
+                displayRepository.getNextDisplayData(deviceConfig)
             } else {
-                displayRepository.getCurrentDisplayData(token)
+                displayRepository.getCurrentDisplayData(deviceConfig)
             }
 
         // Check for errors
@@ -105,6 +106,7 @@ class TrmnlImageRefreshWorker(
 
         // ✅ Log success and update image
         refreshLogManager.addSuccessLog(
+            trmnlDeviceType = deviceConfig.type,
             imageUrl = trmnlDisplayInfo.imageUrl,
             imageName = trmnlDisplayInfo.imageName,
             refreshIntervalSeconds = trmnlDisplayInfo.refreshIntervalSeconds,
@@ -114,9 +116,9 @@ class TrmnlImageRefreshWorker(
         // Check if we should adapt refresh rate
         val refreshRate = trmnlDisplayInfo.refreshIntervalSeconds
         refreshRate?.let { newRefreshRateSec ->
-            if (trmnlTokenDataStore.shouldUpdateRefreshRate(newRefreshRateSec)) {
+            if (trmnlDeviceConfigDataStore.shouldUpdateRefreshRate(newRefreshRateSec)) {
                 Timber.tag(TAG).d("Refresh rate changed, updating periodic work and saving new rate")
-                trmnlTokenDataStore.saveRefreshRateSeconds(newRefreshRateSec)
+                trmnlDeviceConfigDataStore.saveRefreshRateSeconds(newRefreshRateSec)
                 trmnlWorkScheduler.scheduleImageRefreshWork(newRefreshRateSec)
             } else {
                 Timber.tag(TAG).d("Refresh rate is unchanged, not updating")
@@ -162,7 +164,7 @@ class TrmnlImageRefreshWorker(
         @Inject
         constructor(
             private val displayRepository: TrmnlDisplayRepository,
-            private val trmnlTokenDataStore: TrmnlTokenDataStore,
+            private val trmnlDeviceConfigDataStore: TrmnlDeviceConfigDataStore,
             private val refreshLogManager: TrmnlRefreshLogManager,
             private val trmnlWorkScheduler: TrmnlWorkScheduler,
             private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
@@ -175,7 +177,7 @@ class TrmnlImageRefreshWorker(
                     appContext = appContext,
                     params = params,
                     displayRepository = displayRepository,
-                    trmnlTokenDataStore = trmnlTokenDataStore,
+                    trmnlDeviceConfigDataStore = trmnlDeviceConfigDataStore,
                     refreshLogManager = refreshLogManager,
                     trmnlWorkScheduler = trmnlWorkScheduler,
                     trmnlImageUpdateManager = trmnlImageUpdateManager,

@@ -41,6 +41,11 @@ class TrmnlDisplayMirrorApp :
         if (BuildConfig.DEBUG) {
             // Plant a debug tree for development builds
             Timber.plant(Timber.DebugTree())
+        } else {
+            // Enable logging in release builds during early development
+            // This will help us debug issues in production builds
+            // ℹ️ In future we will remove this and install crashlytics tree
+            Timber.plant(Timber.DebugTree())
         }
     }
 }

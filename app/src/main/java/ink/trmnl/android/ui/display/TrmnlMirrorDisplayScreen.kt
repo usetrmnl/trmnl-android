@@ -57,7 +57,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import ink.trmnl.android.R
 import ink.trmnl.android.data.ImageMetadataStore
-import ink.trmnl.android.data.TrmnlTokenDataStore
+import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.ui.FullScreenMode
 import ink.trmnl.android.ui.refreshlog.DisplayRefreshLogScreen
@@ -106,7 +106,7 @@ class TrmnlMirrorDisplayPresenter
     @AssistedInject
     constructor(
         @Assisted private val navigator: Navigator,
-        private val trmnlTokenDataStore: TrmnlTokenDataStore,
+        private val trmnlDeviceConfigDataStore: TrmnlDeviceConfigDataStore,
         private val trmnlWorkScheduler: TrmnlWorkScheduler,
         private val imageMetadataStore: ImageMetadataStore,
         private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
@@ -159,7 +159,7 @@ class TrmnlMirrorDisplayPresenter
 
             // Initialize by checking token and starting one-time work if needed
             LaunchedEffect(Unit) {
-                val token = trmnlTokenDataStore.accessTokenFlow.firstOrNull()
+                val token = trmnlDeviceConfigDataStore.accessTokenFlow.firstOrNull()
                 if (token.isNullOrBlank()) {
                     Timber.d("No access token found, navigating to configuration screen")
                     navigator.goTo(AppSettingsScreen(returnToMirrorAfterSave = true))
@@ -200,7 +200,7 @@ class TrmnlMirrorDisplayPresenter
                                 isLoading = true
                                 error = null
 
-                                if (trmnlTokenDataStore.hasTokenSync()) {
+                                if (trmnlDeviceConfigDataStore.hasTokenSync()) {
                                     Timber.d("Manually refreshing current image via WorkManager")
                                     trmnlWorkScheduler.startOneTimeImageRefreshWork()
                                 } else {
@@ -229,7 +229,7 @@ class TrmnlMirrorDisplayPresenter
                             isLoading = true
                             error = null
 
-                            if (trmnlTokenDataStore.hasTokenSync()) {
+                            if (trmnlDeviceConfigDataStore.hasTokenSync()) {
                                 Timber.d("Manually refreshing next playlist item image via WorkManager")
                                 trmnlWorkScheduler.startOneTimeImageRefreshWork(loadNextPlaylistImage = true)
                             } else {

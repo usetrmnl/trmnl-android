@@ -2,6 +2,8 @@ package ink.trmnl.android.data
 
 import com.google.common.truth.Truth.assertThat
 import com.slack.eithernet.ApiResult
+import ink.trmnl.android.model.TrmnlDeviceConfig
+import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.network.TrmnlApiService
 import ink.trmnl.android.network.model.TrmnlCurrentImageResponse
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
@@ -23,13 +25,21 @@ class TrmnlDisplayRepositoryTest {
     private lateinit var apiService: TrmnlApiService
     private lateinit var imageMetadataStore: ImageMetadataStore
     private lateinit var repositoryConfigProvider: RepositoryConfigProvider
+    private lateinit var deviceConfigDataStore: TrmnlDeviceConfigDataStore
 
-    private val testAccessToken = "test-access-token"
+    private val testDeviceConfig =
+        TrmnlDeviceConfig(
+            type = TrmnlDeviceType.TRMNL,
+            apiAccessToken = "test-access-token",
+            apiBaseUrl = "https://server.example.com",
+            refreshRateSecs = 600L,
+        )
 
     @Before
     fun setup() {
         apiService = mockk()
         repositoryConfigProvider = mockk()
+        deviceConfigDataStore = mockk()
         imageMetadataStore = mockk(relaxed = true)
 
         every { repositoryConfigProvider.shouldUseFakeData } returns false
@@ -62,10 +72,18 @@ class TrmnlDisplayRepositoryTest {
                     firmwareUrl = null,
                     resetFirmware = null,
                 )
-            coEvery { apiService.getNextDisplayData(testAccessToken) } returns ApiResult.success(successResponse)
+
+            val expectedNextApiUrl = "https://server.example.com/api/display"
+
+            coEvery {
+                apiService.getNextDisplayData(
+                    fullApiUrl = expectedNextApiUrl,
+                    accessToken = testDeviceConfig.apiAccessToken,
+                )
+            } returns ApiResult.success(successResponse)
 
             // Act
-            val result = repository.getNextDisplayData(testAccessToken)
+            val result = repository.getNextDisplayData(testDeviceConfig)
 
             // Assert
             assertThat(result.status).isEqualTo(200)
@@ -73,6 +91,7 @@ class TrmnlDisplayRepositoryTest {
             assertThat(result.imageName).isEqualTo("test-image.png")
             assertThat(result.refreshIntervalSeconds).isEqualTo(300L)
             assertThat(result.error).isNull()
+            assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.TRMNL)
 
             // Verify metadata was saved
             coVerify { imageMetadataStore.saveImageMetadata("https://test.com/image.png", 300L) }
@@ -93,10 +112,18 @@ class TrmnlDisplayRepositoryTest {
                     firmwareUrl = null,
                     resetFirmware = null,
                 )
-            coEvery { apiService.getNextDisplayData(testAccessToken) } returns ApiResult.success(errorResponse)
+
+            val expectedNextApiUrl = "https://server.example.com/api/display"
+
+            coEvery {
+                apiService.getNextDisplayData(
+                    fullApiUrl = expectedNextApiUrl,
+                    accessToken = testDeviceConfig.apiAccessToken,
+                )
+            } returns ApiResult.success(errorResponse)
 
             // Act
-            val result = repository.getNextDisplayData(testAccessToken)
+            val result = repository.getNextDisplayData(testDeviceConfig)
 
             // Assert
             assertThat(result.status).isEqualTo(500)
@@ -104,6 +131,7 @@ class TrmnlDisplayRepositoryTest {
             assertThat(result.imageName).isEmpty()
             assertThat(result.refreshIntervalSeconds).isNull()
             assertThat(result.error).isEqualTo("Error fetching display")
+            assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.TRMNL)
 
             // Verify metadata was NOT saved
             coVerify(exactly = 0) { imageMetadataStore.saveImageMetadata(any(), any()) }
@@ -122,10 +150,18 @@ class TrmnlDisplayRepositoryTest {
                     renderedAt = 1234567890L,
                     error = null,
                 )
-            coEvery { apiService.getCurrentDisplayData(testAccessToken) } returns ApiResult.success(successResponse)
+
+            val expectedCurrentApiUrl = "https://server.example.com/api/current_screen"
+
+            coEvery {
+                apiService.getCurrentDisplayData(
+                    fullApiUrl = expectedCurrentApiUrl,
+                    accessToken = testDeviceConfig.apiAccessToken,
+                )
+            } returns ApiResult.success(successResponse)
 
             // Act
-            val result = repository.getCurrentDisplayData(testAccessToken)
+            val result = repository.getCurrentDisplayData(testDeviceConfig)
 
             // Assert
             assertThat(result.status).isEqualTo(200)
@@ -133,6 +169,7 @@ class TrmnlDisplayRepositoryTest {
             assertThat(result.imageName).isEqualTo("current-image.png")
             assertThat(result.refreshIntervalSeconds).isEqualTo(600L)
             assertThat(result.error).isNull()
+            assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.TRMNL)
 
             // Verify metadata was saved
             coVerify { imageMetadataStore.saveImageMetadata("https://test.com/current.png", 600L) }
@@ -151,10 +188,18 @@ class TrmnlDisplayRepositoryTest {
                     renderedAt = null,
                     error = "Device not found",
                 )
-            coEvery { apiService.getCurrentDisplayData(testAccessToken) } returns ApiResult.success(errorResponse)
+
+            val expectedCurrentApiUrl = "https://server.example.com/api/current_screen"
+
+            coEvery {
+                apiService.getCurrentDisplayData(
+                    fullApiUrl = expectedCurrentApiUrl,
+                    accessToken = testDeviceConfig.apiAccessToken,
+                )
+            } returns ApiResult.success(errorResponse)
 
             // Act
-            val result = repository.getCurrentDisplayData(testAccessToken)
+            val result = repository.getCurrentDisplayData(testDeviceConfig)
 
             // Assert
             assertThat(result.status).isEqualTo(500)
@@ -162,6 +207,7 @@ class TrmnlDisplayRepositoryTest {
             assertThat(result.imageName).isEmpty()
             assertThat(result.refreshIntervalSeconds).isNull()
             assertThat(result.error).isEqualTo("Device not found")
+            assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.TRMNL)
 
             // Verify metadata was NOT saved
             coVerify(exactly = 0) { imageMetadataStore.saveImageMetadata(any(), any()) }
@@ -174,7 +220,7 @@ class TrmnlDisplayRepositoryTest {
             every { repositoryConfigProvider.shouldUseFakeData } returns true
 
             // Act
-            val result = repository.getNextDisplayData(testAccessToken)
+            val result = repository.getNextDisplayData(testDeviceConfig)
 
             // Assert
             assertThat(result.status).isEqualTo(200)
@@ -184,7 +230,7 @@ class TrmnlDisplayRepositoryTest {
             assertThat(result.error).isNull()
 
             // Verify API was NOT called
-            coVerify(exactly = 0) { apiService.getNextDisplayData(any()) }
+            coVerify(exactly = 0) { apiService.getNextDisplayData(any(), any()) }
         }
 
     @Test
@@ -194,7 +240,7 @@ class TrmnlDisplayRepositoryTest {
             every { repositoryConfigProvider.shouldUseFakeData } returns true
 
             // Act
-            val result = repository.getCurrentDisplayData(testAccessToken)
+            val result = repository.getCurrentDisplayData(testDeviceConfig)
 
             // Assert
             assertThat(result.status).isEqualTo(200)
@@ -204,6 +250,34 @@ class TrmnlDisplayRepositoryTest {
             assertThat(result.error).isNull()
 
             // Verify API was NOT called
-            coVerify(exactly = 0) { apiService.getCurrentDisplayData(any()) }
+            coVerify(exactly = 0) { apiService.getCurrentDisplayData(any(), any()) }
+        }
+
+    @Test
+    fun `constructApiUrl should handle URLs with and without trailing slashes`() =
+        runTest {
+            // Test with trailing slash
+            val urlWithSlash = "https://example.com/"
+            val expectedWithSlash = "https://example.com/api/endpoint"
+
+            // Test without trailing slash
+            val urlWithoutSlash = "https://example.com"
+            val expectedWithoutSlash = "https://example.com/api/endpoint"
+
+            // Use reflection to access private method
+            val method =
+                TrmnlDisplayRepository::class.java.getDeclaredMethod(
+                    "constructApiUrl",
+                    String::class.java,
+                    String::class.java,
+                )
+            method.isAccessible = true
+
+            // Act & Assert
+            assertThat(method.invoke(repository, urlWithSlash, "api/endpoint"))
+                .isEqualTo(expectedWithSlash)
+
+            assertThat(method.invoke(repository, urlWithoutSlash, "api/endpoint"))
+                .isEqualTo(expectedWithoutSlash)
         }
 }

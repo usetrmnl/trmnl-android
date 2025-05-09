@@ -24,12 +24,6 @@ object NetworkModule {
     // Cache size for OkHttp (10 MB)
     private const val CACHE_SIZE = 10 * 1024 * 1024L
 
-    /**
-     * New base URL for the TRMNL API server.
-     * Ref: https://discord.com/channels/1281055965508141100/1284986536357662740/1364623667337760910
-     */
-    private const val TRMNL_API_SERVER_BASE_URL = "https://trmnl.app/"
-
     @Provides
     @SingleIn(AppScope::class)
     fun provideOkHttpClient(
@@ -86,7 +80,10 @@ object NetworkModule {
     ): Retrofit =
         Retrofit
             .Builder()
-            .baseUrl(TRMNL_API_SERVER_BASE_URL)
+            // This `baseUrl` won't be used for actual requests
+            // Instead we use `@Url` to construct the API URL dynamically
+            // This allows us to use different base URLs for TRMNL, BYOD/S
+            .baseUrl("https://dummy-base-url.com/")
             .client(okHttpClient)
             .addConverterFactory(ApiResultConverterFactory)
             .addConverterFactory(MoshiConverterFactory.create(moshi))

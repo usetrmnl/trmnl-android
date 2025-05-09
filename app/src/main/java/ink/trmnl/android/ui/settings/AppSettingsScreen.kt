@@ -1,5 +1,10 @@
 package ink.trmnl.android.ui.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -37,6 +42,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -85,13 +93,17 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import ink.trmnl.android.R
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
+import ink.trmnl.android.data.AppConfig.TRMNL_API_SERVER_BASE_URL
 import ink.trmnl.android.data.RepositoryConfigProvider
+import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.data.TrmnlDisplayRepository
-import ink.trmnl.android.data.TrmnlTokenDataStore
 import ink.trmnl.android.di.AppScope
+import ink.trmnl.android.model.TrmnlDeviceConfig
+import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.Failure
+import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.InvalidServerUrl
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.Success
 import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
 import ink.trmnl.android.util.CoilRequestUtils
@@ -103,11 +115,13 @@ import ink.trmnl.android.util.toDisplayString
 import ink.trmnl.android.util.toIcon
 import ink.trmnl.android.work.TrmnlImageUpdateManager
 import ink.trmnl.android.work.TrmnlWorkScheduler
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.regex.Pattern
 
 /**
  * Screen for configuring the TRMNL mirror app settings.
@@ -125,6 +139,8 @@ data class AppSettingsScreen(
     val returnToMirrorAfterSave: Boolean = false,
 ) : Screen {
     data class State(
+        val deviceType: TrmnlDeviceType,
+        val serverBaseUrl: String,
         val accessToken: String,
         val usesFakeApiData: Boolean,
         val isLoading: Boolean = false,
@@ -137,6 +153,10 @@ data class AppSettingsScreen(
         data class Success(
             val imageUrl: String,
             val refreshRateSecs: Long,
+        ) : ValidationResult()
+
+        data class InvalidServerUrl(
+            val message: String,
         ) : ValidationResult()
 
         data class Failure(
@@ -174,6 +194,14 @@ data class AppSettingsScreen(
          * Event triggered to cancel the scheduled work.
          */
         data object CancelScheduledWork : Event()
+
+        data class DeviceTypeChanged(
+            val type: TrmnlDeviceType,
+        ) : Event()
+
+        data class ServerUrlChanged(
+            val url: String,
+        ) : Event()
     }
 }
 
@@ -187,13 +215,15 @@ class AppSettingsPresenter
         @Assisted private val navigator: Navigator,
         @Assisted private val screen: AppSettingsScreen,
         private val displayRepository: TrmnlDisplayRepository,
-        private val trmnlTokenDataStore: TrmnlTokenDataStore,
+        private val deviceConfigStore: TrmnlDeviceConfigDataStore,
         private val trmnlWorkScheduler: TrmnlWorkScheduler,
         private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
         private val repositoryConfigProvider: RepositoryConfigProvider,
     ) : Presenter<AppSettingsScreen.State> {
         @Composable
         override fun present(): AppSettingsScreen.State {
+            var deviceType by remember { mutableStateOf(TrmnlDeviceType.TRMNL) }
+            var serverBaseUrl by remember { mutableStateOf("") }
             var accessToken by remember { mutableStateOf("") }
             var isLoading by remember { mutableStateOf(false) }
             var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
@@ -209,14 +239,20 @@ class AppSettingsPresenter
 
             // Load saved token if available
             LaunchedEffect(Unit) {
-                trmnlTokenDataStore.accessTokenFlow.collect { savedToken ->
-                    if (!savedToken.isNullOrBlank()) {
-                        accessToken = savedToken
+                deviceConfigStore.deviceConfigFlow.filterNotNull().collect {
+                    deviceType = it.type
+                    accessToken = it.apiAccessToken
+
+                    if (it.type == TrmnlDeviceType.BYOS) {
+                        // On initial load, prefill only if the device type is BYOS
+                        serverBaseUrl = it.apiBaseUrl
                     }
                 }
             }
 
             return AppSettingsScreen.State(
+                deviceType = deviceType,
+                serverBaseUrl = serverBaseUrl,
                 accessToken = accessToken,
                 usesFakeApiData = usesFakeApiData,
                 isLoading = isLoading,
@@ -236,7 +272,23 @@ class AppSettingsPresenter
                                 isLoading = true
                                 validationResult = null
 
-                                val response = displayRepository.getCurrentDisplayData(accessToken)
+                                // First validate server URL if device type is BYOS
+                                if (deviceType == TrmnlDeviceType.BYOS) {
+                                    if (!isValidUrl(serverBaseUrl)) {
+                                        isLoading = false
+                                        validationResult = InvalidServerUrl("Please enter a valid URL (e.g. https://example.com)")
+                                        return@launch
+                                    }
+                                }
+
+                                val response =
+                                    displayRepository.getCurrentDisplayData(
+                                        TrmnlDeviceConfig(
+                                            type = deviceType,
+                                            apiBaseUrl = serverBaseUrl.forDevice(deviceType),
+                                            apiAccessToken = accessToken,
+                                        ),
+                                    )
 
                                 if (response.status.isHttpError()) {
                                     // Handle explicit error response
@@ -262,9 +314,16 @@ class AppSettingsPresenter
                         AppSettingsScreen.Event.SaveAndContinue -> {
                             // Only save if validation was successful
                             val result = validationResult
-                            if (result is ValidationResult.Success) {
+                            if (result is Success) {
                                 scope.launch {
-                                    trmnlTokenDataStore.saveAccessToken(accessToken)
+                                    deviceConfigStore.saveDeviceConfig(
+                                        TrmnlDeviceConfig(
+                                            type = deviceType,
+                                            apiBaseUrl = serverBaseUrl.forDevice(deviceType),
+                                            apiAccessToken = accessToken,
+                                            refreshRateSecs = result.refreshRateSecs,
+                                        ),
+                                    )
                                     trmnlWorkScheduler.updateRefreshInterval(result.refreshRateSecs)
 
                                     if (screen.returnToMirrorAfterSave) {
@@ -283,9 +342,44 @@ class AppSettingsPresenter
                         AppSettingsScreen.Event.CancelScheduledWork -> {
                             trmnlWorkScheduler.cancelImageRefreshWork()
                         }
+
+                        is AppSettingsScreen.Event.DeviceTypeChanged -> {
+                            deviceType = event.type
+                            // Clear validation result when device type changes
+                            validationResult = null
+                        }
+
+                        is AppSettingsScreen.Event.ServerUrlChanged -> {
+                            serverBaseUrl = event.url
+                            // Clear validation result when server URL changes
+                            if (validationResult is InvalidServerUrl) {
+                                validationResult = null
+                            }
+                        }
                     }
                 },
             )
+        }
+
+        /**
+         * Returns the server base URL for the [deviceType] (custom or TRMNL server).
+         */
+        private fun String.forDevice(deviceType: TrmnlDeviceType): String =
+            if (deviceType == TrmnlDeviceType.BYOS) {
+                // For BYOS, use the provided custom server URL
+                this
+            } else {
+                // For any other device type, use the default TRMNL API server URL
+                TRMNL_API_SERVER_BASE_URL
+            }
+
+        private fun isValidUrl(url: String): Boolean {
+            val urlRegex =
+                Pattern.compile(
+                    "^(https?)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]",
+                    Pattern.CASE_INSENSITIVE,
+                )
+            return urlRegex.matcher(url).matches()
         }
 
         @CircuitInject(AppSettingsScreen::class, AppScope::class)
@@ -313,7 +407,6 @@ fun AppSettingsContent(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val hasToken = state.accessToken.isNotBlank()
-    val trmnlWorkScheduler = remember { TrmnlWorkScheduler(context, TrmnlTokenDataStore(context)) }
 
     // Control password visibility
     var passwordVisible by remember { mutableStateOf(false) }
@@ -394,6 +487,15 @@ fun AppSettingsContent(
             )
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            DeviceTypeSelectorConfig(
+                selectedType = state.deviceType,
+                serverUrl = state.serverBaseUrl,
+                onTypeSelected = { state.eventSink(AppSettingsScreen.Event.DeviceTypeChanged(it)) },
+                onServerUrlChanged = { state.eventSink(AppSettingsScreen.Event.ServerUrlChanged(it)) },
+                isServerUrlError = state.validationResult is InvalidServerUrl,
+                serverUrlError = (state.validationResult as? InvalidServerUrl)?.message,
+            )
 
             // Password field with toggle visibility button
             OutlinedTextField(
@@ -483,6 +585,24 @@ fun AppSettingsContent(
                                 }
                             }
                         }
+                        is ValidationResult.InvalidServerUrl -> {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    "❌ Server URL Invalid",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    result.message,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
                         is ValidationResult.Failure -> {
                             // Error state remains the same
                             Column(
@@ -513,6 +633,77 @@ fun AppSettingsContent(
 
             Spacer(modifier = Modifier.height(24.dp))
             WorkScheduleStatusCard(state = state, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@Composable
+private fun DeviceTypeSelectorConfig(
+    selectedType: TrmnlDeviceType,
+    serverUrl: String = "",
+    onTypeSelected: (TrmnlDeviceType) -> Unit,
+    onServerUrlChanged: (String) -> Unit,
+    isServerUrlError: Boolean = false,
+    serverUrlError: String? = null,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            TrmnlDeviceType.entries.forEachIndexed { index, deviceType ->
+                SegmentedButton(
+                    shape =
+                        SegmentedButtonDefaults.itemShape(
+                            index = index,
+                            count = TrmnlDeviceType.entries.size,
+                        ),
+                    icon = {
+                        SegmentedButtonDefaults.Icon(active = deviceType == selectedType) {
+                            Icon(
+                                painter =
+                                    when (deviceType) {
+                                        TrmnlDeviceType.TRMNL -> painterResource(R.drawable.trmnl_logo_plain)
+                                        TrmnlDeviceType.BYOD -> painterResource(R.drawable.devices_24dp)
+                                        TrmnlDeviceType.BYOS -> painterResource(R.drawable.storage_24dp)
+                                    },
+                                contentDescription = null,
+                            )
+                        }
+                    },
+                    onClick = { onTypeSelected(deviceType) },
+                    selected = deviceType == selectedType,
+                ) {
+                    Text(deviceType.name)
+                }
+            }
+        }
+
+        AnimatedVisibility(
+            visible = selectedType == TrmnlDeviceType.BYOS,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            OutlinedTextField(
+                value = serverUrl,
+                onValueChange = onServerUrlChanged,
+                label = { Text("API Server Base URL") },
+                placeholder = { Text("https://your-trmnl-server.com") },
+                isError = isServerUrlError,
+                supportingText = {
+                    if (isServerUrlError && serverUrlError != null) {
+                        Text(serverUrlError)
+                    }
+                },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Done,
+                    ),
+                singleLine = true,
+            )
         }
     }
 }
@@ -739,6 +930,8 @@ private fun PreviewAppSettingsContentInitial() {
         AppSettingsContent(
             state =
                 AppSettingsScreen.State(
+                    deviceType = TrmnlDeviceType.TRMNL,
+                    serverBaseUrl = "https://example.com",
                     accessToken = "",
                     usesFakeApiData = true,
                     isLoading = false,
@@ -757,6 +950,8 @@ private fun PreviewAppSettingsContentLoading() {
         AppSettingsContent(
             state =
                 AppSettingsScreen.State(
+                    deviceType = TrmnlDeviceType.TRMNL,
+                    serverBaseUrl = "https://example.com",
                     accessToken = "some-token",
                     usesFakeApiData = false,
                     isLoading = true,
@@ -775,6 +970,8 @@ private fun PreviewAppSettingsContentSuccess() {
         AppSettingsContent(
             state =
                 AppSettingsScreen.State(
+                    deviceType = TrmnlDeviceType.TRMNL,
+                    serverBaseUrl = "https://example.com",
                     accessToken = "valid-token-123",
                     usesFakeApiData = false,
                     isLoading = false,
@@ -797,6 +994,8 @@ private fun PreviewAppSettingsContentFailure() {
         AppSettingsContent(
             state =
                 AppSettingsScreen.State(
+                    deviceType = TrmnlDeviceType.TRMNL,
+                    serverBaseUrl = "https://example.com",
                     accessToken = "invalid-token",
                     usesFakeApiData = false,
                     isLoading = false,
@@ -822,6 +1021,8 @@ private fun PreviewAppSettingsContentWithWork() {
         AppSettingsContent(
             state =
                 AppSettingsScreen.State(
+                    deviceType = TrmnlDeviceType.TRMNL,
+                    serverBaseUrl = "https://example.com",
                     accessToken = "valid-token-123",
                     usesFakeApiData = false,
                     isLoading = false,
@@ -850,6 +1051,8 @@ private fun PreviewWorkScheduleStatusCardScheduled() {
         WorkScheduleStatusCard(
             state =
                 AppSettingsScreen.State(
+                    deviceType = TrmnlDeviceType.TRMNL,
+                    serverBaseUrl = "https://example.com",
                     accessToken = "some-token",
                     usesFakeApiData = false,
                     nextRefreshJobInfo =
@@ -872,6 +1075,8 @@ private fun PreviewWorkScheduleStatusCardNoWork() {
         WorkScheduleStatusCard(
             state =
                 AppSettingsScreen.State(
+                    deviceType = TrmnlDeviceType.TRMNL,
+                    serverBaseUrl = "https://example.com",
                     accessToken = "some-token",
                     usesFakeApiData = false,
                     nextRefreshJobInfo = null,

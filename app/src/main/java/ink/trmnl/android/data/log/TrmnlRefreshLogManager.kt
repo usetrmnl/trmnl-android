@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import com.squareup.anvil.annotations.optional.SingleIn
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.di.ApplicationContext
+import ink.trmnl.android.model.TrmnlDeviceType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -30,12 +31,21 @@ class TrmnlRefreshLogManager
                 }.map { it.logs }
 
         suspend fun addSuccessLog(
+            trmnlDeviceType: TrmnlDeviceType,
             imageUrl: String,
             imageName: String,
             refreshIntervalSeconds: Long?,
             imageRefreshWorkType: String?,
         ) {
-            addLog(TrmnlRefreshLog.createSuccess(imageUrl, imageName, refreshIntervalSeconds, imageRefreshWorkType))
+            addLog(
+                TrmnlRefreshLog.createSuccess(
+                    trmnlDeviceType = trmnlDeviceType,
+                    imageUrl = imageUrl,
+                    imageName = imageName,
+                    refreshIntervalSeconds = refreshIntervalSeconds,
+                    imageRefreshWorkType = imageRefreshWorkType,
+                ),
+            )
         }
 
         suspend fun addFailureLog(error: String) {

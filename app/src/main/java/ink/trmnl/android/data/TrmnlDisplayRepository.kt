@@ -4,7 +4,11 @@ import com.slack.eithernet.successOrNull
 import com.squareup.anvil.annotations.optional.SingleIn
 import ink.trmnl.android.BuildConfig.USE_FAKE_API
 import ink.trmnl.android.di.AppScope
+import ink.trmnl.android.model.TrmnlDeviceConfig
+import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.network.TrmnlApiService
+import ink.trmnl.android.network.TrmnlApiService.Companion.CURRENT_SCREEN_ENDPOINT
+import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_DISPLAY_ENDPOINT
 import ink.trmnl.android.util.HTTP_200
 import ink.trmnl.android.util.HTTP_500
 import ink.trmnl.android.util.isHttpOk
@@ -32,10 +36,10 @@ class TrmnlDisplayRepository
          * Fetches display data for next plugin from the server using the provided access token.
          * If the app is in debug mode, it uses mock data instead.
          *
-         * @param accessToken The access token for authentication.
+         * @param trmnlDeviceConfig Device configuration containing the access token and other settings.
          * @return A [TrmnlDisplayInfo] object containing the display data.
          */
-        suspend fun getNextDisplayData(accessToken: String): TrmnlDisplayInfo {
+        suspend fun getNextDisplayData(trmnlDeviceConfig: TrmnlDeviceConfig): TrmnlDisplayInfo {
             if (repositoryConfigProvider.shouldUseFakeData) {
                 // Avoid using real API in debug mode
                 return fakeTrmnlDisplayInfo(apiUsed = "next-image")
@@ -43,12 +47,18 @@ class TrmnlDisplayRepository
 
             Timber.i("Fetching next playlist item display data from server")
 
-            val response = apiService.getNextDisplayData(accessToken).successOrNull()
+            val response =
+                apiService
+                    .getNextDisplayData(
+                        fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, NEXT_DISPLAY_ENDPOINT),
+                        accessToken = trmnlDeviceConfig.apiAccessToken,
+                    ).successOrNull()
 
             // Map the response to the display info
             val displayInfo =
                 TrmnlDisplayInfo(
                     status = response?.status ?: HTTP_500,
+                    trmnlDeviceType = trmnlDeviceConfig.type,
                     imageUrl = response?.imageUrl ?: "",
                     imageName = response?.imageName ?: "",
                     error = response?.error,
@@ -70,10 +80,10 @@ class TrmnlDisplayRepository
          * Fetches the current display data from the server using the provided access token.
          * If the app is in debug mode, it uses mock data instead.
          *
-         * @param accessToken The access token for authentication.
+         * @param trmnlDeviceConfig Device configuration containing the access token and other settings.
          * @return A [TrmnlDisplayInfo] object containing the current display data.
          */
-        suspend fun getCurrentDisplayData(accessToken: String): TrmnlDisplayInfo {
+        suspend fun getCurrentDisplayData(trmnlDeviceConfig: TrmnlDeviceConfig): TrmnlDisplayInfo {
             if (repositoryConfigProvider.shouldUseFakeData) {
                 // Avoid using real API in debug mode
                 return fakeTrmnlDisplayInfo(apiUsed = "current-image")
@@ -81,12 +91,18 @@ class TrmnlDisplayRepository
 
             Timber.i("Fetching current display data from server")
 
-            val response = apiService.getCurrentDisplayData(accessToken).successOrNull()
+            val response =
+                apiService
+                    .getCurrentDisplayData(
+                        fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, CURRENT_SCREEN_ENDPOINT),
+                        accessToken = trmnlDeviceConfig.apiAccessToken,
+                    ).successOrNull()
 
             // Map the response to the display info
             val displayInfo =
                 TrmnlDisplayInfo(
                     status = response?.status ?: HTTP_500,
+                    trmnlDeviceType = trmnlDeviceConfig.type,
                     imageUrl = response?.imageUrl ?: "",
                     imageName = response?.filename ?: "",
                     error = response?.error,
@@ -120,10 +136,24 @@ class TrmnlDisplayRepository
 
             return TrmnlDisplayInfo(
                 status = HTTP_200,
+                trmnlDeviceType = TrmnlDeviceType.TRMNL,
                 imageUrl = mockImageUrl,
                 imageName = "mocked-image-" + mockImageUrl.substringAfterLast('?'),
                 error = null,
                 refreshIntervalSeconds = mockRefreshRate,
             )
         }
+
+        /**
+         * Constructs the full URL for API requests based on the configured base URL for device.
+         */
+        private fun constructApiUrl(
+            baseUrl: String,
+            endpoint: String,
+        ): String =
+            if (baseUrl.endsWith("/")) {
+                "${baseUrl}$endpoint"
+            } else {
+                "$baseUrl/$endpoint"
+            }
     }
