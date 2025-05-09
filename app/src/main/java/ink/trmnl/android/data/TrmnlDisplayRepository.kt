@@ -1,6 +1,6 @@
 package ink.trmnl.android.data
 
-import com.slack.eithernet.successOrNull
+import com.slack.eithernet.ApiResult
 import com.squareup.anvil.annotations.optional.SingleIn
 import ink.trmnl.android.BuildConfig.USE_FAKE_API
 import ink.trmnl.android.di.AppScope
@@ -47,33 +47,41 @@ class TrmnlDisplayRepository
 
             Timber.i("Fetching next playlist item display data from server")
 
-            val response =
+            val result =
                 apiService
                     .getNextDisplayData(
                         fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, NEXT_PLAYLIST_SCREEN_API_PATH),
                         accessToken = trmnlDeviceConfig.apiAccessToken,
-                    ).successOrNull()
+                    )
 
-            // Map the response to the display info
-            val displayInfo =
-                TrmnlDisplayInfo(
-                    status = response?.status ?: HTTP_500,
-                    trmnlDeviceType = trmnlDeviceConfig.type,
-                    imageUrl = response?.imageUrl ?: "",
-                    imageName = response?.imageName ?: "",
-                    error = response?.error,
-                    refreshIntervalSeconds = response?.refreshRate,
-                )
+            when (result) {
+                is ApiResult.Failure -> {
+                    return failedTrmnlDisplayInfo(trmnlDeviceConfig, result)
+                }
+                is ApiResult.Success -> {
+                    // Map the response to the display info
+                    val response = result.value
+                    val displayInfo =
+                        TrmnlDisplayInfo(
+                            status = response.status,
+                            trmnlDeviceType = trmnlDeviceConfig.type,
+                            imageUrl = response.imageUrl ?: "",
+                            imageName = response.imageName ?: "",
+                            error = response.error,
+                            refreshIntervalSeconds = response.refreshRate,
+                        )
 
-            // If response was successful and has an image URL, save to data store
-            if (response?.status.isHttpOk() && displayInfo.imageUrl.isNotEmpty()) {
-                imageMetadataStore.saveImageMetadata(
-                    displayInfo.imageUrl,
-                    displayInfo.refreshIntervalSeconds,
-                )
+                    // If response was successful and has an image URL, save to data store
+                    if (response.status.isHttpOk() && displayInfo.imageUrl.isNotEmpty()) {
+                        imageMetadataStore.saveImageMetadata(
+                            displayInfo.imageUrl,
+                            displayInfo.refreshIntervalSeconds,
+                        )
+                    }
+
+                    return displayInfo
+                }
             }
-
-            return displayInfo
         }
 
         /**
@@ -91,33 +99,41 @@ class TrmnlDisplayRepository
 
             Timber.i("Fetching current display data from server")
 
-            val response =
+            val result =
                 apiService
                     .getCurrentDisplayData(
                         fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, CURRENT_PLAYLIST_SCREEN_API_PATH),
                         accessToken = trmnlDeviceConfig.apiAccessToken,
-                    ).successOrNull()
+                    )
 
-            // Map the response to the display info
-            val displayInfo =
-                TrmnlDisplayInfo(
-                    status = response?.status ?: HTTP_500,
-                    trmnlDeviceType = trmnlDeviceConfig.type,
-                    imageUrl = response?.imageUrl ?: "",
-                    imageName = response?.filename ?: "",
-                    error = response?.error,
-                    refreshIntervalSeconds = response?.refreshRateSec,
-                )
+            when (result) {
+                is ApiResult.Failure -> {
+                    return failedTrmnlDisplayInfo(trmnlDeviceConfig, result)
+                }
+                is ApiResult.Success -> {
+                    // Map the response to the display info
+                    val response = result.value
+                    val displayInfo =
+                        TrmnlDisplayInfo(
+                            status = response.status,
+                            trmnlDeviceType = trmnlDeviceConfig.type,
+                            imageUrl = response.imageUrl ?: "",
+                            imageName = response.filename ?: "",
+                            error = response.error,
+                            refreshIntervalSeconds = response.refreshRateSec,
+                        )
 
-            // If response was successful and has an image URL, save to data store
-            if (response?.status.isHttpOk() && displayInfo.imageUrl.isNotEmpty()) {
-                imageMetadataStore.saveImageMetadata(
-                    displayInfo.imageUrl,
-                    displayInfo.refreshIntervalSeconds,
-                )
+                    // If response was successful and has an image URL, save to data store
+                    if (response.status.isHttpOk() && displayInfo.imageUrl.isNotEmpty()) {
+                        imageMetadataStore.saveImageMetadata(
+                            displayInfo.imageUrl,
+                            displayInfo.refreshIntervalSeconds,
+                        )
+                    }
+
+                    return displayInfo
+                }
             }
-
-            return displayInfo
         }
 
         /**
@@ -155,5 +171,58 @@ class TrmnlDisplayRepository
                 "${baseUrl}$endpoint"
             } else {
                 "$baseUrl/$endpoint"
+            }
+
+        /**
+         * Converts API failure results into a [TrmnlDisplayInfo] object with proper error info.
+         */
+        private fun failedTrmnlDisplayInfo(
+            trmnlDeviceConfig: TrmnlDeviceConfig,
+            failure: ApiResult.Failure<Unit>,
+        ): TrmnlDisplayInfo =
+            when (failure) {
+                is ApiResult.Failure.ApiFailure -> {
+                    TrmnlDisplayInfo(
+                        status = HTTP_500,
+                        trmnlDeviceType = trmnlDeviceConfig.type,
+                        imageUrl = "",
+                        imageName = "",
+                        error = "API failure",
+                        refreshIntervalSeconds = 0L,
+                    )
+                }
+
+                is ApiResult.Failure.HttpFailure -> {
+                    TrmnlDisplayInfo(
+                        status = HTTP_500,
+                        trmnlDeviceType = trmnlDeviceConfig.type,
+                        imageUrl = "",
+                        imageName = "",
+                        error = "HTTP failure: ${failure.code}, error: ${failure.error}",
+                        refreshIntervalSeconds = 0L,
+                    )
+                }
+
+                is ApiResult.Failure.NetworkFailure -> {
+                    TrmnlDisplayInfo(
+                        status = HTTP_500,
+                        trmnlDeviceType = trmnlDeviceConfig.type,
+                        imageUrl = "",
+                        imageName = "",
+                        error = "Network failure: ${failure.error.localizedMessage}",
+                        refreshIntervalSeconds = 0L,
+                    )
+                }
+
+                is ApiResult.Failure.UnknownFailure -> {
+                    TrmnlDisplayInfo(
+                        status = HTTP_500,
+                        trmnlDeviceType = trmnlDeviceConfig.type,
+                        imageUrl = "",
+                        imageName = "",
+                        error = "Unknown failure: ${failure.error.localizedMessage}",
+                        refreshIntervalSeconds = 0L,
+                    )
+                }
             }
     }
