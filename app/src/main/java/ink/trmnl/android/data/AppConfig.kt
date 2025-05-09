@@ -5,6 +5,11 @@ package ink.trmnl.android.data
  */
 object AppConfig {
     /**
+     * Duration in milliseconds to wait before automatically hiding the app config window.
+     */
+    const val AUTO_HIDE_APP_CONFIG_WINDOW_MS: Long = 4_000L // 4 seconds
+
+    /**
      * Default display refresh rate in case the server does not provide one.
      */
     const val DEFAULT_REFRESH_INTERVAL_SEC: Long = 7_200L // 2 hours
