@@ -56,6 +56,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import ink.trmnl.android.R
+import ink.trmnl.android.data.AppConfig.AUTO_HIDE_APP_CONFIG_WINDOW_MS
 import ink.trmnl.android.data.ImageMetadataStore
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.di.AppScope
@@ -144,7 +145,7 @@ class TrmnlMirrorDisplayPresenter
             // Auto-hide timer for overlay controls
             LaunchedEffect(overlayControlsVisible) {
                 if (overlayControlsVisible) {
-                    delay(3_000) // Hide controls after 3 seconds
+                    delay(AUTO_HIDE_APP_CONFIG_WINDOW_MS)
                     overlayControlsVisible = false
                 }
             }
@@ -388,7 +389,7 @@ private fun OverlaySettingsView(
                 },
                 text = {
                     Text(
-                        "Configure TRMNL API Token",
+                        "Configure Mirror Device",
                         style = fabTextStyle,
                         fontWeight = FontWeight.Bold,
                     )
