@@ -1,7 +1,7 @@
 [![Android CI](https://github.com/usetrmnl/trmnl-android/actions/workflows/android.yml/badge.svg)](https://github.com/usetrmnl/trmnl-android/actions/workflows/android.yml) [![Android Release Build](https://github.com/usetrmnl/trmnl-android/actions/workflows/android-release.yml/badge.svg)](https://github.com/usetrmnl/trmnl-android/actions/workflows/android-release.yml)
 
 # Android - TRMNL Display Mirror 🪞
-A simple app to mirror existing TRMNL's content to your Android device (preferably e-ink display).
+A simple app to mirror existing TRMNL's content to your Android devices like Phone, Tablet, e-Ink Display.
 
 ## 📜 Preconditions
 You must have a **valid** `access-token` to access the [screen content](https://docs.usetrmnl.com/go/private-api/fetch-screen-content) using TRMNL server API.
@@ -44,7 +44,8 @@ The TRMNL Display Mirror app serves as a digital display mirror for TRMNL e-ink 
 - [x] Token-based authentication with the TRMNL API
 - [x] Automatic periodic image refresh from the server
 - [x] Adaptive refresh rate based on server response config
-- [x] Manual refresh capabilities
+- [x] Manual refresh capabilities and option to load next playlist image
+- [x] Support for custom server URLs for your BYOS installations
 - [x] Refresh history logging for tracking & validation
 
 
