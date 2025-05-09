@@ -36,9 +36,7 @@ Here are some of the known ways you can get access to the `access-token`.
 ### <img src="https://github.com/user-attachments/assets/64b4b132-a885-4783-98e3-c201bae6ccff" width="25"> Download Release
 Check installable APK from Assets in [latest release](https://github.com/usetrmnl/trmnl-android/releases).
 
-<img alt="Demo Video" src="https://github.com/user-attachments/assets/2e98a5b4-fcd5-4aa9-bb57-43a8089919d6" width="500">  
-
-▶️ See [full demo](https://youtu.be/SRSwBphZTvs) 
+<img alt="Demo Video" src="https://github.com/user-attachments/assets/2e3fcdef-2681-4c06-9372-2ad98131fb3c" width="500">  
 
 ### Limitations 🚧
 1. Right now, screen lock using Google's [recommended](https://developer.android.com/develop/background-work/background-tasks/awake/screen-on) **`FLAG_KEEP_SCREEN_ON`** is not working on e-Ink tablet due to strict battery optimization. So, if you plan to keep the screen on indefinitely, you should set that in the device settings.
