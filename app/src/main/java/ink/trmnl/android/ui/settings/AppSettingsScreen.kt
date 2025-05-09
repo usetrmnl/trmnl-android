@@ -425,7 +425,7 @@ fun AppSettingsContent(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("TRMNL Configuration") },
+                title = { Text("Settings") },
                 navigationIcon = {
                     // Only show the back button if a token is already set
                     if (hasToken) {
