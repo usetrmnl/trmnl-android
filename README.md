@@ -29,8 +29,7 @@ Here are some of the known ways you can get access to the `access-token`.
 ## How to try
 ⬇️ Install the APK on your Android device.
 <img src="https://github.com/user-attachments/assets/6ec04cf5-b72c-429a-a435-406f0051d221" align="right" width="150">
-1. Configure the API `access-token` in the app settings  
-    i. 📝 NOTE: Right now only `https://trmnl.app/api/` service API is supported, custom service URL support will be added later
+1. Configure the API `access-token` in the app settings
 2. Save the token and keep the app always-on with the TRMNL's display image showing.
 
 ### <img src="https://github.com/user-attachments/assets/64b4b132-a885-4783-98e3-c201bae6ccff" width="25"> Download Release
