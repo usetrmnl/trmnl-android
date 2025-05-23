@@ -249,6 +249,9 @@ fun TrmnlMirrorDisplayContent(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+
+    // Use for UI preview in Android Studio
+    // https://developer.android.com/develop/ui/compose/tooling/previews#localinspectionmode
     val isPreviewMode = LocalInspectionMode.current
 
     // Apply fullscreen mode and keep screen on
@@ -294,6 +297,7 @@ fun TrmnlMirrorDisplayContent(
                 // Use a regular Image in preview mode, AsyncImage in runtime
                 if (isPreviewMode) {
                     // In preview mode, use static Image with drawable resource
+                    // https://developer.android.com/develop/ui/compose/tooling/previews#localinspectionmode
                     Image(
                         painter = painterResource(R.drawable.trmnl_device_white),
                         contentDescription = "Terminal Display Preview",
