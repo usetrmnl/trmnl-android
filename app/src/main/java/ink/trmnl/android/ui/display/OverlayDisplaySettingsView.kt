@@ -91,7 +91,7 @@ internal fun OverlaySettingsView(
                 modifier = Modifier.padding(bottom = 8.dp),
             )
 
-            Text("Display image refresh: ${state.nextImageRefreshIn}", style = infoTextStyle)
+            Text("Display image will refresh: ${state.nextImageRefreshIn}", style = infoTextStyle)
 
             ExtendedFloatingActionButton(
                 onClick = {
