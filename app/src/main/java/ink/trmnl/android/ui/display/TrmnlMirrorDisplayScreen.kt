@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -29,9 +30,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.slack.circuit.codegen.annotations.CircuitInject
@@ -246,6 +249,7 @@ fun TrmnlMirrorDisplayContent(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val isPreviewMode = LocalInspectionMode.current
 
     // Apply fullscreen mode and keep screen on
     FullScreenMode(enabled = true, keepScreenOn = true)
@@ -287,13 +291,25 @@ fun TrmnlMirrorDisplayContent(
                     )
                 }
             } else {
-                AsyncImage(
-                    model = CoilRequestUtils.createCachedImageRequest(context, state.imageUrl),
-                    contentDescription = "Terminal Display",
-                    contentScale = ContentScale.Fit,
-                    placeholder = painterResource(R.drawable.trmnl_logo_semi_transparent),
-                    modifier = Modifier.fillMaxSize(),
-                )
+                // Use a regular Image in preview mode, AsyncImage in runtime
+                if (isPreviewMode) {
+                    // In preview mode, use static Image with drawable resource
+                    Image(
+                        painter = painterResource(R.drawable.trmnl_device_white),
+                        contentDescription = "Terminal Display Preview",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    // In real app, use AsyncImage with network URL
+                    AsyncImage(
+                        model = CoilRequestUtils.createCachedImageRequest(context, state.imageUrl),
+                        contentDescription = "Terminal Display",
+                        contentScale = ContentScale.Fit,
+                        placeholder = painterResource(R.drawable.trmnl_logo_semi_transparent),
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
 
             // Floating action buttons that appear when controls are visible
@@ -308,6 +324,44 @@ fun TrmnlMirrorDisplayContent(
     }
 }
 
+@Preview(name = "Trmnl Mirror Display Image Preview")
+@PreviewScreenSizes
+@Composable
+fun PreviewTrmnlMirrorDisplayImageContent() {
+    Surface {
+        TrmnlMirrorDisplayContent(
+            state =
+                TrmnlMirrorDisplayScreen.State(
+                    imageUrl = "placeholder_url", // Not used in preview mode
+                    overlayControlsVisible = false,
+                    nextImageRefreshIn = "5 minutes",
+                    isLoading = false,
+                    errorMessage = null,
+                    eventSink = {},
+                ),
+        )
+    }
+}
+
+@Preview(name = "Trmnl Mirror Display With Controls")
+@PreviewScreenSizes
+@Composable
+fun PreviewTrmnlMirrorDisplayWithControls() {
+    Surface {
+        TrmnlMirrorDisplayContent(
+            state =
+                TrmnlMirrorDisplayScreen.State(
+                    imageUrl = "placeholder_url", // Not used in preview mode
+                    overlayControlsVisible = true,
+                    nextImageRefreshIn = "5 minutes",
+                    isLoading = false,
+                    errorMessage = null,
+                    eventSink = {},
+                ),
+        )
+    }
+}
+
 @Preview(name = "Trmnl Mirror Display Error Content Preview")
 @Composable
 fun PreviewTrmnlMirrorDisplayErrorContent() {
@@ -315,7 +369,7 @@ fun PreviewTrmnlMirrorDisplayErrorContent() {
         TrmnlMirrorDisplayContent(
             state =
                 TrmnlMirrorDisplayScreen.State(
-                    imageUrl = "https://picsum.photos/200",
+                    imageUrl = null, // Don't need URL for error state
                     overlayControlsVisible = false,
                     nextImageRefreshIn = "5 minutes",
                     isLoading = false,
