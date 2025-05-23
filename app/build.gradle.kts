@@ -15,6 +15,8 @@ android {
 
     defaultConfig {
         applicationId = "ink.trmnl.android"
+        // Minimum SDK is Android 9.0 (Pie) with 94% Android devices coverage
+        // Can't be lower than 28, See https://github.com/usetrmnl/trmnl-android/pull/56
         minSdk = 28
         targetSdk = 35
         versionCode = 5
