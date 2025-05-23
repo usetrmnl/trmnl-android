@@ -15,7 +15,7 @@ android {
 
     defaultConfig {
         applicationId = "ink.trmnl.android"
-        minSdk = 30
+        minSdk = 28
         targetSdk = 35
         versionCode = 5
         versionName = "1.4.0"

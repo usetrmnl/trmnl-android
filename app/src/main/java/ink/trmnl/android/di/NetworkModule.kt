@@ -1,6 +1,7 @@
 package ink.trmnl.android.di
 
 import android.content.Context
+import androidx.core.content.pm.PackageInfoCompat
 import com.slack.eithernet.integration.retrofit.ApiResultCallAdapterFactory
 import com.slack.eithernet.integration.retrofit.ApiResultConverterFactory
 import com.squareup.anvil.annotations.ContributesTo
@@ -42,7 +43,7 @@ object NetworkModule {
         val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
         val appName = context.getString(context.applicationInfo.labelRes)
         val versionName = packageInfo.versionName
-        val versionCode = packageInfo.longVersionCode
+        val versionCode = PackageInfoCompat.getLongVersionCode(packageInfo)
 
         val userAgent = "$appName/$versionName (build:$versionCode; Android ${android.os.Build.VERSION.RELEASE})"
 
