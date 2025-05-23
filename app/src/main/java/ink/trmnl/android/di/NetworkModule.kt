@@ -43,7 +43,7 @@ object NetworkModule {
         val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
         val appName = context.getString(context.applicationInfo.labelRes)
         val versionName = packageInfo.versionName
-        // Use PackageInfoCompat.getLongVersionCode to ensure compatibility with API 28+ 
+        // Use PackageInfoCompat.getLongVersionCode to ensure compatibility with API 28+
         // while avoiding direct calls to longVersionCode on older devices.
         val versionCode = PackageInfoCompat.getLongVersionCode(packageInfo)
 
