@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -13,20 +14,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,13 +30,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
-import androidx.window.core.layout.WindowSizeClass
-import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_EXPANDED_LOWER_BOUND
-import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOWER_BOUND
 import coil3.compose.AsyncImage
 import com.slack.circuit.codegen.annotations.CircuitInject
 import com.slack.circuit.runtime.CircuitUiEvent
@@ -259,6 +250,10 @@ fun TrmnlMirrorDisplayContent(
 ) {
     val context = LocalContext.current
 
+    // Use for UI preview in Android Studio
+    // https://developer.android.com/develop/ui/compose/tooling/previews#localinspectionmode
+    val isPreviewMode = LocalInspectionMode.current
+
     // Apply fullscreen mode and keep screen on
     FullScreenMode(enabled = true, keepScreenOn = true)
 
@@ -299,13 +294,26 @@ fun TrmnlMirrorDisplayContent(
                     )
                 }
             } else {
-                AsyncImage(
-                    model = CoilRequestUtils.createCachedImageRequest(context, state.imageUrl),
-                    contentDescription = "Terminal Display",
-                    contentScale = ContentScale.Fit,
-                    placeholder = painterResource(R.drawable.trmnl_logo_semi_transparent),
-                    modifier = Modifier.fillMaxSize(),
-                )
+                // Use a regular Image in preview mode, AsyncImage in runtime
+                if (isPreviewMode) {
+                    // In preview mode, use static Image with drawable resource
+                    // https://developer.android.com/develop/ui/compose/tooling/previews#localinspectionmode
+                    Image(
+                        painter = painterResource(R.drawable.trmnl_device_white),
+                        contentDescription = "Terminal Display Preview",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    // In real app, use AsyncImage with network URL
+                    AsyncImage(
+                        model = CoilRequestUtils.createCachedImageRequest(context, state.imageUrl),
+                        contentDescription = "Terminal Display",
+                        contentScale = ContentScale.Fit,
+                        placeholder = painterResource(R.drawable.trmnl_logo_semi_transparent),
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
 
             // Floating action buttons that appear when controls are visible
@@ -320,142 +328,41 @@ fun TrmnlMirrorDisplayContent(
     }
 }
 
+@Preview(name = "Trmnl Mirror Display Image Preview")
+@PreviewScreenSizes
 @Composable
-private fun OverlaySettingsView(
-    state: TrmnlMirrorDisplayScreen.State,
-    windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo().windowSizeClass,
-) {
-    // Shows larger button on tablets
-    // https://developer.android.com/develop/ui/compose/layouts/adaptive/support-different-display-sizes
-    // https://developer.android.com/develop/ui/compose/layouts/adaptive/use-window-size-classes
-    val isExpandedWidth =
-        windowSizeClass.isWidthAtLeastBreakpoint(WIDTH_DP_EXPANDED_LOWER_BOUND) ||
-            windowSizeClass.isWidthAtLeastBreakpoint(WIDTH_DP_MEDIUM_LOWER_BOUND)
+fun PreviewTrmnlMirrorDisplayImageContent() {
+    Surface {
+        TrmnlMirrorDisplayContent(
+            state =
+                TrmnlMirrorDisplayScreen.State(
+                    imageUrl = "placeholder_url", // Not used in preview mode
+                    overlayControlsVisible = false,
+                    nextImageRefreshIn = "5 minutes",
+                    isLoading = false,
+                    errorMessage = null,
+                    eventSink = {},
+                ),
+        )
+    }
+}
 
-    // Choose text style based on window width
-    val fabTextStyle =
-        if (isExpandedWidth) {
-            MaterialTheme.typography.titleLarge
-        } else {
-            MaterialTheme.typography.bodyLarge
-        }
-
-    val infoTextStyle =
-        if (isExpandedWidth) {
-            MaterialTheme.typography.titleLarge
-        } else {
-            MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-        }
-
-    Card(
-        modifier =
-            Modifier
-                .padding(16.dp),
-        elevation =
-            CardDefaults.cardElevation(
-                defaultElevation = 4.dp,
-            ),
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-            ),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = "Display Configurations",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-
-            Text("Display image refresh: ${state.nextImageRefreshIn}", style = infoTextStyle)
-
-            ExtendedFloatingActionButton(
-                onClick = {
-                    state.eventSink(TrmnlMirrorDisplayScreen.Event.ConfigureRequested)
-                },
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = null,
-                        modifier = if (isExpandedWidth) Modifier.size(32.dp) else Modifier,
-                    )
-                },
-                text = {
-                    Text(
-                        "Configure Mirror Device",
-                        style = fabTextStyle,
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-            )
-
-            ExtendedFloatingActionButton(
-                onClick = {
-                    state.eventSink(TrmnlMirrorDisplayScreen.Event.RefreshCurrentPlaylistItemRequested)
-                },
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                        modifier = if (isExpandedWidth) Modifier.size(32.dp) else Modifier,
-                    )
-                },
-                text = {
-                    Text(
-                        "Refresh Current Playlist Image",
-                        style = fabTextStyle,
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-            )
-
-            ExtendedFloatingActionButton(
-                onClick = {
-                    state.eventSink(TrmnlMirrorDisplayScreen.Event.LoadNextPlaylistItemImage)
-                },
-                icon = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        modifier = if (isExpandedWidth) Modifier.size(32.dp) else Modifier,
-                    )
-                },
-                text = {
-                    Text(
-                        "Load Next Playlist Image",
-                        style = fabTextStyle,
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-            )
-
-            ExtendedFloatingActionButton(
-                onClick = {
-                    state.eventSink(TrmnlMirrorDisplayScreen.Event.ViewLogsRequested)
-                },
-                icon = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.List,
-                        contentDescription = null,
-                        modifier = if (isExpandedWidth) Modifier.size(32.dp) else Modifier,
-                    )
-                },
-                text = {
-                    Text(
-                        "View Image Refresh Logs",
-                        style = fabTextStyle,
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-            )
-        }
+@Preview(name = "Trmnl Mirror Display With Controls")
+@PreviewScreenSizes
+@Composable
+fun PreviewTrmnlMirrorDisplayWithControls() {
+    Surface {
+        TrmnlMirrorDisplayContent(
+            state =
+                TrmnlMirrorDisplayScreen.State(
+                    imageUrl = "placeholder_url", // Not used in preview mode
+                    overlayControlsVisible = true,
+                    nextImageRefreshIn = "5 minutes",
+                    isLoading = false,
+                    errorMessage = null,
+                    eventSink = {},
+                ),
+        )
     }
 }
 
@@ -466,29 +373,11 @@ fun PreviewTrmnlMirrorDisplayErrorContent() {
         TrmnlMirrorDisplayContent(
             state =
                 TrmnlMirrorDisplayScreen.State(
-                    imageUrl = "https://picsum.photos/200",
+                    imageUrl = null, // Don't need URL for error state
                     overlayControlsVisible = false,
                     nextImageRefreshIn = "5 minutes",
                     isLoading = false,
                     errorMessage = "Sample Error Message",
-                    eventSink = {},
-                ),
-        )
-    }
-}
-
-@Preview(name = "Overlay Settings Preview")
-@Composable
-fun PreviewOverlaySettingsView() {
-    Surface {
-        OverlaySettingsView(
-            state =
-                TrmnlMirrorDisplayScreen.State(
-                    imageUrl = null,
-                    overlayControlsVisible = true,
-                    nextImageRefreshIn = "5 minutes",
-                    isLoading = false,
-                    errorMessage = null,
                     eventSink = {},
                 ),
         )
