@@ -1,5 +1,6 @@
 package ink.trmnl.android.ui.refreshlog
 
+import android.content.ClipData
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,14 +29,21 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -215,8 +223,11 @@ fun DisplayRefreshLogContent(
     state: DisplayRefreshLogScreen.State,
     modifier: Modifier = Modifier,
 ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Display Refresh Logs") },
@@ -295,7 +306,7 @@ fun DisplayRefreshLogContent(
                     contentPadding = PaddingValues(16.dp),
                 ) {
                     items(state.logs) { log ->
-                        LogItemView(log = log)
+                        LogItemView(log = log, snackbarHostState = snackbarHostState)
                     }
                 }
             }
@@ -311,7 +322,11 @@ fun DisplayRefreshLogContent(
 private fun LogItemView(
     log: TrmnlRefreshLog,
     modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState,
 ) {
+    val clipboard: Clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+
     Card(
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -400,6 +415,28 @@ private fun LogItemView(
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyLarge,
                     )
+
+                    if (!log.imageUrl.isNullOrEmpty()) {
+                        // Adds option for user to copy the URL if they want to try it out in a browser
+                        IconButton(
+                            modifier = Modifier.align(Alignment.CenterVertically),
+                            onClick = {
+                                scope.launch {
+                                    clipboard.setClipEntry(ClipData.newPlainText("Image URL", log.imageUrl).toClipEntry())
+                                    snackbarHostState.showSnackbar(
+                                        message = "The display image URL '${log.imageUrl}' has been copied to clipboard",
+                                        duration = SnackbarDuration.Long,
+                                    )
+                                }
+                            },
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.content_copy_24dp),
+                                contentDescription = "Copy URL",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
                 }
                 Text(
                     text = log.imageName ?: "N/A",
@@ -635,7 +672,7 @@ private fun PreviewLogItemViewSuccess() {
             error = null,
         )
     TrmnlDisplayAppTheme {
-        LogItemView(log = log)
+        LogItemView(log = log, snackbarHostState = remember { SnackbarHostState() })
     }
 }
 
@@ -654,6 +691,6 @@ private fun PreviewLogItemViewFailure() {
             error = "Network timeout while fetching image.",
         )
     TrmnlDisplayAppTheme {
-        LogItemView(log = log)
+        LogItemView(log = log, snackbarHostState = remember { SnackbarHostState() })
     }
 }
