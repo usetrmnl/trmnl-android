@@ -91,6 +91,10 @@ data object TrmnlMirrorDisplayScreen : Screen {
         data object BackPressed : Event()
 
         data object ToggleOverlayControls : Event()
+
+        data class ImageLoadingError(
+            val message: String,
+        ) : Event()
     }
 }
 
@@ -230,6 +234,11 @@ class TrmnlMirrorDisplayPresenter
                                 Timber.w("Refresh failed: No access token found")
                             }
                         }
+
+                        is TrmnlMirrorDisplayScreen.Event.ImageLoadingError -> {
+                            error = event.message
+                            isLoading = false
+                        }
                     }
                 },
             )
@@ -311,6 +320,15 @@ fun TrmnlMirrorDisplayContent(
                         contentDescription = "Terminal Display",
                         contentScale = ContentScale.Fit,
                         placeholder = painterResource(R.drawable.trmnl_logo_semi_transparent),
+                        error = painterResource(R.drawable.trmnl_logo_semi_transparent),
+                        onError = { error ->
+                            Timber.e("Image loading failed: ${error.result.throwable}")
+                            state.eventSink(
+                                TrmnlMirrorDisplayScreen.Event.ImageLoadingError(
+                                    "Failed to load image: ${error.result.throwable.message ?: "Unknown error"}",
+                                ),
+                            )
+                        },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
