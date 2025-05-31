@@ -90,3 +90,85 @@ Automatic snapshot release builds are available in the [release workflow](https:
 - [Android Work Manager](https://developer.android.com/topic/libraries/architecture/workmanager)
 
 Thank you for contributing to TRMNL Display Mirror App!
+
+
+## TRMNL App Image Loading Flow
+Here is a generated sequence diagram illustrating the flow of image loading in the TRMNL Display Mirror application.
+
+```mermaid
+sequenceDiagram
+    participant WorkManager
+    participant TrmnlImageRefreshWorker
+    participant TrmnlDisplayRepository
+    participant MainActivity
+    participant TrmnlImageUpdateManager
+    participant TrmnlMirrorDisplayScreen
+    participant AsyncImage
+
+    Note over WorkManager: Scheduled or one-time work
+
+    WorkManager->>TrmnlImageRefreshWorker: Start work (periodic/one-time)
+    
+    TrmnlImageRefreshWorker->>TrmnlDisplayRepository: Get display data
+    TrmnlDisplayRepository-->>TrmnlImageRefreshWorker: Return image URL & metadata
+    
+    alt Success
+        TrmnlImageRefreshWorker-->>WorkManager: Return success with imageUrl in output data
+    else Failure
+        TrmnlImageRefreshWorker-->>WorkManager: Return failure with error message
+    end
+    
+    WorkManager-->>MainActivity: Notify work completed via WorkInfo observer
+
+    alt Success
+        MainActivity->>TrmnlImageUpdateManager: updateImage(imageUrl)
+    else Failure
+        MainActivity->>TrmnlImageUpdateManager: updateImage("", errorMessage)
+    end
+
+    Note right of TrmnlImageUpdateManager: Notifies via imageUpdateFlow
+
+    TrmnlImageUpdateManager-->>TrmnlMirrorDisplayScreen: Emit new image metadata
+    
+    alt Success
+        TrmnlMirrorDisplayScreen->>AsyncImage: Load image from URL
+        
+        alt Image Loads Successfully
+            AsyncImage-->>TrmnlMirrorDisplayScreen: Image displayed
+        else Image Load Failure
+            AsyncImage-->>TrmnlMirrorDisplayScreen: onError callback triggered
+            TrmnlMirrorDisplayScreen->>TrmnlMirrorDisplayScreen: eventSink(ImageLoadingError)
+            Note over TrmnlMirrorDisplayScreen: Display error UI
+        end
+    else Failure
+        TrmnlMirrorDisplayScreen->>TrmnlMirrorDisplayScreen: Display error message
+    end
+```
+
+### 📖 Flow Explanation
+
+1. **WorkManager** initiates the image refresh work (either periodic scheduled work or one-time work)
+
+2. **TrmnlImageRefreshWorker** executes the work:
+    - Fetches display data from TrmnlDisplayRepository
+    - Adds success/failure log entry
+    - Returns result with image URL or error message
+
+3. **MainActivity** observes the work completion:
+    - Receives WorkInfo updates from WorkManager
+    - Processes the results
+
+4. **TrmnlImageUpdateManager** gets notified of new image:
+    - Updates the image metadata
+    - Emits the update through imageUpdateFlow
+
+5. **TrmnlMirrorDisplayScreen** receives the update:
+    - Collects from imageUpdateFlow
+    - Updates state with new image URL or error
+
+6. **AsyncImage** loads the image:
+    - On success: Displays the image
+    - On failure: Triggers onError callback
+    - Error case results in showing error UI
+
+This data flow uses a combination of WorkManager for background processing, StateFlow for reactive updates, and Compose for UI rendering.
