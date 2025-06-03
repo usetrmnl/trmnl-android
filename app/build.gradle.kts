@@ -35,8 +35,8 @@ android {
         create("release") {
             // Uses the same debug keystore for release builds to enable CLI building
             // ⚠️ This is temporary solution as app is still under development
-            //    It allows early testers to test drive the app without us worrying about signing
-            //    https://developer.android.com/studio/publish/app-signing
+            //    It allows early adopters to test drive the app without us worrying about signing key.
+            //    - 📚 https://github.com/usetrmnl/trmnl-android/blob/main/keystore/README.md
             storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
 
             // ℹ️ When time comes, these values should come from `secret.properties` file or CI/CD secrets.
