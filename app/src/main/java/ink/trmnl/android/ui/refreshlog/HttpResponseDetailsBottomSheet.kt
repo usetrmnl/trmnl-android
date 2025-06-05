@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -14,7 +15,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -36,8 +37,10 @@ fun HttpResponseDetailsBottomSheet(
     httpResponseMetadata: HttpResponseMetadata,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
+    val sheetState =
+        rememberModalBottomSheetState(
+            skipPartiallyExpanded = true,
+        )
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -121,7 +124,7 @@ private fun DetailItem(
     label: String,
     value: String,
 ) {
-    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+    Column(modifier = Modifier.padding(vertical = 4.dp)) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
@@ -129,31 +132,33 @@ private fun DetailItem(
             color = MaterialTheme.colorScheme.secondary,
         )
 
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontFamily = FontFamily.Monospace,
-            modifier = Modifier.padding(top = 2.dp),
-        )
+        SelectionContainer {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
 
         HorizontalDivider(
-            modifier = Modifier.padding(top = 8.dp),
+            modifier = Modifier.padding(top = 4.dp),
             color = MaterialTheme.colorScheme.surfaceVariant,
         )
     }
 }
 
-/**
- * Format bytes into a human-readable string
- */
 private const val BYTES_IN_KB = 1024
 private const val BYTES_IN_MB = BYTES_IN_KB * 1024
 private const val BYTES_IN_GB = BYTES_IN_MB * 1024
 
+/**
+ * Format bytes into a human-readable string
+ */
 private fun formatBytes(bytes: Long): String =
     when {
         bytes < BYTES_IN_KB -> "$bytes B"
-        bytes < BYTES_IN_MB -> String.format("%.2f KB", bytes / BYTES_IN_KB.toDouble())
-        bytes < BYTES_IN_GB -> String.format("%.2f MB", bytes / BYTES_IN_MB.toDouble())
-        else -> String.format("%.2f GB", bytes / BYTES_IN_GB.toDouble())
+        bytes < BYTES_IN_MB -> String.format(Locale.US, "%.2f KB", bytes / BYTES_IN_KB.toDouble())
+        bytes < BYTES_IN_GB -> String.format(Locale.US, "%.2f MB", bytes / BYTES_IN_MB.toDouble())
+        else -> String.format(Locale.US, "%.2f GB", bytes / BYTES_IN_GB.toDouble())
     }
