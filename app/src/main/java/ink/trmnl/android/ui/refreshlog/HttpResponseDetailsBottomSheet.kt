@@ -87,7 +87,7 @@ fun HttpResponseDetailsBottomSheet(
             }
 
             // Content Length
-            if (httpResponseMetadata.contentLength > 0) {
+            if (httpResponseMetadata.contentLength >= 0) {
                 DetailItem(
                     label = "Content Length",
                     value = formatBytes(httpResponseMetadata.contentLength),
