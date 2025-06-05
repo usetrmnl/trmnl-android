@@ -12,9 +12,13 @@ espressoCore = "3.6.1"
 googleFonts = "1.8.2"
 junit = "4.13.2"
 junitVersion = "1.2.1"
-kotlin = "2.1.10"
 kotlinxCoroutinesTest = "1.10.2"
+
+# Kotlin and KSP versions (must be in sync)
+# ⚠️ Kotlin version can't be higher than `2.1.10` due to known issue with Dagger
+kotlin = "2.1.10"
 ksp = "2.1.10-1.0.31"
+
 lifecycleRuntimeKtx = "2.9.1"
 
 # Added full icon set - release build will shrink unused icons
