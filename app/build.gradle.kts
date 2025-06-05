@@ -19,8 +19,8 @@ android {
         // Can't be lower than 28, See https://github.com/usetrmnl/trmnl-android/pull/56
         minSdk = 28
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.6.0"
+        versionCode = 8
+        versionName = "1.7.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
