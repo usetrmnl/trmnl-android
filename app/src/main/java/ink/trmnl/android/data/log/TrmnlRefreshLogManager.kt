@@ -36,6 +36,7 @@ class TrmnlRefreshLogManager
             imageName: String,
             refreshIntervalSeconds: Long?,
             imageRefreshWorkType: String?,
+            httpResponseMetadata: ink.trmnl.android.data.HttpResponseMetadata? = null,
         ) {
             addLog(
                 TrmnlRefreshLog.createSuccess(
@@ -44,6 +45,7 @@ class TrmnlRefreshLogManager
                     imageName = imageName,
                     refreshIntervalSeconds = refreshIntervalSeconds,
                     imageRefreshWorkType = imageRefreshWorkType,
+                    httpResponseMetadata = httpResponseMetadata,
                 ),
             )
         }

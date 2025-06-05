@@ -111,6 +111,7 @@ class TrmnlImageRefreshWorker(
             imageName = trmnlDisplayInfo.imageName,
             refreshIntervalSeconds = trmnlDisplayInfo.refreshIntervalSeconds,
             imageRefreshWorkType = workTypeValue,
+            httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
         )
 
         // Check if we should adapt refresh rate
