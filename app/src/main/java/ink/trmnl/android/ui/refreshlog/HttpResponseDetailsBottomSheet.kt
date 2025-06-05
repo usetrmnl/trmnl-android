@@ -107,7 +107,7 @@ fun HttpResponseDetailsBottomSheet(
             }
 
             // Timestamp
-            val dateFormat = SimpleDateFormat("MMM dd, yyyy hh:mm:ss.SSS a", Locale.getDefault())
+            val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy hh:mm:ss.SSS a", Locale.getDefault()) }
             val formattedTimestamp = dateFormat.format(Date(httpResponseMetadata.timestamp))
             DetailItem(label = "Response Time", value = formattedTimestamp)
 
