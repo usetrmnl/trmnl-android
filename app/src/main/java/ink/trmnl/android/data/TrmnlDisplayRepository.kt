@@ -1,6 +1,7 @@
 package ink.trmnl.android.data
 
 import com.slack.eithernet.ApiResult
+import com.slack.eithernet.InternalEitherNetApi
 import com.squareup.anvil.annotations.optional.SingleIn
 import ink.trmnl.android.BuildConfig.USE_FAKE_API
 import ink.trmnl.android.di.AppScope
@@ -69,6 +70,7 @@ class TrmnlDisplayRepository
                             imageName = response.imageName ?: "",
                             error = response.error,
                             refreshIntervalSeconds = response.refreshRate,
+                            httpResponseMetadata = extractHttpResponseMetadata(result),
                         )
 
                     // If response was successful and has an image URL, save to data store
@@ -121,6 +123,7 @@ class TrmnlDisplayRepository
                             imageName = response.filename ?: "",
                             error = response.error,
                             refreshIntervalSeconds = response.refreshRateSec,
+                            httpResponseMetadata = extractHttpResponseMetadata(result),
                         )
 
                     // If response was successful and has an image URL, save to data store
@@ -241,4 +244,33 @@ class TrmnlDisplayRepository
                     )
                 }
             }
+
+        /**
+         * Extracts HTTP response metadata from an ApiResult.Success instance.
+         * The metadata is retrieved from the okhttp3.Response object stored in the ApiResult's tags.
+         *
+         * @param apiResult The successful API result containing response metadata
+         * @return HttpResponseMetadata object containing useful response information, or null if not available
+         */
+        @OptIn(InternalEitherNetApi::class)
+        private fun extractHttpResponseMetadata(apiResult: ApiResult.Success<*>): HttpResponseMetadata? {
+            val httpResponse = apiResult.tags[okhttp3.Response::class] as? okhttp3.Response ?: return null
+
+            // Calculate the request duration using the timestamps from the response
+            val requestDuration = httpResponse.receivedResponseAtMillis - httpResponse.sentRequestAtMillis
+
+            return HttpResponseMetadata(
+                url = httpResponse.request.url.toString(),
+                protocol = httpResponse.protocol.toString(),
+                statusCode = httpResponse.code,
+                message = httpResponse.message,
+                contentType = httpResponse.header("Content-Type"),
+                contentLength = httpResponse.header("Content-Length")?.toLongOrNull() ?: -1,
+                serverName = httpResponse.header("Server"),
+                requestDuration = requestDuration,
+                etag = httpResponse.header("etag"),
+                requestId = httpResponse.header("x-request-id"),
+                timestamp = System.currentTimeMillis(),
+            )
+        }
     }

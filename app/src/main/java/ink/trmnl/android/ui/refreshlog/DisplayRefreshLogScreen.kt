@@ -37,8 +37,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.Clipboard
@@ -62,6 +64,7 @@ import dagger.assisted.AssistedInject
 import ink.trmnl.android.BuildConfig
 import ink.trmnl.android.R
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
+import ink.trmnl.android.data.HttpResponseMetadata
 import ink.trmnl.android.data.log.RefreshLogExporter
 import ink.trmnl.android.data.log.TrmnlRefreshLog
 import ink.trmnl.android.data.log.TrmnlRefreshLogManager
@@ -171,7 +174,10 @@ class DisplayRefreshLogPresenter
                         DisplayRefreshLogScreen.Event.AddFailLog -> {
                             scope.launch {
                                 refreshLogManager.addLog(
-                                    TrmnlRefreshLog.createFailure(error = "Test failure"),
+                                    TrmnlRefreshLog.createFailure(
+                                        error = "Test failure",
+                                        HttpResponseMetadata.empty(),
+                                    ),
                                 )
                             }
                         }
@@ -327,8 +333,25 @@ private fun LogItemView(
     val clipboard: Clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
 
+    // State for controlling the visibility of HTTP details bottom sheet
+    var showHttpDetails by remember { mutableStateOf(false) }
+
+    // Show the bottom sheet if metadata exists and showHttpDetails is true
+    if (showHttpDetails && log.httpResponseMetadata != null) {
+        HttpResponseDetailsBottomSheet(
+            httpResponseMetadata = log.httpResponseMetadata,
+            onDismiss = { showHttpDetails = false },
+        )
+    }
+
     Card(
         modifier = modifier.fillMaxWidth(),
+        onClick = {
+            // Only show if metadata exists
+            if (log.httpResponseMetadata != null) {
+                showHttpDetails = true
+            }
+        },
     ) {
         Column(
             modifier = Modifier.padding(16.dp),

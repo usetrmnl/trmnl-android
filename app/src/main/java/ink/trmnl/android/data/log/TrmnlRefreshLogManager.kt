@@ -3,6 +3,7 @@ package ink.trmnl.android.data.log
 import android.content.Context
 import androidx.datastore.core.DataStore
 import com.squareup.anvil.annotations.optional.SingleIn
+import ink.trmnl.android.data.HttpResponseMetadata
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.di.ApplicationContext
 import ink.trmnl.android.model.TrmnlDeviceType
@@ -36,6 +37,7 @@ class TrmnlRefreshLogManager
             imageName: String,
             refreshIntervalSeconds: Long?,
             imageRefreshWorkType: String?,
+            httpResponseMetadata: HttpResponseMetadata? = null,
         ) {
             addLog(
                 TrmnlRefreshLog.createSuccess(
@@ -44,12 +46,16 @@ class TrmnlRefreshLogManager
                     imageName = imageName,
                     refreshIntervalSeconds = refreshIntervalSeconds,
                     imageRefreshWorkType = imageRefreshWorkType,
+                    httpResponseMetadata = httpResponseMetadata,
                 ),
             )
         }
 
-        suspend fun addFailureLog(error: String) {
-            addLog(TrmnlRefreshLog.createFailure(error))
+        suspend fun addFailureLog(
+            error: String,
+            httpResponseMetadata: HttpResponseMetadata? = null,
+        ) {
+            addLog(TrmnlRefreshLog.createFailure(error, httpResponseMetadata))
         }
 
         internal suspend fun addLog(log: TrmnlRefreshLog) {

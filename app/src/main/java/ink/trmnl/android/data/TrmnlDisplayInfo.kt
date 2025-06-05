@@ -22,4 +22,9 @@ data class TrmnlDisplayInfo constructor(
     val imageName: String,
     val error: String? = null,
     val refreshIntervalSeconds: Long? = DEFAULT_REFRESH_INTERVAL_SEC,
+    /**
+     * Metadata about the HTTP response that returned this display info.
+     * Contains useful information for debugging and logging.
+     */
+    val httpResponseMetadata: HttpResponseMetadata? = null,
 )

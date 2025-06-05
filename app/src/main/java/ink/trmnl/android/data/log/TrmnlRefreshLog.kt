@@ -2,6 +2,7 @@ package ink.trmnl.android.data.log
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
+import ink.trmnl.android.data.HttpResponseMetadata
 import ink.trmnl.android.model.TrmnlDeviceType
 import java.time.Instant
 
@@ -15,6 +16,7 @@ data class TrmnlRefreshLog(
     @Json(name = "success") val success: Boolean,
     @Json(name = "error") val error: String? = null,
     @Json(name = "refreshWorkType") val imageRefreshWorkType: String? = null,
+    @Json(name = "httpResponseMetadata") val httpResponseMetadata: HttpResponseMetadata? = null,
 ) {
     companion object {
         fun createSuccess(
@@ -23,6 +25,7 @@ data class TrmnlRefreshLog(
             imageName: String,
             refreshIntervalSeconds: Long?,
             imageRefreshWorkType: String?,
+            httpResponseMetadata: HttpResponseMetadata? = null,
         ): TrmnlRefreshLog =
             TrmnlRefreshLog(
                 timestamp = Instant.now().toEpochMilli(),
@@ -32,9 +35,13 @@ data class TrmnlRefreshLog(
                 refreshIntervalSeconds = refreshIntervalSeconds,
                 success = true,
                 imageRefreshWorkType = imageRefreshWorkType,
+                httpResponseMetadata = httpResponseMetadata,
             )
 
-        fun createFailure(error: String): TrmnlRefreshLog =
+        fun createFailure(
+            error: String,
+            httpResponseMetadata: HttpResponseMetadata? = null,
+        ): TrmnlRefreshLog =
             TrmnlRefreshLog(
                 timestamp = Instant.now().toEpochMilli(),
                 trmnlDeviceType = TrmnlDeviceType.TRMNL, // Not used
@@ -44,6 +51,7 @@ data class TrmnlRefreshLog(
                 success = false,
                 error = error,
                 imageRefreshWorkType = null,
+                httpResponseMetadata = httpResponseMetadata,
             )
     }
 }
