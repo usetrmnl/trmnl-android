@@ -38,7 +38,10 @@ data class TrmnlRefreshLog(
                 httpResponseMetadata = httpResponseMetadata,
             )
 
-        fun createFailure(error: String): TrmnlRefreshLog =
+        fun createFailure(
+            error: String,
+            httpResponseMetadata: HttpResponseMetadata? = null,
+        ): TrmnlRefreshLog =
             TrmnlRefreshLog(
                 timestamp = Instant.now().toEpochMilli(),
                 trmnlDeviceType = TrmnlDeviceType.TRMNL, // Not used
@@ -48,7 +51,7 @@ data class TrmnlRefreshLog(
                 success = false,
                 error = error,
                 imageRefreshWorkType = null,
-                httpResponseMetadata = null,
+                httpResponseMetadata = httpResponseMetadata,
             )
     }
 }

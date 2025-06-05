@@ -64,6 +64,7 @@ import dagger.assisted.AssistedInject
 import ink.trmnl.android.BuildConfig
 import ink.trmnl.android.R
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
+import ink.trmnl.android.data.HttpResponseMetadata
 import ink.trmnl.android.data.log.RefreshLogExporter
 import ink.trmnl.android.data.log.TrmnlRefreshLog
 import ink.trmnl.android.data.log.TrmnlRefreshLogManager
@@ -173,7 +174,10 @@ class DisplayRefreshLogPresenter
                         DisplayRefreshLogScreen.Event.AddFailLog -> {
                             scope.launch {
                                 refreshLogManager.addLog(
-                                    TrmnlRefreshLog.createFailure(error = "Test failure"),
+                                    TrmnlRefreshLog.createFailure(
+                                        error = "Test failure",
+                                        HttpResponseMetadata.empty(),
+                                    ),
                                 )
                             }
                         }

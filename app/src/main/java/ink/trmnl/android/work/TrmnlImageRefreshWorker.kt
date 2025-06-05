@@ -6,6 +6,7 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import ink.trmnl.android.MainActivity
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
+import ink.trmnl.android.data.TrmnlDisplayInfo
 import ink.trmnl.android.data.TrmnlDisplayRepository
 import ink.trmnl.android.data.log.TrmnlRefreshLogManager
 import ink.trmnl.android.di.WorkerModule
@@ -73,7 +74,7 @@ class TrmnlImageRefreshWorker(
         }
 
         // Fetch TRMNL display image - current or next from playlist based on request type
-        val trmnlDisplayInfo =
+        val trmnlDisplayInfo: TrmnlDisplayInfo =
             if (loadNextPluginImage) {
                 displayRepository.getNextDisplayData(deviceConfig)
             } else {
@@ -83,7 +84,10 @@ class TrmnlImageRefreshWorker(
         // Check for errors
         if (trmnlDisplayInfo.status.isHttpError()) {
             Timber.tag(TAG).w("Failed to fetch display data: ${trmnlDisplayInfo.error}")
-            refreshLogManager.addFailureLog(trmnlDisplayInfo.error ?: "Unknown server error")
+            refreshLogManager.addFailureLog(
+                error = trmnlDisplayInfo.error ?: "Unknown server error",
+                httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
+            )
             return Result.failure(
                 workDataOf(
                     KEY_REFRESH_RESULT to FAILURE.name,
@@ -95,7 +99,10 @@ class TrmnlImageRefreshWorker(
         // Check if image URL is valid
         if (trmnlDisplayInfo.imageUrl.isEmpty() || trmnlDisplayInfo.status.isHttpOk().not()) {
             Timber.tag(TAG).w("No image URL provided in response. ${trmnlDisplayInfo.error}")
-            refreshLogManager.addFailureLog("No image URL provided in response. ${trmnlDisplayInfo.error}")
+            refreshLogManager.addFailureLog(
+                error = "No image URL provided in response. ${trmnlDisplayInfo.error}",
+                httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
+            )
             return Result.failure(
                 workDataOf(
                     KEY_REFRESH_RESULT to FAILURE.name,
