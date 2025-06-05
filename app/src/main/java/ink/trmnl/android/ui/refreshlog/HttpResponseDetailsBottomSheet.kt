@@ -59,16 +59,16 @@ fun HttpResponseDetailsBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Request URL
-            DetailItem(label = "URL", value = httpResponseMetadata.url)
+            DetailItem(label = "Request URL", value = httpResponseMetadata.url)
 
             // HTTP Status
             DetailItem(
-                label = "Status",
+                label = "HTTP Status",
                 value = "${httpResponseMetadata.statusCode} ${httpResponseMetadata.message}",
             )
 
             // Protocol
-            DetailItem(label = "Protocol", value = httpResponseMetadata.protocol)
+            DetailItem(label = "HTTP Protocol", value = httpResponseMetadata.protocol)
 
             // Server
             httpResponseMetadata.serverName?.let {
@@ -86,6 +86,16 @@ fun HttpResponseDetailsBottomSheet(
                     label = "Content Length",
                     value = formatBytes(httpResponseMetadata.contentLength),
                 )
+            }
+
+            // ETag (for cache validation)
+            httpResponseMetadata.etag?.let {
+                DetailItem(label = "ETag", value = it)
+            }
+
+            // Request ID (for server-side tracing)
+            httpResponseMetadata.requestId?.let {
+                DetailItem(label = "Request ID", value = it)
             }
 
             // Request Duration

@@ -256,9 +256,8 @@ class TrmnlDisplayRepository
         private fun extractHttpResponseMetadata(apiResult: ApiResult.Success<*>): HttpResponseMetadata? {
             val httpResponse = apiResult.tags[okhttp3.Response::class] as? okhttp3.Response ?: return null
 
-            // Get the request start time if available (might be set by an interceptor)
-            val requestStartTime = httpResponse.request.tag(Long::class.java) ?: -1L
-            val requestDuration = if (requestStartTime > 0) System.currentTimeMillis() - requestStartTime else -1
+            // Calculate the request duration using the timestamps from the response
+            val requestDuration = httpResponse.receivedResponseAtMillis - httpResponse.sentRequestAtMillis
 
             return HttpResponseMetadata(
                 url = httpResponse.request.url.toString(),
@@ -269,6 +268,9 @@ class TrmnlDisplayRepository
                 contentLength = httpResponse.header("Content-Length")?.toLongOrNull() ?: -1,
                 serverName = httpResponse.header("Server"),
                 requestDuration = requestDuration,
+                etag = httpResponse.header("etag"),
+                requestId = httpResponse.header("x-request-id"),
+                timestamp = System.currentTimeMillis(),
             )
         }
     }

@@ -18,6 +18,8 @@ data class HttpResponseMetadata(
     val contentLength: Long,
     val serverName: String?,
     val requestDuration: Long,
+    val etag: String?,
+    val requestId: String?,
     val timestamp: Long = System.currentTimeMillis(),
 ) {
     companion object {
@@ -35,6 +37,8 @@ data class HttpResponseMetadata(
                 contentLength = -1,
                 serverName = null,
                 requestDuration = -1,
+                etag = null,
+                requestId = null,
                 timestamp = System.currentTimeMillis(),
             )
     }
