@@ -146,10 +146,14 @@ private fun DetailItem(
 /**
  * Format bytes into a human-readable string
  */
+private const val BYTES_IN_KB = 1024
+private const val BYTES_IN_MB = BYTES_IN_KB * 1024
+private const val BYTES_IN_GB = BYTES_IN_MB * 1024
+
 private fun formatBytes(bytes: Long): String =
     when {
-        bytes < 1024 -> "$bytes B"
-        bytes < 1024 * 1024 -> String.format("%.2f KB", bytes / 1024.0)
-        bytes < 1024 * 1024 * 1024 -> String.format("%.2f MB", bytes / (1024.0 * 1024.0))
-        else -> String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
+        bytes < BYTES_IN_KB -> "$bytes B"
+        bytes < BYTES_IN_MB -> String.format("%.2f KB", bytes / BYTES_IN_KB.toDouble())
+        bytes < BYTES_IN_GB -> String.format("%.2f MB", bytes / BYTES_IN_MB.toDouble())
+        else -> String.format("%.2f GB", bytes / BYTES_IN_GB.toDouble())
     }
