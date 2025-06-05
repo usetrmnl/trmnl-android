@@ -29,10 +29,10 @@ data class HttpResponseMetadata(
          */
         fun empty() =
             HttpResponseMetadata(
-                url = "",
-                protocol = "",
+                url = "https://example.com",
+                protocol = "http/1.1",
                 statusCode = 0,
-                message = "",
+                message = "Not applicable",
                 contentType = null,
                 contentLength = -1,
                 serverName = null,

@@ -71,7 +71,10 @@ fun HttpResponseDetailsBottomSheet(
             )
 
             // Protocol
-            DetailItem(label = "HTTP Protocol", value = httpResponseMetadata.protocol)
+            DetailItem(
+                label = "HTTP Protocol",
+                value = if (httpResponseMetadata.protocol == "h2") "HTTP/2" else httpResponseMetadata.protocol,
+            )
 
             // Server
             httpResponseMetadata.serverName?.let {
