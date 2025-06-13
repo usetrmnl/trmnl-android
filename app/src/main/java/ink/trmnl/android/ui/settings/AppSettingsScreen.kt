@@ -267,19 +267,29 @@ class AppSettingsPresenter
                                 if (deviceType == TrmnlDeviceType.BYOS) {
                                     if (!isValidUrl(serverBaseUrl)) {
                                         isLoading = false
-                                        validationResult = InvalidServerUrl("Please enter a valid URL (e.g. https://example.com)")
+                                        validationResult = InvalidServerUrl("Please enter a valid HTTPS URL (e.g. https://my-terminus.com)")
                                         return@launch
                                     }
                                 }
 
-                                val response =
-                                    displayRepository.getCurrentDisplayData(
-                                        TrmnlDeviceConfig(
-                                            type = deviceType,
-                                            apiBaseUrl = serverBaseUrl.forDevice(deviceType),
-                                            apiAccessToken = accessToken,
-                                        ),
+                                // Device configuration for API calls
+                                val deviceConfig =
+                                    TrmnlDeviceConfig(
+                                        type = deviceType,
+                                        apiBaseUrl = serverBaseUrl.forDevice(deviceType),
+                                        apiAccessToken = accessToken,
                                     )
+                                // For TRMNL mirror device type, use getCurrentDisplayData
+                                // For all other device types, use getNextDisplayData
+                                val response =
+                                    when (deviceType) {
+                                        TrmnlDeviceType.TRMNL -> {
+                                            displayRepository.getCurrentDisplayData(deviceConfig)
+                                        }
+                                        else -> {
+                                            displayRepository.getNextDisplayData(deviceConfig)
+                                        }
+                                    }
 
                                 if (response.status.isHttpError()) {
                                     // Handle explicit error response
