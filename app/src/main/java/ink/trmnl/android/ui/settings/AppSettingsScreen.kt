@@ -281,6 +281,7 @@ class AppSettingsPresenter
                                     )
                                 // For TRMNL mirror device type, use getCurrentDisplayData
                                 // For all other device types, use getNextDisplayData
+                                // See https://discord.com/channels/1281055965508141100/1331360842809348106/1382865608236077086
                                 val response =
                                     when (deviceType) {
                                         TrmnlDeviceType.TRMNL -> {
