@@ -519,7 +519,7 @@ fun AppSettingsContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            TrmnlDeviceTypeInfoText()
+            SwitchDeviceTypeInfoText(deviceType = state.deviceType)
 
             Spacer(modifier = Modifier.height(16.dp))
 
