@@ -11,6 +11,7 @@ import ink.trmnl.android.data.TrmnlDisplayRepository
 import ink.trmnl.android.data.log.TrmnlRefreshLogManager
 import ink.trmnl.android.di.WorkerModule
 import ink.trmnl.android.model.TrmnlDeviceConfig
+import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
 import ink.trmnl.android.util.isHttpError
 import ink.trmnl.android.util.isHttpOk
@@ -74,8 +75,10 @@ class TrmnlImageRefreshWorker(
         }
 
         // Fetch TRMNL display image - current or next from playlist based on request type
+        // Also, if device type is BYOD or BYOS, we will always load the next playlist image
+        // See https://discord.com/channels/1281055965508141100/1331360842809348106/1382865608236077086
         val trmnlDisplayInfo: TrmnlDisplayInfo =
-            if (loadNextPluginImage) {
+            if (loadNextPluginImage || deviceConfig.type != TrmnlDeviceType.TRMNL) {
                 displayRepository.getNextDisplayData(deviceConfig)
             } else {
                 displayRepository.getCurrentDisplayData(deviceConfig)

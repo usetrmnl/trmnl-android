@@ -41,12 +41,12 @@ class TrmnlDisplayRepository
          * @return A [TrmnlDisplayInfo] object containing the display data.
          */
         suspend fun getNextDisplayData(trmnlDeviceConfig: TrmnlDeviceConfig): TrmnlDisplayInfo {
+            Timber.i("Fetching next playlist item display data from server for device: ${trmnlDeviceConfig.type}")
+
             if (repositoryConfigProvider.shouldUseFakeData) {
                 // Avoid using real API in debug mode
                 return fakeTrmnlDisplayInfo(apiUsed = "next-image")
             }
-
-            Timber.i("Fetching next playlist item display data from server")
 
             val result =
                 apiService
@@ -90,16 +90,23 @@ class TrmnlDisplayRepository
          * Fetches the current display data from the server using the provided access token.
          * If the app is in debug mode, it uses mock data instead.
          *
+         * ⚠️ NOTE: This API is not available on BYOS servers.
+         * See https://discord.com/channels/1281055965508141100/1331360842809348106/1382863253880963124
+         *
          * @param trmnlDeviceConfig Device configuration containing the access token and other settings.
          * @return A [TrmnlDisplayInfo] object containing the current display data.
          */
         suspend fun getCurrentDisplayData(trmnlDeviceConfig: TrmnlDeviceConfig): TrmnlDisplayInfo {
+            Timber.i("Fetching current display data from server for device: ${trmnlDeviceConfig.type}")
+
+            if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOS) {
+                Timber.w("Current display image data API is not available for BYOS service.")
+            }
+
             if (repositoryConfigProvider.shouldUseFakeData) {
                 // Avoid using real API in debug mode
                 return fakeTrmnlDisplayInfo(apiUsed = "current-image")
             }
-
-            Timber.i("Fetching current display data from server")
 
             val result =
                 apiService
