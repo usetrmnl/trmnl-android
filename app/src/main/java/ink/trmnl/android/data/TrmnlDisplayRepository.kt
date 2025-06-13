@@ -41,12 +41,12 @@ class TrmnlDisplayRepository
          * @return A [TrmnlDisplayInfo] object containing the display data.
          */
         suspend fun getNextDisplayData(trmnlDeviceConfig: TrmnlDeviceConfig): TrmnlDisplayInfo {
+            Timber.i("Fetching next playlist item display data from server for device: ${trmnlDeviceConfig.type}")
+
             if (repositoryConfigProvider.shouldUseFakeData) {
                 // Avoid using real API in debug mode
                 return fakeTrmnlDisplayInfo(apiUsed = "next-image")
             }
-
-            Timber.i("Fetching next playlist item display data from server")
 
             val result =
                 apiService
@@ -94,12 +94,12 @@ class TrmnlDisplayRepository
          * @return A [TrmnlDisplayInfo] object containing the current display data.
          */
         suspend fun getCurrentDisplayData(trmnlDeviceConfig: TrmnlDeviceConfig): TrmnlDisplayInfo {
+            Timber.i("Fetching current display data from server for device: ${trmnlDeviceConfig.type}")
+
             if (repositoryConfigProvider.shouldUseFakeData) {
                 // Avoid using real API in debug mode
                 return fakeTrmnlDisplayInfo(apiUsed = "current-image")
             }
-
-            Timber.i("Fetching current display data from server")
 
             val result =
                 apiService
