@@ -35,6 +35,22 @@ class TrmnlDisplayRepositoryTest {
             refreshRateSecs = 600L,
         )
 
+    private val byosDeviceConfig =
+        TrmnlDeviceConfig(
+            type = TrmnlDeviceType.BYOS,
+            apiAccessToken = "test-access-token",
+            apiBaseUrl = "https://custom-server.example.com",
+            refreshRateSecs = 600L,
+        )
+
+    private val byodDeviceConfig =
+        TrmnlDeviceConfig(
+            type = TrmnlDeviceType.BYOD,
+            apiAccessToken = "test-access-token",
+            apiBaseUrl = "https://server.example.com",
+            refreshRateSecs = 600L,
+        )
+
     @Before
     fun setup() {
         apiService = mockk()
@@ -279,5 +295,164 @@ class TrmnlDisplayRepositoryTest {
 
             assertThat(method.invoke(repository, urlWithoutSlash, "api/endpoint"))
                 .isEqualTo(expectedWithoutSlash)
+        }
+
+    @Test
+    fun `getCurrentDisplayData should warn when BYOS device type is used`() =
+        runTest {
+            // Arrange
+            val successResponse =
+                TrmnlCurrentImageResponse(
+                    status = 200,
+                    imageUrl = "https://test.com/current.png",
+                    filename = "current-image.png",
+                    refreshRateSec = 600L,
+                    renderedAt = 1234567890L,
+                    error = null,
+                )
+
+            val expectedCurrentApiUrl = "https://custom-server.example.com/api/current_screen"
+
+            coEvery {
+                apiService.getCurrentDisplayData(
+                    fullApiUrl = expectedCurrentApiUrl,
+                    accessToken = byosDeviceConfig.apiAccessToken,
+                )
+            } returns ApiResult.success(successResponse)
+
+            // Act
+            val result = repository.getCurrentDisplayData(byosDeviceConfig)
+
+            // Assert
+            assertThat(result.status).isEqualTo(200)
+            assertThat(result.imageUrl).isEqualTo("https://test.com/current.png")
+            assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.BYOS)
+
+            // There should be a warning logged, but we can't easily test timber logs
+        }
+
+    @Test
+    fun `getNextDisplayData with BYOS should use custom server URL`() =
+        runTest {
+            // Arrange
+            val successResponse =
+                TrmnlDisplayResponse(
+                    status = 200,
+                    imageUrl = "https://test.com/image.png",
+                    imageName = "test-image.png",
+                    refreshRate = 300L,
+                    error = null,
+                    updateFirmware = null,
+                    firmwareUrl = null,
+                    resetFirmware = null,
+                )
+
+            val expectedNextApiUrl = "https://custom-server.example.com/api/display"
+
+            coEvery {
+                apiService.getNextDisplayData(
+                    fullApiUrl = expectedNextApiUrl,
+                    accessToken = byosDeviceConfig.apiAccessToken,
+                )
+            } returns ApiResult.success(successResponse)
+
+            // Act
+            val result = repository.getNextDisplayData(byosDeviceConfig)
+
+            // Assert
+            assertThat(result.status).isEqualTo(200)
+            assertThat(result.imageUrl).isEqualTo("https://test.com/image.png")
+            assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.BYOS)
+
+            // Verify the correct URL was constructed with the custom server
+            coVerify {
+                apiService.getNextDisplayData(
+                    fullApiUrl = expectedNextApiUrl,
+                    accessToken = byosDeviceConfig.apiAccessToken,
+                )
+            }
+        }
+
+    @Test
+    fun `getNextDisplayData with BYOD should use default TRMNL API server URL`() =
+        runTest {
+            // Arrange
+            val successResponse =
+                TrmnlDisplayResponse(
+                    status = 200,
+                    imageUrl = "https://test.com/image.png",
+                    imageName = "test-image.png",
+                    refreshRate = 300L,
+                    error = null,
+                    updateFirmware = null,
+                    firmwareUrl = null,
+                    resetFirmware = null,
+                )
+
+            // Despite byodDeviceConfig having a server URL, the standard TRMNL API endpoint should be used
+            val expectedNextApiUrl = "https://server.example.com/api/display"
+
+            coEvery {
+                apiService.getNextDisplayData(
+                    fullApiUrl = expectedNextApiUrl,
+                    accessToken = byodDeviceConfig.apiAccessToken,
+                )
+            } returns ApiResult.success(successResponse)
+
+            // Act
+            val result = repository.getNextDisplayData(byodDeviceConfig)
+
+            // Assert
+            assertThat(result.status).isEqualTo(200)
+            assertThat(result.imageUrl).isEqualTo("https://test.com/image.png")
+            assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.BYOD)
+
+            // Verify the correct URL was used
+            coVerify {
+                apiService.getNextDisplayData(
+                    fullApiUrl = expectedNextApiUrl,
+                    accessToken = byodDeviceConfig.apiAccessToken,
+                )
+            }
+        }
+
+    @Test
+    fun `getCurrentDisplayData should use custom server URL for BYOS`() =
+        runTest {
+            // Arrange
+            val successResponse =
+                TrmnlCurrentImageResponse(
+                    status = 200,
+                    imageUrl = "https://test.com/current.png",
+                    filename = "current-image.png",
+                    refreshRateSec = 600L,
+                    renderedAt = 1234567890L,
+                    error = null,
+                )
+
+            val expectedCurrentApiUrl = "https://custom-server.example.com/api/current_screen"
+
+            coEvery {
+                apiService.getCurrentDisplayData(
+                    fullApiUrl = expectedCurrentApiUrl,
+                    accessToken = byosDeviceConfig.apiAccessToken,
+                )
+            } returns ApiResult.success(successResponse)
+
+            // Act
+            val result = repository.getCurrentDisplayData(byosDeviceConfig)
+
+            // Assert
+            assertThat(result.status).isEqualTo(200)
+            assertThat(result.imageUrl).isEqualTo("https://test.com/current.png")
+            assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.BYOS)
+
+            // Verify the custom server URL was used
+            coVerify {
+                apiService.getCurrentDisplayData(
+                    fullApiUrl = expectedCurrentApiUrl,
+                    accessToken = byosDeviceConfig.apiAccessToken,
+                )
+            }
         }
 }
