@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
 
 @Composable
-internal fun TokenInfoTextView() {
+internal fun TrmnlDeviceTypeInfoText() {
     // Informational text with links using withLink
     val uriHandler = LocalUriHandler.current
     val linkStyle = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)
@@ -84,6 +84,6 @@ internal fun TokenInfoTextView() {
 @Composable
 private fun PreviewInfoTextView() {
     TrmnlDisplayAppTheme {
-        TokenInfoTextView()
+        TrmnlDeviceTypeInfoText()
     }
 }
