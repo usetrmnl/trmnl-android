@@ -151,6 +151,10 @@ data class AppSettingsScreen(
             val message: String,
         ) : ValidationResult()
 
+        data class InvalidDeviceMacId(
+            val message: String,
+        ) : ValidationResult()
+
         data class Failure(
             val message: String,
         ) : ValidationResult()
@@ -283,6 +287,19 @@ class AppSettingsPresenter
                                         validationResult = InvalidServerUrl("Please enter a valid HTTPS URL (e.g. https://my-terminus.com)")
                                         return@launch
                                     }
+
+                                    // If device ID is provided, validate MAC address format (only for BYOS)
+                                    if (deviceMacId.isNotBlank() && !isValidMacAddress(deviceMacId)) {
+                                        isLoading = false
+                                        validationResult = ValidationResult.InvalidDeviceMacId(
+                                            "Please enter a valid MAC address format:\n" +
+                                            "• XX:XX:XX:XX:XX:XX\n" +
+                                            "• XX-XX-XX-XX-XX-XX\n" +
+                                            "• XXXXXXXXXXXX\n" +
+                                            "where X is a hexadecimal digit (0-9, A-F)"
+                                        )
+                                        return@launch
+                                    }
                                 }
 
                                 // Device configuration for API calls
@@ -405,6 +422,36 @@ class AppSettingsPresenter
             return urlRegex.matcher(url).matches()
         }
 
+        /**
+         * Validates MAC address format. Supports formats:
+         * - XX:XX:XX:XX:XX:XX
+         * - XX-XX-XX-XX-XX-XX
+         * - XXXXXXXXXXXX
+         * where X is a hexadecimal digit (case insensitive)
+         */
+        private fun isValidMacAddress(mac: String): Boolean {
+            if (mac.isBlank()) return true // Empty is valid (optional field)
+
+            // Standard format with colons XX:XX:XX:XX:XX:XX
+            val colonFormatRegex = Pattern.compile(
+                "^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$"
+            )
+
+            // Format with hyphens XX-XX-XX-XX-XX-XX
+            val hyphenFormatRegex = Pattern.compile(
+                "^([0-9A-Fa-f]{2}[-]){5}([0-9A-Fa-f]{2})$"
+            )
+
+            // No separator XXXXXXXXXXXX
+            val noSeparatorRegex = Pattern.compile(
+                "^([0-9A-Fa-f]{12})$"
+            )
+
+            return colonFormatRegex.matcher(mac).matches() ||
+                   hyphenFormatRegex.matcher(mac).matches() ||
+                   noSeparatorRegex.matcher(mac).matches()
+        }
+
         @CircuitInject(AppSettingsScreen::class, AppScope::class)
         @AssistedFactory
         fun interface Factory {
@@ -520,6 +567,8 @@ fun AppSettingsContent(
                 onDeviceIdChanged = { state.eventSink(AppSettingsScreen.Event.DeviceIdChanged(it)) },
                 isServerUrlError = state.validationResult is InvalidServerUrl,
                 serverUrlError = (state.validationResult as? InvalidServerUrl)?.message,
+                isDeviceMacIdError = state.validationResult is ValidationResult.InvalidDeviceMacId,
+                deviceIdError = (state.validationResult as? ValidationResult.InvalidDeviceMacId)?.message,
             )
 
             // Password field with toggle visibility button
@@ -628,6 +677,24 @@ fun AppSettingsContent(
                                 )
                             }
                         }
+                        is ValidationResult.InvalidDeviceMacId -> {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    "❌ Device ID (Mac Address) Invalid Format",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    result.message,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
                         is ValidationResult.Failure -> {
                             // Error state remains the same
                             Column(
@@ -672,6 +739,8 @@ private fun DeviceTypeSelectorConfig(
     onDeviceIdChanged: (String) -> Unit,
     isServerUrlError: Boolean = false,
     serverUrlError: String? = null,
+    isDeviceMacIdError: Boolean = false,
+    deviceIdError: String? = null,
     modifier: Modifier = Modifier,
 ) {
     // Control device ID visibility
@@ -742,6 +811,7 @@ private fun DeviceTypeSelectorConfig(
                     onValueChange = onDeviceIdChanged,
                     label = { Text("Device ID (MAC Address)") },
                     placeholder = { Text("aa:bb:cc:dd:ee:ff") },
+                    isError = isDeviceMacIdError,
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -754,7 +824,11 @@ private fun DeviceTypeSelectorConfig(
                     visualTransformation = if (deviceIdVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     singleLine = true,
                     supportingText = {
-                        Text("Optional: Used for Terminus server APIs")
+                        if (isDeviceMacIdError && deviceIdError != null) {
+                            Text(deviceIdError)
+                        } else {
+                            Text("Optional: Used for Terminus server APIs")
+                        }
                     },
                     trailingIcon = {
                         IconButton(onClick = { deviceIdVisible = !deviceIdVisible }) {
