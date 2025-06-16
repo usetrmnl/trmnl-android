@@ -13,9 +13,9 @@ if [ $status -ne 0 ]; then
 fi
 
 # Check if there are unstaged changes after formatting
-if [[ -n $(git status -s | grep "^.M") ]]; then
+if [[ -n $(git diff --name-only --diff-filter=M) ]]; then
   echo "❌ Files were modified by formatKotlin. Please add these changes to your commit."
-  git status -s | grep "^.M"
+  git diff --name-only --diff-filter=M
   exit 1
 fi
 
