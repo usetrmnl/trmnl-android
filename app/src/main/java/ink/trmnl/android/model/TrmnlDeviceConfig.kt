@@ -22,6 +22,6 @@ data class TrmnlDeviceConfig constructor(
     /**
      * Device MAC address for API authentication, usually used by BYOS servers.
      */
-    val deviceId: String? = null,
+    val deviceMacId: String? = null,
     val refreshRateSecs: Long = DEFAULT_REFRESH_INTERVAL_SEC,
 )

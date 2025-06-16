@@ -224,7 +224,7 @@ class AppSettingsPresenter
             var deviceType by remember { mutableStateOf(TrmnlDeviceType.TRMNL) }
             var serverBaseUrl by remember { mutableStateOf("") }
             var accessToken by remember { mutableStateOf("") }
-            var deviceId by remember { mutableStateOf("") }
+            var deviceMacId by remember { mutableStateOf("") }
             var isLoading by remember { mutableStateOf(false) }
             var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
             val usesFakeApiData = repositoryConfigProvider.shouldUseFakeData
@@ -246,8 +246,8 @@ class AppSettingsPresenter
                     if (it.type == TrmnlDeviceType.BYOS) {
                         // On initial load, prefill only if the device type is BYOS
                         serverBaseUrl = it.apiBaseUrl
-                        it.deviceId?.let { savedDeviceId ->
-                            deviceId = savedDeviceId
+                        it.deviceMacId?.let { savedDeviceId ->
+                            deviceMacId = savedDeviceId
                         }
                     }
                 }
@@ -257,7 +257,7 @@ class AppSettingsPresenter
                 deviceType = deviceType,
                 serverBaseUrl = serverBaseUrl,
                 accessToken = accessToken,
-                deviceMacId = deviceId,
+                deviceMacId = deviceMacId,
                 usesFakeApiData = usesFakeApiData,
                 isLoading = isLoading,
                 validationResult = validationResult,
@@ -291,7 +291,7 @@ class AppSettingsPresenter
                                         type = deviceType,
                                         apiBaseUrl = serverBaseUrl.forDevice(deviceType),
                                         apiAccessToken = accessToken,
-                                        deviceId = deviceId.ifBlank { null },
+                                        deviceMacId = deviceMacId.ifBlank { null },
                                     )
                                 // For TRMNL mirror device type, use getCurrentDisplayData
                                 // For all other device types, use getNextDisplayData
@@ -338,7 +338,7 @@ class AppSettingsPresenter
                                             apiBaseUrl = serverBaseUrl.forDevice(deviceType),
                                             apiAccessToken = accessToken,
                                             refreshRateSecs = result.refreshRateSecs,
-                                            deviceId = deviceId.ifBlank { null },
+                                            deviceMacId = deviceMacId.ifBlank { null },
                                         ),
                                     )
                                     trmnlWorkScheduler.updateRefreshInterval(result.refreshRateSecs)
@@ -375,7 +375,7 @@ class AppSettingsPresenter
                         }
 
                         is AppSettingsScreen.Event.DeviceIdChanged -> {
-                            deviceId = event.deviceId
+                            deviceMacId = event.deviceId
                             // Clear previous validation when device ID changes
                             validationResult = null
                         }
