@@ -3,7 +3,7 @@
 echo "Running Kotlin formatter check..."
 
 # Execute the Kotlin formatting task
-./gradlew formatKotlin --daemon
+./gradlew formatKotlin --quiet
 
 # Check the exit code of the format command
 status=$?
