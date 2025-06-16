@@ -204,8 +204,8 @@ data class AppSettingsScreen(
         /**
          * Event triggered when the device ID (MAC address) is changed.
          */
-        data class DeviceIdChanged(
-            val deviceId: String,
+        data class DeviceMacIdChanged(
+            val deviceMacId: String,
         ) : Event()
     }
 }
@@ -396,8 +396,8 @@ class AppSettingsPresenter
                             }
                         }
 
-                        is AppSettingsScreen.Event.DeviceIdChanged -> {
-                            deviceMacId = event.deviceId
+                        is AppSettingsScreen.Event.DeviceMacIdChanged -> {
+                            deviceMacId = event.deviceMacId
                             // Clear previous validation when device ID changes
                             validationResult = null
                         }
@@ -530,7 +530,7 @@ fun AppSettingsContent(
                 deviceId = state.deviceMacId,
                 onTypeSelected = { state.eventSink(AppSettingsScreen.Event.DeviceTypeChanged(it)) },
                 onServerUrlChanged = { state.eventSink(AppSettingsScreen.Event.ServerUrlChanged(it)) },
-                onDeviceIdChanged = { state.eventSink(AppSettingsScreen.Event.DeviceIdChanged(it)) },
+                onDeviceIdChanged = { state.eventSink(AppSettingsScreen.Event.DeviceMacIdChanged(it)) },
                 isServerUrlError = state.validationResult is InvalidServerUrl,
                 serverUrlError = (state.validationResult as? InvalidServerUrl)?.message,
                 isDeviceMacIdError = state.validationResult is ValidationResult.InvalidDeviceMacId,
