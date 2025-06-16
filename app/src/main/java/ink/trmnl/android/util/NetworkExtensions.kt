@@ -17,9 +17,16 @@ internal const val HTTP_200 = 200
 internal const val HTTP_OK = 0
 
 /**
+ * -1 - Indicates no HTTP status code was received in JSON response.
+ * This is the case for the BYOS Hanami server, which does not return a status code.
+ * - https://discord.com/channels/1281055965508141100/1331360842809348106/1383221807716237433
+ */
+internal const val HTTP_NONE = -1
+
+/**
  * Extension function to check if the HTTP status code is OK based on TRMNL server responses.
  */
-internal fun Int?.isHttpOk(): Boolean = this == HTTP_OK || this == HTTP_200
+internal fun Int?.isHttpOk(): Boolean = this == HTTP_OK || this == HTTP_200 || this == HTTP_NONE
 
 /**
  * Extension function to check if the HTTP status code is an error.
