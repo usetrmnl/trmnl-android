@@ -328,6 +328,7 @@ class AppSettingsPresenter
 
                                 if (response.status.isHttpError()) {
                                     // Handle explicit error response
+                                    // FIXME - default error message is wrong, can't assume device not found
                                     val errorMessage = response.error ?: "Device not found"
                                     validationResult = Failure(errorMessage)
                                 } else if (response.imageUrl.isNotBlank()) {

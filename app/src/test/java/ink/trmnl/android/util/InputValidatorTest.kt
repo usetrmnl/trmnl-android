@@ -8,15 +8,15 @@ import org.junit.Test
  */
 class InputValidatorTest {
     @Test
-    fun `isValidUrl should return true for valid URLs`() {
+    fun `isValidUrl should return true for valid HTTPS URLs`() {
         val validUrls =
             listOf(
-                "http://example.com",
+                "https://localhost:2443",
                 "https://example.com",
-                "http://example.com/path",
+                "https://example.com/path",
                 "https://example.com/path?query=value",
                 "https://example.com:8080",
-                "http://subdomain.example.com",
+                "https://subdomain.example.com",
                 "https://example-domain.com",
                 "https://example.com/path/to/resource",
                 "https://example.com/path-with-dash",
@@ -29,12 +29,15 @@ class InputValidatorTest {
     }
 
     @Test
-    fun `isValidUrl should return false for invalid URLs`() {
+    fun `isValidUrl should return false for invalid URLs and HTTP URLs`() {
         val invalidUrls =
             listOf(
                 "",
                 "example.com",
                 "www.example.com",
+                "http://example.com", // HTTP is now invalid - HTTPS only
+                "http://subdomain.example.com", // HTTP is now invalid - HTTPS only
+                "http://example.com/path", // HTTP is now invalid - HTTPS only
                 "ftp://example.com",
                 "file:///path/to/file",
                 "http:/example.com",

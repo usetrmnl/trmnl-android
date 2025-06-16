@@ -3,22 +3,22 @@ package ink.trmnl.android.util
 import java.util.regex.Pattern
 
 /**
- * Validates if the provided string is a valid HTTP or HTTPS URL.
+ * Validates if the provided string is a valid HTTPS URL.
  *
  * The function checks that the URL:
- * - Starts with http:// or https://
+ * - Starts with https:// (HTTP is not accepted for security reasons)
  * - Contains valid URL characters in the domain and path components
  *
  * @param url The string to validate as a URL
- * @return true if the string is a valid URL, false otherwise
+ * @return true if the string is a valid HTTPS URL, false otherwise
  */
 internal fun isValidUrl(url: String): Boolean {
-    val urlRegex =
+    val httpsRegex =
         Pattern.compile(
-            "^(https?)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]",
+            "^(https)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]",
             Pattern.CASE_INSENSITIVE,
         )
-    return urlRegex.matcher(url).matches()
+    return httpsRegex.matcher(url).matches()
 }
 
 /**
