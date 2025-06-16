@@ -103,6 +103,7 @@ import ink.trmnl.android.util.isHttpError
 import ink.trmnl.android.util.isValidMacAddress
 import ink.trmnl.android.util.isValidUrl
 import ink.trmnl.android.util.nextRunTime
+import ink.trmnl.android.util.normalizeMacAddress
 import ink.trmnl.android.util.toColor
 import ink.trmnl.android.util.toDisplayString
 import ink.trmnl.android.util.toIcon
@@ -357,7 +358,8 @@ class AppSettingsPresenter
                                             apiBaseUrl = serverBaseUrl.forDevice(deviceType),
                                             apiAccessToken = accessToken,
                                             refreshRateSecs = result.refreshRateSecs,
-                                            deviceMacId = deviceMacId.ifBlank { null },
+                                            // Normalize the MAC address to standard format if provided in different format
+                                            deviceMacId = normalizeMacAddress(deviceMacId)?.ifBlank { null },
                                         ),
                                     )
                                     trmnlWorkScheduler.updateRefreshInterval(result.refreshRateSecs)
@@ -1106,7 +1108,7 @@ private fun PreviewWorkScheduleStatusCardScheduled() {
                     deviceType = TrmnlDeviceType.TRMNL,
                     serverBaseUrl = "https://example.com",
                     accessToken = "some-token",
-                    deviceMacId = "aa:bb:cc:dd:ee:ff",
+                    deviceMacId = "AA:BB:CC:DD:EE:FF",
                     usesFakeApiData = false,
                     nextRefreshJobInfo =
                         NextImageRefreshDisplayInfo(
