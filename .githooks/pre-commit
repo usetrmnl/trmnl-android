@@ -1,0 +1,23 @@
+#!/bin/bash
+
+echo "Running Kotlin formatter check..."
+
+# Execute the Kotlin formatting task
+./gradlew formatKotlin --quiet
+
+# Check the exit code of the format command
+status=$?
+if [ $status -ne 0 ]; then
+  echo "❌ formatKotlin failed! Please fix formatting issues before committing."
+  exit 1
+fi
+
+# Check if there are unstaged changes after formatting
+if [[ -n $(git diff --name-only --diff-filter=M) ]]; then
+  echo "❌ Files were modified by formatKotlin. Please add these changes to your commit."
+  git diff --name-only --diff-filter=M
+  exit 1
+fi
+
+echo "✅ Kotlin code formatting check passed!"
+exit 0
