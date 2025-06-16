@@ -100,6 +100,8 @@ import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
 import ink.trmnl.android.util.CoilRequestUtils
 import ink.trmnl.android.util.NextImageRefreshDisplayInfo
 import ink.trmnl.android.util.isHttpError
+import ink.trmnl.android.util.isValidMacAddress
+import ink.trmnl.android.util.isValidUrl
 import ink.trmnl.android.util.nextRunTime
 import ink.trmnl.android.util.toColor
 import ink.trmnl.android.util.toDisplayString
@@ -112,7 +114,6 @@ import kotlinx.parcelize.Parcelize
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.regex.Pattern
 
 /**
  * Screen for configuring the TRMNL mirror app settings.
@@ -291,13 +292,14 @@ class AppSettingsPresenter
                                     // If device ID is provided, validate MAC address format (only for BYOS)
                                     if (deviceMacId.isNotBlank() && !isValidMacAddress(deviceMacId)) {
                                         isLoading = false
-                                        validationResult = ValidationResult.InvalidDeviceMacId(
-                                            "Please enter a valid MAC address format:\n" +
-                                            "• XX:XX:XX:XX:XX:XX\n" +
-                                            "• XX-XX-XX-XX-XX-XX\n" +
-                                            "• XXXXXXXXXXXX\n" +
-                                            "where X is a hexadecimal digit (0-9, A-F)"
-                                        )
+                                        validationResult =
+                                            ValidationResult.InvalidDeviceMacId(
+                                                "Please enter a valid MAC address format:\n" +
+                                                    "• XX:XX:XX:XX:XX:XX\n" +
+                                                    "• XX-XX-XX-XX-XX-XX\n" +
+                                                    "• XXXXXXXXXXXX\n" +
+                                                    "where X is a hexadecimal digit (0-9, A-F)",
+                                            )
                                         return@launch
                                     }
                                 }
@@ -412,45 +414,6 @@ class AppSettingsPresenter
                 // For any other device type, use the default TRMNL API server URL
                 TRMNL_API_SERVER_BASE_URL
             }
-
-        private fun isValidUrl(url: String): Boolean {
-            val urlRegex =
-                Pattern.compile(
-                    "^(https?)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]",
-                    Pattern.CASE_INSENSITIVE,
-                )
-            return urlRegex.matcher(url).matches()
-        }
-
-        /**
-         * Validates MAC address format. Supports formats:
-         * - XX:XX:XX:XX:XX:XX
-         * - XX-XX-XX-XX-XX-XX
-         * - XXXXXXXXXXXX
-         * where X is a hexadecimal digit (case insensitive)
-         */
-        private fun isValidMacAddress(mac: String): Boolean {
-            if (mac.isBlank()) return true // Empty is valid (optional field)
-
-            // Standard format with colons XX:XX:XX:XX:XX:XX
-            val colonFormatRegex = Pattern.compile(
-                "^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$"
-            )
-
-            // Format with hyphens XX-XX-XX-XX-XX-XX
-            val hyphenFormatRegex = Pattern.compile(
-                "^([0-9A-Fa-f]{2}[-]){5}([0-9A-Fa-f]{2})$"
-            )
-
-            // No separator XXXXXXXXXXXX
-            val noSeparatorRegex = Pattern.compile(
-                "^([0-9A-Fa-f]{12})$"
-            )
-
-            return colonFormatRegex.matcher(mac).matches() ||
-                   hyphenFormatRegex.matcher(mac).matches() ||
-                   noSeparatorRegex.matcher(mac).matches()
-        }
 
         @CircuitInject(AppSettingsScreen::class, AppScope::class)
         @AssistedFactory
