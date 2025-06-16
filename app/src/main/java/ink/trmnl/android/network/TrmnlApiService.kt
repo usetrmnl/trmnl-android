@@ -41,12 +41,19 @@ interface TrmnlApiService {
      *
      * NOTE: This API always loads the next plugin image from the playlist.
      *
+     * @param fullApiUrl The complete API URL to call
+     * @param accessToken The device's API key (required)
+     * @param deviceId The device's MAC address (optional)
+     * @param useBase64 Whether to request Base64-encoded image data (optional)
+     *
      * @see getCurrentDisplayData
      */
     @GET
     suspend fun getNextDisplayData(
         @Url fullApiUrl: String,
         @Header("access-token") accessToken: String,
+        @Header("ID") deviceId: String? = null,
+        @Header("BASE64") useBase64: Boolean? = null,
     ): ApiResult<TrmnlDisplayResponse, Unit>
 
     /**
