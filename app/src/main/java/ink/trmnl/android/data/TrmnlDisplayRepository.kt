@@ -53,6 +53,8 @@ class TrmnlDisplayRepository
                     .getNextDisplayData(
                         fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, NEXT_PLAYLIST_SCREEN_API_PATH),
                         accessToken = trmnlDeviceConfig.apiAccessToken,
+                        // Send device MAC ID if available (used for BYOS service)
+                        deviceMacId = trmnlDeviceConfig.deviceMacId,
                     )
 
             when (result) {
