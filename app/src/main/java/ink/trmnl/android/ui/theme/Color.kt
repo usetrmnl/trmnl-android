@@ -14,3 +14,6 @@ val Grey80 = Color(0xFFECEFF1)
 val Blue40 = Color(0xFF2236B0)
 val BlueGrey40 = Color(0xFF546E7A)
 val Grey40 = Color(0xFF47676F)
+
+// Add TRMNL color - #F8654B
+val TrmnlOrange = Color(0xFFF8654B)

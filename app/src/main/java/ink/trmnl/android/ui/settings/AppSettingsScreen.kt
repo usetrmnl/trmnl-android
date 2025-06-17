@@ -91,6 +91,7 @@ import ink.trmnl.android.data.TrmnlDisplayRepository
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
+import ink.trmnl.android.ui.aboutapp.AppInfoScreen
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.Failure
@@ -193,6 +194,11 @@ data class AppSettingsScreen(
         data class ServerUrlChanged(
             val url: String,
         ) : Event()
+
+        /**
+         * Event triggered when the info icon is clicked.
+         */
+        data object AppInfoPressed : Event()
     }
 }
 
@@ -358,6 +364,11 @@ class AppSettingsPresenter
                                 validationResult = null
                             }
                         }
+
+                        AppSettingsScreen.Event.AppInfoPressed -> {
+                            // Navigate to AppInfoScreen
+                            navigator.goTo(AppInfoScreen)
+                        }
                     }
                 },
             )
@@ -437,6 +448,15 @@ fun AppSettingsContent(
                                 contentDescription = "Back",
                             )
                         }
+                    }
+                },
+                // Add the info action button to navigate to AppInfoScreen
+                actions = {
+                    IconButton(onClick = { state.eventSink(AppSettingsScreen.Event.AppInfoPressed) }) {
+                        Icon(
+                            painter = painterResource(R.drawable.info_24dp),
+                            contentDescription = "App Info",
+                        )
                     }
                 },
                 // Configure the TopAppBar to handle status bar insets
