@@ -464,7 +464,7 @@ class AppSettingsPresenter
                                     // Handle error response
                                     deviceSetupMessage = setupResult.message
                                 } else {
-                                    deviceSetupMessage = "Device setup successful! You can now use your TRMNL."
+                                    deviceSetupMessage = "Device setup successful! Re-validate ID/Token to continue."
                                     // Also prepopulate the access token
                                     accessToken = setupResult.apiKey
                                 }
