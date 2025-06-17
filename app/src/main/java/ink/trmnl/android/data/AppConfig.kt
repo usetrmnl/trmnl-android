@@ -24,4 +24,9 @@ object AppConfig {
      * URL for the TRMNL Android app on GitHub.
      */
     const val TRMNL_ANDROID_APP_GITHUB_URL = "https://github.com/usetrmnl/trmnl-android"
+
+    /**
+     * URL for the TRMNL main website.
+     */
+    const val TRMNL_SITE_URL = "https://usetrmnl.com/"
 }

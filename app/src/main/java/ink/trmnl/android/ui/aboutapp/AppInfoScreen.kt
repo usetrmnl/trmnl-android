@@ -1,6 +1,7 @@
 package ink.trmnl.android.ui.aboutapp
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -43,6 +44,7 @@ import dagger.assisted.AssistedInject
 import ink.trmnl.android.BuildConfig
 import ink.trmnl.android.R
 import ink.trmnl.android.data.AppConfig.TRMNL_ANDROID_APP_GITHUB_URL
+import ink.trmnl.android.data.AppConfig.TRMNL_SITE_URL
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.ui.aboutapp.AppInfoScreen.Event
 import ink.trmnl.android.ui.aboutapp.AppInfoScreen.State
@@ -65,6 +67,8 @@ data object AppInfoScreen : Screen {
         data object BackPressed : Event()
 
         data object OpenGithub : Event()
+
+        data object OpenTrmnlSite : Event()
     }
 }
 
@@ -86,8 +90,10 @@ class AppInfoPresenter
                     when (event) {
                         Event.BackPressed -> navigator.pop()
                         Event.OpenGithub -> {
-                            // Handled in the UI
                             uriHandler.openUri(TRMNL_ANDROID_APP_GITHUB_URL)
+                        }
+                        Event.OpenTrmnlSite -> {
+                            uriHandler.openUri(TRMNL_SITE_URL)
                         }
                     }
                 },
@@ -171,7 +177,10 @@ fun AppInfoContent(
             Image(
                 painter = painterResource(R.drawable.trmnl_device_white_transparent),
                 contentDescription = "TRMNL Device",
-                modifier = Modifier.padding(vertical = 16.dp),
+                modifier =
+                    Modifier
+                        .padding(vertical = 16.dp)
+                        .clickable { state.eventSink(Event.OpenTrmnlSite) },
             )
 
             Spacer(modifier = Modifier.height(8.dp))
