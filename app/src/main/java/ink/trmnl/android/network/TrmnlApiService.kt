@@ -7,6 +7,7 @@ import ink.trmnl.android.network.model.TrmnlCurrentImageResponse
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.Url
 
 /**
@@ -49,13 +50,6 @@ interface TrmnlApiService {
          * @see setupNewDevice
          */
         internal const val SETUP_API_PATH = "api/setup/"
-
-        /**
-         * Default content type for API requests.
-         *
-         * This is used when setting up a new device or making other API calls that require a content type header.
-         */
-        private const val DEFAULT_CONTENT_TYPE = "application/json"
     }
 
     /**
@@ -101,10 +95,10 @@ interface TrmnlApiService {
      * @param deviceMacId The device's MAC address, sent in the "ID" header.
      * @return An [ApiResult] containing [TrmnlSetupResponse] on success.
      */
+    @Headers("Content-Type: application/json")
     @GET
     suspend fun setupNewDevice(
         @Url fullApiUrl: String,
         @Header("ID") deviceMacId: String,
-        @Header("Content-Type") contentType: String = DEFAULT_CONTENT_TYPE,
     ): ApiResult<TrmnlSetupResponse, Unit>
 }
