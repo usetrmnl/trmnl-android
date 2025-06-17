@@ -1,5 +1,6 @@
 package ink.trmnl.android.ui.aboutapp
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -167,7 +168,13 @@ fun AppInfoContent(
                 style = MaterialTheme.typography.bodyMedium,
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Image(
+                painter = painterResource(R.drawable.trmnl_device_white_transparent),
+                contentDescription = "TRMNL Device",
+                modifier = Modifier.padding(vertical = 16.dp),
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = { state.eventSink(Event.OpenGithub) },
