@@ -17,7 +17,7 @@ The TRMNL Display Mirror app serves as a digital display mirror for TRMNL e-ink 
 - [x] Refresh history logging for tracking & validation
 
 ## 📜 Preconditions
-You must have a **valid** `access-token` or device mac `ID` to access the [screen content](https://docs.usetrmnl.com/go/private-api/fetch-screen-content) using TRMNL server API.
+You must have a **valid** `access-token` or `ID` _(MAC Address)_ to access the [screen content](https://docs.usetrmnl.com/go/private-api/fetch-screen-content) using TRMNL server API.
 
 Here are some of the known ways you can get access to the `access-token`.
 
@@ -29,7 +29,7 @@ Here are some of the known ways you can get access to the `access-token`.
 ## How to try
 ⬇️ Install the APK on your Android device.
 <img src="https://github.com/user-attachments/assets/6ec04cf5-b72c-429a-a435-406f0051d221" align="right" width="150">
-1. Configure the API `access-token` or `ID` (mac address) in the app settings
+1. Configure the API `access-token` or `ID` _(MAC Address)_ in the app settings
 2. Save the token and keep the app always-on with the TRMNL's display image showing.
 
 ### <img src="https://github.com/user-attachments/assets/64b4b132-a885-4783-98e3-c201bae6ccff" width="25"> Download Release
