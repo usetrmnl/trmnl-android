@@ -36,6 +36,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -85,6 +86,7 @@ import dagger.assisted.AssistedInject
 import ink.trmnl.android.R
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
 import ink.trmnl.android.data.AppConfig.TRMNL_API_SERVER_BASE_URL
+import ink.trmnl.android.data.DeviceSetupInfo
 import ink.trmnl.android.data.RepositoryConfigProvider
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.data.TrmnlDisplayRepository
@@ -99,6 +101,7 @@ import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.InvalidS
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.Success
 import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
 import ink.trmnl.android.util.CoilRequestUtils
+import ink.trmnl.android.util.ERROR_TYPE_DEVICE_SETUP_REQUIRED
 import ink.trmnl.android.util.NextImageRefreshDisplayInfo
 import ink.trmnl.android.util.isHttpError
 import ink.trmnl.android.util.isValidMacAddress
@@ -140,6 +143,8 @@ data class AppSettingsScreen(
         val usesFakeApiData: Boolean,
         val isLoading: Boolean = false,
         val validationResult: ValidationResult? = null,
+        val isDeviceSetupLoading: Boolean = false,
+        val deviceSetupMessage: String? = null,
         val nextRefreshJobInfo: NextImageRefreshDisplayInfo? = null,
         val eventSink: (Event) -> Unit,
     ) : CircuitUiState
@@ -159,6 +164,10 @@ data class AppSettingsScreen(
         ) : ValidationResult()
 
         data class Failure(
+            val message: String,
+        ) : ValidationResult()
+
+        data class DeviceSetupRequired(
             val message: String,
         ) : ValidationResult()
     }
@@ -213,6 +222,10 @@ data class AppSettingsScreen(
          * Event triggered when the info icon is clicked.
          */
         data object AppInfoPressed : Event()
+
+        data class SetupDevice(
+            val deviceMacId: String,
+        ) : Event()
     }
 }
 
@@ -239,6 +252,8 @@ class AppSettingsPresenter
             var deviceMacId by remember { mutableStateOf("") }
             var isLoading by remember { mutableStateOf(false) }
             var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
+            var isDeviceSetupLoading by remember { mutableStateOf(false) }
+            var deviceSetupMessage by remember { mutableStateOf<String?>(null) }
             val usesFakeApiData = repositoryConfigProvider.shouldUseFakeData
             val scope = rememberCoroutineScope()
             val focusManager = LocalFocusManager.current
@@ -273,6 +288,8 @@ class AppSettingsPresenter
                 usesFakeApiData = usesFakeApiData,
                 isLoading = isLoading,
                 validationResult = validationResult,
+                isDeviceSetupLoading = isDeviceSetupLoading,
+                deviceSetupMessage = deviceSetupMessage,
                 nextRefreshJobInfo = nextRefreshInfo,
                 eventSink = { event ->
                     when (event) {
@@ -280,6 +297,7 @@ class AppSettingsPresenter
                             accessToken = event.token
                             // Clear previous validation when token changes
                             validationResult = null
+                            deviceSetupMessage = null
                         }
 
                         AppSettingsScreen.Event.ValidateToken -> {
@@ -287,6 +305,7 @@ class AppSettingsPresenter
                                 focusManager.clearFocus()
                                 isLoading = true
                                 validationResult = null
+                                deviceSetupMessage = null
 
                                 // First validate server URL if device type is BYOS
                                 if (deviceType == TrmnlDeviceType.BYOS) {
@@ -333,10 +352,17 @@ class AppSettingsPresenter
                                     }
 
                                 if (response.status.isHttpError()) {
-                                    // Handle explicit error response
-                                    // FIXME - default error message is wrong, can't assume device not found
-                                    val errorMessage = response.error ?: "Device not found"
-                                    validationResult = Failure(errorMessage)
+                                    if (response.imageFileName == ERROR_TYPE_DEVICE_SETUP_REQUIRED) {
+                                        // Special case for device setup required
+                                        validationResult =
+                                            ValidationResult.DeviceSetupRequired(
+                                                response.error ?: "Device setup required. Please follow the setup instructions.",
+                                            )
+                                    } else {
+                                        // Handle explicit error response
+                                        val errorMessage = response.error ?: "Unexpected error occurred. Please check required inputs."
+                                        validationResult = Failure(errorMessage)
+                                    }
                                 } else if (response.imageUrl.isNotBlank()) {
                                     // Success case - we have an image URL
                                     trmnlImageUpdateManager.updateImage(response.imageUrl, response.refreshIntervalSeconds)
@@ -392,6 +418,7 @@ class AppSettingsPresenter
                             deviceType = event.type
                             // Clear validation result when device type changes
                             validationResult = null
+                            deviceSetupMessage = null
                         }
 
                         is AppSettingsScreen.Event.ServerUrlChanged -> {
@@ -399,6 +426,7 @@ class AppSettingsPresenter
                             // Clear validation result when server URL changes
                             if (validationResult is InvalidServerUrl) {
                                 validationResult = null
+                                deviceSetupMessage = null
                             }
                         }
 
@@ -406,11 +434,41 @@ class AppSettingsPresenter
                             deviceMacId = event.deviceMacId
                             // Clear previous validation when device ID changes
                             validationResult = null
+                            deviceSetupMessage = null
                         }
 
                         AppSettingsScreen.Event.AppInfoPressed -> {
                             // Navigate to AppInfoScreen
                             navigator.goTo(AppInfoScreen)
+                        }
+
+                        is AppSettingsScreen.Event.SetupDevice -> {
+                            isDeviceSetupLoading = true
+                            deviceSetupMessage = null
+
+                            scope.launch {
+                                // Call the setup API with the provided device ID
+                                val setupResult: DeviceSetupInfo =
+                                    displayRepository.setupNewDevice(
+                                        TrmnlDeviceConfig(
+                                            type = deviceType,
+                                            apiBaseUrl = serverBaseUrl.forDevice(deviceType),
+                                            apiAccessToken = accessToken,
+                                            deviceMacId = event.deviceMacId,
+                                        ),
+                                    )
+
+                                isDeviceSetupLoading = false
+
+                                if (!setupResult.success) {
+                                    // Handle error response
+                                    deviceSetupMessage = setupResult.message
+                                } else {
+                                    deviceSetupMessage = "Device setup successful! You can now use your TRMNL."
+                                    // Also prepopulate the access token
+                                    accessToken = setupResult.apiKey
+                                }
+                            }
                         }
                     }
                 },
@@ -608,7 +666,7 @@ fun AppSettingsContent(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     when (result) {
-                        is ValidationResult.Success -> {
+                        is Success -> {
                             Column(
                                 modifier = Modifier.padding(16.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -645,7 +703,7 @@ fun AppSettingsContent(
                                 }
                             }
                         }
-                        is ValidationResult.InvalidServerUrl -> {
+                        is InvalidServerUrl -> {
                             Column(
                                 modifier = Modifier.padding(16.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -681,7 +739,7 @@ fun AppSettingsContent(
                                 )
                             }
                         }
-                        is ValidationResult.Failure -> {
+                        is Failure -> {
                             // Error state remains the same
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -698,6 +756,48 @@ fun AppSettingsContent(
                                     textAlign = TextAlign.Center,
                                     color = MaterialTheme.colorScheme.error,
                                 )
+                            }
+                        }
+
+                        is ValidationResult.DeviceSetupRequired -> {
+                            Column(
+                                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    "⚠️ Device Setup Required",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                if (state.deviceSetupMessage != null) {
+                                    Text(
+                                        text = state.deviceSetupMessage,
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                } else {
+                                    FilledTonalButton(
+                                        onClick = {
+                                            state.eventSink(
+                                                AppSettingsScreen.Event.SetupDevice(
+                                                    deviceMacId = state.deviceMacId,
+                                                ),
+                                            )
+                                        },
+                                        enabled = !state.isDeviceSetupLoading,
+                                    ) {
+                                        if (state.isDeviceSetupLoading) {
+                                            CircularProgressIndicator(
+                                                color = MaterialTheme.colorScheme.onPrimary,
+                                                modifier = Modifier.size(20.dp),
+                                                strokeWidth = 2.dp,
+                                            )
+                                        } else {
+                                            Text("Setup Device")
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

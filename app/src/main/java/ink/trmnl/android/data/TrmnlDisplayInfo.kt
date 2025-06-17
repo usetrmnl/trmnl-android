@@ -3,6 +3,7 @@ package ink.trmnl.android.data
 import androidx.annotation.Keep
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
 import ink.trmnl.android.model.TrmnlDeviceType
+import ink.trmnl.android.util.ERROR_TYPE_DEVICE_SETUP_REQUIRED
 import ink.trmnl.android.util.HTTP_200
 import ink.trmnl.android.util.HTTP_500
 import ink.trmnl.android.util.HTTP_OK
@@ -19,7 +20,14 @@ data class TrmnlDisplayInfo constructor(
     val status: Int,
     val trmnlDeviceType: TrmnlDeviceType,
     val imageUrl: String,
-    val imageName: String,
+    /**
+     * The file name of the image to be displayed.
+     *
+     * If this is an error type, it indicates a specific error condition.
+     * For example:
+     * - [ERROR_TYPE_DEVICE_SETUP_REQUIRED]
+     */
+    val imageFileName: String,
     val error: String? = null,
     val refreshIntervalSeconds: Long? = DEFAULT_REFRESH_INTERVAL_SEC,
     /**

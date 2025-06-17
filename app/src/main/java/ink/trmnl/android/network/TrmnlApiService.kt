@@ -10,7 +10,7 @@ import retrofit2.http.Header
 import retrofit2.http.Url
 
 /**
- * API service interface for TRMNL.
+ * API service interface for TRMNL or BYOS servers.
  *
  * This interface defines the endpoints for the TRMNL API.
  *
@@ -25,7 +25,8 @@ interface TrmnlApiService {
         /**
          * Path for the TRMNL API endpoint that provides the next image in a playlist.
          *
-         * https://docs.usetrmnl.com/go/private-api/fetch-screen-content#auto-advance-content
+         * - https://docs.usetrmnl.com/go/private-api/fetch-screen-content#auto-advance-content
+         * - https://github.com/usetrmnl/byos_hanami?tab=readme-ov-file#display
          *
          * @see getNextDisplayData
          */
@@ -44,8 +45,17 @@ interface TrmnlApiService {
          * Path for the TRMNL API endpoint used for new device setup.
          *
          * https://github.com/usetrmnl/byos_hanami?tab=readme-ov-file#setup-1
+         *
+         * @see setupNewDevice
          */
-        internal const val SETUP_API_PATH = "api/setup"
+        internal const val SETUP_API_PATH = "api/setup/"
+
+        /**
+         * Default content type for API requests.
+         *
+         * This is used when setting up a new device or making other API calls that require a content type header.
+         */
+        private const val DEFAULT_CONTENT_TYPE = "application/json"
     }
 
     /**
@@ -95,5 +105,6 @@ interface TrmnlApiService {
     suspend fun setupNewDevice(
         @Url fullApiUrl: String,
         @Header("ID") deviceMacId: String,
+        @Header("Content-Type") contentType: String = DEFAULT_CONTENT_TYPE,
     ): ApiResult<TrmnlSetupResponse, Unit>
 }

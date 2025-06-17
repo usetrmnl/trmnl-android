@@ -105,7 +105,7 @@ class TrmnlDisplayRepositoryTest {
             // Assert
             assertThat(result.status).isEqualTo(200)
             assertThat(result.imageUrl).isEqualTo("https://test.com/image.png")
-            assertThat(result.imageName).isEqualTo("test-image.png")
+            assertThat(result.imageFileName).isEqualTo("test-image.png")
             assertThat(result.refreshIntervalSeconds).isEqualTo(300L)
             assertThat(result.error).isNull()
             assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.TRMNL)
@@ -146,7 +146,7 @@ class TrmnlDisplayRepositoryTest {
             // Assert
             assertThat(result.status).isEqualTo(500)
             assertThat(result.imageUrl).isEmpty()
-            assertThat(result.imageName).isEmpty()
+            assertThat(result.imageFileName).isEmpty()
             assertThat(result.refreshIntervalSeconds).isNull()
             assertThat(result.error).isEqualTo("Error fetching display")
             assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.TRMNL)
@@ -184,7 +184,7 @@ class TrmnlDisplayRepositoryTest {
             // Assert
             assertThat(result.status).isEqualTo(200)
             assertThat(result.imageUrl).isEqualTo("https://test.com/current.png")
-            assertThat(result.imageName).isEqualTo("current-image.png")
+            assertThat(result.imageFileName).isEqualTo("current-image.png")
             assertThat(result.refreshIntervalSeconds).isEqualTo(600L)
             assertThat(result.error).isNull()
             assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.TRMNL)
@@ -222,7 +222,7 @@ class TrmnlDisplayRepositoryTest {
             // Assert
             assertThat(result.status).isEqualTo(500)
             assertThat(result.imageUrl).isEmpty()
-            assertThat(result.imageName).isEmpty()
+            assertThat(result.imageFileName).isEmpty()
             assertThat(result.refreshIntervalSeconds).isNull()
             assertThat(result.error).isEqualTo("Device not found")
             assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.TRMNL)
@@ -243,7 +243,7 @@ class TrmnlDisplayRepositoryTest {
             // Assert
             assertThat(result.status).isEqualTo(200)
             assertThat(result.imageUrl).contains("picsum.photos")
-            assertThat(result.imageName).contains("mocked-image-grayscale&time")
+            assertThat(result.imageFileName).contains("mocked-image-grayscale&time")
             assertThat(result.refreshIntervalSeconds).isEqualTo(600L)
             assertThat(result.error).isNull()
 
@@ -263,7 +263,7 @@ class TrmnlDisplayRepositoryTest {
             // Assert
             assertThat(result.status).isEqualTo(200)
             assertThat(result.imageUrl).contains("picsum.photos")
-            assertThat(result.imageName).contains("mocked-image-grayscale&time")
+            assertThat(result.imageFileName).contains("mocked-image-grayscale&time")
             assertThat(result.refreshIntervalSeconds).isEqualTo(600L)
             assertThat(result.error).isNull()
 

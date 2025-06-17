@@ -36,7 +36,7 @@ internal fun Int?.isHttpOk(): Boolean = this == HTTP_OK || this == HTTP_200 || t
 internal fun Int?.isHttpError(): Boolean = this == HTTP_500 || this == null
 
 /**
- * Special error code provided in the [TrmnlDisplayInfo.imageName] as hack to indicate that the device requires setup.
+ * Special error code provided in the [TrmnlDisplayInfo.imageFileName] as hack to indicate that the device requires setup.
  *
  * See following for additional context:
  * - https://discord.com/channels/1281055965508141100/1331360842809348106/1384605617456545904

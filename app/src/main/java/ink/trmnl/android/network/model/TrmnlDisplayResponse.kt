@@ -49,6 +49,17 @@ import ink.trmnl.android.util.HTTP_NONE
  *   "update_firmware": false
  * }
  * ```
+ *
+ * Sample 4404 response from BYOS Hanami server:
+ * ```json
+ * {
+ *   "type": "/problem_details#device_id",
+ *   "title": "Not Found",
+ *   "status": 404,
+ *   "detail": "Invalid device ID.",
+ *   "instance": "/api/display"
+ * }
+ * ```
  */
 @JsonClass(generateAdapter = true)
 data class TrmnlDisplayResponse(
