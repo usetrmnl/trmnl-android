@@ -64,7 +64,7 @@ data class TrmnlDisplayResponse(
      */
     val status: Int = HTTP_NONE,
     @Json(name = "image_url") val imageUrl: String?,
-    @Json(name = "filename") val imageName: String?,
+    @Json(name = "filename") val imageFileName: String?,
     @Json(name = "update_firmware") val updateFirmware: Boolean?,
     @Json(name = "firmware_url") val firmwareUrl: String?,
     @Json(name = "refresh_rate") val refreshRate: Long?,

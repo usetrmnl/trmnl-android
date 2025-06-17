@@ -10,6 +10,8 @@ import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.network.TrmnlApiService
 import ink.trmnl.android.network.TrmnlApiService.Companion.CURRENT_PLAYLIST_SCREEN_API_PATH
 import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_PLAYLIST_SCREEN_API_PATH
+import ink.trmnl.android.network.model.TrmnlDisplayResponse
+import ink.trmnl.android.util.ERROR_TYPE_DEVICE_SETUP_REQUIRED
 import ink.trmnl.android.util.HTTP_200
 import ink.trmnl.android.util.HTTP_500
 import ink.trmnl.android.util.isHttpOk
@@ -66,13 +68,18 @@ class TrmnlDisplayRepository
                 }
                 is ApiResult.Success -> {
                     // Map the response to the display info
-                    val response = result.value
+                    val response: TrmnlDisplayResponse = result.value
+
+                    if (isDeviceSetupRequired(trmnlDeviceConfig, response)) {
+                        return setupRequiredTrmnlDisplayInfo(trmnlDeviceConfig)
+                    }
+
                     val displayInfo =
                         TrmnlDisplayInfo(
                             status = response.status,
                             trmnlDeviceType = trmnlDeviceConfig.type,
                             imageUrl = response.imageUrl ?: "",
-                            imageName = response.imageName ?: "",
+                            imageName = response.imageFileName ?: "",
                             error = response.error,
                             refreshIntervalSeconds = response.refreshRate,
                             httpResponseMetadata = extractHttpResponseMetadata(result),
@@ -285,4 +292,38 @@ class TrmnlDisplayRepository
                 timestamp = System.currentTimeMillis(),
             )
         }
+
+        /**
+         * Right now there is no good known way to determine if a device requires setup.
+         * The logic here is based on sample responses from the Terminus server API.
+         *
+         * See
+         * - https://discord.com/channels/1281055965508141100/1331360842809348106/1384605617456545904
+         * - https://discord.com/channels/1281055965508141100/1384605617456545904/1384613229086511135
+         */
+        private fun isDeviceSetupRequired(
+            trmnlDeviceConfig: TrmnlDeviceConfig,
+            response: TrmnlDisplayResponse,
+        ): Boolean =
+            trmnlDeviceConfig.type == TrmnlDeviceType.BYOS &&
+                response.imageFileName?.startsWith("setup", ignoreCase = true) == true &&
+                // This ensures that no screen is generated yet for the device
+                response.imageFileName.contains("screens", ignoreCase = true).not()
+
+        /**
+         * Creates a [TrmnlDisplayInfo] indicating that the device requires setup.
+         *
+         * This is used when the device is not yet configured and needs to be set up before it can display content.
+         * @see ERROR_TYPE_DEVICE_SETUP_REQUIRED
+         * @see [isDeviceSetupRequired]
+         */
+        private fun setupRequiredTrmnlDisplayInfo(trmnlDeviceConfig: TrmnlDeviceConfig): TrmnlDisplayInfo =
+            TrmnlDisplayInfo(
+                status = HTTP_500,
+                trmnlDeviceType = trmnlDeviceConfig.type,
+                imageUrl = "",
+                imageName = ERROR_TYPE_DEVICE_SETUP_REQUIRED,
+                error = "Device setup required",
+                refreshIntervalSeconds = 0L,
+            )
     }

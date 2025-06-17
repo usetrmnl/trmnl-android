@@ -81,7 +81,7 @@ class TrmnlDisplayRepositoryTest {
                 TrmnlDisplayResponse(
                     status = 200,
                     imageUrl = "https://test.com/image.png",
-                    imageName = "test-image.png",
+                    imageFileName = "test-image.png",
                     refreshRate = 300L,
                     error = null,
                     updateFirmware = null,
@@ -122,7 +122,7 @@ class TrmnlDisplayRepositoryTest {
                 TrmnlDisplayResponse(
                     status = 500,
                     imageUrl = null,
-                    imageName = null,
+                    imageFileName = null,
                     refreshRate = null,
                     error = "Error fetching display",
                     updateFirmware = null,
@@ -341,7 +341,7 @@ class TrmnlDisplayRepositoryTest {
                 TrmnlDisplayResponse(
                     status = 200,
                     imageUrl = "https://test.com/image.png",
-                    imageName = "test-image.png",
+                    imageFileName = "test-image.png",
                     refreshRate = 300L,
                     error = null,
                     updateFirmware = null,
@@ -385,7 +385,7 @@ class TrmnlDisplayRepositoryTest {
                 TrmnlDisplayResponse(
                     status = 200,
                     imageUrl = "https://test.com/image.png",
-                    imageName = "test-image.png",
+                    imageFileName = "test-image.png",
                     refreshRate = 300L,
                     error = null,
                     updateFirmware = null,

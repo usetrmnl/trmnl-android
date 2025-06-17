@@ -1,5 +1,7 @@
 package ink.trmnl.android.util
 
+import ink.trmnl.android.data.TrmnlDisplayInfo
+
 /**
  * 500 Internal Server Error - A generic error message, given when an unexpected
  * condition was encountered and no more specific message is suitable.
@@ -32,3 +34,12 @@ internal fun Int?.isHttpOk(): Boolean = this == HTTP_OK || this == HTTP_200 || t
  * Extension function to check if the HTTP status code is an error.
  */
 internal fun Int?.isHttpError(): Boolean = this == HTTP_500 || this == null
+
+/**
+ * Special error code provided in the [TrmnlDisplayInfo.imageName] as hack to indicate that the device requires setup.
+ *
+ * See following for additional context:
+ * - https://discord.com/channels/1281055965508141100/1331360842809348106/1384605617456545904
+ * - https://github.com/usetrmnl/trmnl-android/issues/83
+ */
+internal const val ERROR_TYPE_DEVICE_SETUP_REQUIRED = "device_requires_setup"
