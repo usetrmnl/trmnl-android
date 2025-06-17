@@ -139,7 +139,7 @@ class TrmnlImageRefreshWorkerTest {
                     status = HTTP_200,
                     trmnlDeviceType = TrmnlDeviceType.TRMNL,
                     imageUrl = validImageUrl,
-                    imageName = "test-image.png",
+                    imageFileName = "test-image.png",
                     refreshIntervalSeconds = validRefreshRate,
                 )
 
@@ -181,7 +181,7 @@ class TrmnlImageRefreshWorkerTest {
                     status = HTTP_200,
                     trmnlDeviceType = TrmnlDeviceType.BYOD,
                     imageUrl = validImageUrl,
-                    imageName = "test-image.png",
+                    imageFileName = "test-image.png",
                     refreshIntervalSeconds = validRefreshRate,
                 )
 
@@ -210,7 +210,7 @@ class TrmnlImageRefreshWorkerTest {
                     status = HTTP_200,
                     trmnlDeviceType = TrmnlDeviceType.BYOS,
                     imageUrl = validImageUrl,
-                    imageName = "test-image.png",
+                    imageFileName = "test-image.png",
                     refreshIntervalSeconds = validRefreshRate,
                 )
 
@@ -243,7 +243,7 @@ class TrmnlImageRefreshWorkerTest {
                     status = HTTP_200,
                     trmnlDeviceType = TrmnlDeviceType.TRMNL,
                     imageUrl = validImageUrl,
-                    imageName = "test-image.png",
+                    imageFileName = "test-image.png",
                     refreshIntervalSeconds = validRefreshRate,
                 )
 
@@ -270,7 +270,7 @@ class TrmnlImageRefreshWorkerTest {
                     status = HTTP_500,
                     trmnlDeviceType = TrmnlDeviceType.TRMNL,
                     imageUrl = "",
-                    imageName = "",
+                    imageFileName = "",
                     error = "Device not found",
                     refreshIntervalSeconds = null,
                 )
@@ -304,7 +304,7 @@ class TrmnlImageRefreshWorkerTest {
                     status = HTTP_200,
                     trmnlDeviceType = TrmnlDeviceType.TRMNL,
                     imageUrl = "",
-                    imageName = "",
+                    imageFileName = "",
                     refreshIntervalSeconds = validRefreshRate,
                 )
 
@@ -330,7 +330,7 @@ class TrmnlImageRefreshWorkerTest {
                     status = HTTP_200,
                     trmnlDeviceType = TrmnlDeviceType.TRMNL,
                     imageUrl = validImageUrl,
-                    imageName = "test-image.png",
+                    imageFileName = "test-image.png",
                     refreshIntervalSeconds = newRefreshRate,
                 )
 
@@ -357,7 +357,7 @@ class TrmnlImageRefreshWorkerTest {
                     status = HTTP_200,
                     trmnlDeviceType = TrmnlDeviceType.TRMNL,
                     imageUrl = validImageUrl,
-                    imageName = "test-image.png",
+                    imageFileName = "test-image.png",
                     refreshIntervalSeconds = validRefreshRate,
                 )
 
@@ -389,7 +389,7 @@ class TrmnlImageRefreshWorkerTest {
                     status = HTTP_200,
                     trmnlDeviceType = TrmnlDeviceType.TRMNL,
                     imageUrl = validImageUrl,
-                    imageName = "test-image.png",
+                    imageFileName = "test-image.png",
                     refreshIntervalSeconds = validRefreshRate,
                 )
 

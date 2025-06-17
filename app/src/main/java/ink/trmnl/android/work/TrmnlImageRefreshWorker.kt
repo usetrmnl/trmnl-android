@@ -118,7 +118,7 @@ class TrmnlImageRefreshWorker(
         refreshLogManager.addSuccessLog(
             trmnlDeviceType = deviceConfig.type,
             imageUrl = trmnlDisplayInfo.imageUrl,
-            imageName = trmnlDisplayInfo.imageName,
+            imageName = trmnlDisplayInfo.imageFileName,
             refreshIntervalSeconds = trmnlDisplayInfo.refreshIntervalSeconds,
             imageRefreshWorkType = workTypeValue,
             httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,

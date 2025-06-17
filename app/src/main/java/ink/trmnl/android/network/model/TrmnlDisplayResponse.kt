@@ -49,6 +49,17 @@ import ink.trmnl.android.util.HTTP_NONE
  *   "update_firmware": false
  * }
  * ```
+ *
+ * Sample 4404 response from BYOS Hanami server:
+ * ```json
+ * {
+ *   "type": "/problem_details#device_id",
+ *   "title": "Not Found",
+ *   "status": 404,
+ *   "detail": "Invalid device ID.",
+ *   "instance": "/api/display"
+ * }
+ * ```
  */
 @JsonClass(generateAdapter = true)
 data class TrmnlDisplayResponse(
@@ -64,7 +75,7 @@ data class TrmnlDisplayResponse(
      */
     val status: Int = HTTP_NONE,
     @Json(name = "image_url") val imageUrl: String?,
-    @Json(name = "filename") val imageName: String?,
+    @Json(name = "filename") val imageFileName: String?,
     @Json(name = "update_firmware") val updateFirmware: Boolean?,
     @Json(name = "firmware_url") val firmwareUrl: String?,
     @Json(name = "refresh_rate") val refreshRate: Long?,

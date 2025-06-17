@@ -2,6 +2,7 @@ package ink.trmnl.android.data
 
 import com.slack.eithernet.ApiResult
 import com.slack.eithernet.InternalEitherNetApi
+import com.slack.eithernet.exceptionOrNull
 import com.squareup.anvil.annotations.optional.SingleIn
 import ink.trmnl.android.BuildConfig.USE_FAKE_API
 import ink.trmnl.android.di.AppScope
@@ -10,6 +11,8 @@ import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.network.TrmnlApiService
 import ink.trmnl.android.network.TrmnlApiService.Companion.CURRENT_PLAYLIST_SCREEN_API_PATH
 import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_PLAYLIST_SCREEN_API_PATH
+import ink.trmnl.android.network.model.TrmnlDisplayResponse
+import ink.trmnl.android.util.ERROR_TYPE_DEVICE_SETUP_REQUIRED
 import ink.trmnl.android.util.HTTP_200
 import ink.trmnl.android.util.HTTP_500
 import ink.trmnl.android.util.isHttpOk
@@ -57,7 +60,7 @@ class TrmnlDisplayRepository
                         deviceMacId = trmnlDeviceConfig.deviceMacId,
                         // TEMP FIX: Use Base64 encoding to avoid relative path issue
                         // See https://github.com/usetrmnl/trmnl-android/issues/76#issuecomment-2980018109
-                        useBase64 = trmnlDeviceConfig.type == TrmnlDeviceType.BYOS,
+                        // useBase64 = trmnlDeviceConfig.type == TrmnlDeviceType.BYOS, // Disabled for now
                     )
 
             when (result) {
@@ -66,13 +69,18 @@ class TrmnlDisplayRepository
                 }
                 is ApiResult.Success -> {
                     // Map the response to the display info
-                    val response = result.value
+                    val response: TrmnlDisplayResponse = result.value
+
+                    if (isDeviceSetupRequired(trmnlDeviceConfig, response)) {
+                        return setupRequiredTrmnlDisplayInfo(trmnlDeviceConfig)
+                    }
+
                     val displayInfo =
                         TrmnlDisplayInfo(
                             status = response.status,
                             trmnlDeviceType = trmnlDeviceConfig.type,
                             imageUrl = response.imageUrl ?: "",
-                            imageName = response.imageName ?: "",
+                            imageFileName = response.imageFileName ?: "",
                             error = response.error,
                             refreshIntervalSeconds = response.refreshRate,
                             httpResponseMetadata = extractHttpResponseMetadata(result),
@@ -132,7 +140,7 @@ class TrmnlDisplayRepository
                             status = response.status,
                             trmnlDeviceType = trmnlDeviceConfig.type,
                             imageUrl = response.imageUrl ?: "",
-                            imageName = response.filename ?: "",
+                            imageFileName = response.filename ?: "",
                             error = response.error,
                             refreshIntervalSeconds = response.refreshRateSec,
                             httpResponseMetadata = extractHttpResponseMetadata(result),
@@ -147,6 +155,46 @@ class TrmnlDisplayRepository
                     }
 
                     return displayInfo
+                }
+            }
+        }
+
+        /**
+         * Sets up a new device by calling the setup API endpoint.
+         *
+         * This is only applicable for BYOS devices, as other device types do not require setup.
+         *
+         * @param trmnlDeviceConfig The configuration for the device to be set up.
+         * @return A [DeviceSetupInfo] object containing the result of the setup operation.
+         */
+        suspend fun setupNewDevice(trmnlDeviceConfig: TrmnlDeviceConfig): DeviceSetupInfo {
+            if (trmnlDeviceConfig.type != TrmnlDeviceType.BYOS) {
+                Timber.w("Device setup is only applicable for BYOS devices.")
+            }
+
+            val result =
+                apiService.setupNewDevice(
+                    fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, TrmnlApiService.SETUP_API_PATH),
+                    deviceMacId = requireNotNull(trmnlDeviceConfig.deviceMacId) { "Device MAC ID is required for setup" },
+                )
+            when (result) {
+                is ApiResult.Failure -> {
+                    Timber.e("Failed to setup device: ${result.exceptionOrNull()}")
+                    return DeviceSetupInfo(
+                        success = false,
+                        deviceMacId = trmnlDeviceConfig.deviceMacId,
+                        apiKey = "",
+                        message = "Failed to setup device with ID (${trmnlDeviceConfig.deviceMacId}). Reason: $result",
+                    )
+                }
+                is ApiResult.Success -> {
+                    Timber.i("Device setup successful: ${result.value}")
+                    return DeviceSetupInfo(
+                        success = true,
+                        deviceMacId = trmnlDeviceConfig.deviceMacId,
+                        apiKey = result.value.apiKey,
+                        message = result.value.message,
+                    )
                 }
             }
         }
@@ -169,7 +217,7 @@ class TrmnlDisplayRepository
                 status = HTTP_200,
                 trmnlDeviceType = TrmnlDeviceType.TRMNL,
                 imageUrl = mockImageUrl,
-                imageName = "mocked-image-" + mockImageUrl.substringAfterLast('?'),
+                imageFileName = "mocked-image-" + mockImageUrl.substringAfterLast('?'),
                 error = null,
                 refreshIntervalSeconds = mockRefreshRate,
             )
@@ -208,7 +256,7 @@ class TrmnlDisplayRepository
                         status = HTTP_500,
                         trmnlDeviceType = trmnlDeviceConfig.type,
                         imageUrl = "",
-                        imageName = "",
+                        imageFileName = "",
                         error = "API failure",
                         refreshIntervalSeconds = 0L,
                     )
@@ -222,7 +270,7 @@ class TrmnlDisplayRepository
                         status = HTTP_500,
                         trmnlDeviceType = trmnlDeviceConfig.type,
                         imageUrl = "",
-                        imageName = "",
+                        imageFileName = "",
                         error = "HTTP failure: ${failure.code}, error: ${failure.error}",
                         refreshIntervalSeconds = 0L,
                     )
@@ -236,7 +284,7 @@ class TrmnlDisplayRepository
                         status = HTTP_500,
                         trmnlDeviceType = trmnlDeviceConfig.type,
                         imageUrl = "",
-                        imageName = "",
+                        imageFileName = "",
                         error = "Network failure: ${failure.error.localizedMessage}",
                         refreshIntervalSeconds = 0L,
                     )
@@ -250,7 +298,7 @@ class TrmnlDisplayRepository
                         status = HTTP_500,
                         trmnlDeviceType = trmnlDeviceConfig.type,
                         imageUrl = "",
-                        imageName = "",
+                        imageFileName = "",
                         error = "Unknown failure: ${failure.error.localizedMessage}",
                         refreshIntervalSeconds = 0L,
                     )
@@ -285,4 +333,38 @@ class TrmnlDisplayRepository
                 timestamp = System.currentTimeMillis(),
             )
         }
+
+        /**
+         * Right now there is no good known way to determine if a device requires setup.
+         * The logic here is based on sample responses from the Terminus server API.
+         *
+         * See
+         * - https://discord.com/channels/1281055965508141100/1331360842809348106/1384605617456545904
+         * - https://discord.com/channels/1281055965508141100/1384605617456545904/1384613229086511135
+         */
+        private fun isDeviceSetupRequired(
+            trmnlDeviceConfig: TrmnlDeviceConfig,
+            response: TrmnlDisplayResponse,
+        ): Boolean =
+            trmnlDeviceConfig.type == TrmnlDeviceType.BYOS &&
+                response.imageFileName?.startsWith("setup", ignoreCase = true) == true &&
+                // This ensures that no screen is generated yet for the device
+                response.imageUrl?.contains("screens", ignoreCase = true) == false
+
+        /**
+         * Creates a [TrmnlDisplayInfo] indicating that the device requires setup.
+         *
+         * This is used when the device is not yet configured and needs to be set up before it can display content.
+         * @see ERROR_TYPE_DEVICE_SETUP_REQUIRED
+         * @see [isDeviceSetupRequired]
+         */
+        private fun setupRequiredTrmnlDisplayInfo(trmnlDeviceConfig: TrmnlDeviceConfig): TrmnlDisplayInfo =
+            TrmnlDisplayInfo(
+                status = HTTP_500,
+                trmnlDeviceType = trmnlDeviceConfig.type,
+                imageUrl = "",
+                imageFileName = ERROR_TYPE_DEVICE_SETUP_REQUIRED,
+                error = "Device setup required",
+                refreshIntervalSeconds = 0L,
+            )
     }
