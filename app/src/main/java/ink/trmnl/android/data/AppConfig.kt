@@ -19,4 +19,14 @@ object AppConfig {
      * Ref: https://discord.com/channels/1281055965508141100/1284986536357662740/1364623667337760910
      */
     const val TRMNL_API_SERVER_BASE_URL = "https://trmnl.app/"
+
+    /**
+     * URL for the TRMNL Android app on GitHub.
+     */
+    const val TRMNL_ANDROID_APP_GITHUB_URL = "https://github.com/usetrmnl/trmnl-android"
+
+    /**
+     * URL for the TRMNL main website.
+     */
+    const val TRMNL_SITE_URL = "https://usetrmnl.com/"
 }
