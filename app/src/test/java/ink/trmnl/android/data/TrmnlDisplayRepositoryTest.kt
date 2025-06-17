@@ -95,6 +95,7 @@ class TrmnlDisplayRepositoryTest {
                 apiService.getNextDisplayData(
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = testDeviceConfig.apiAccessToken,
+                    useBase64 = any(),
                 )
             } returns ApiResult.success(successResponse)
 
@@ -135,6 +136,7 @@ class TrmnlDisplayRepositoryTest {
                 apiService.getNextDisplayData(
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = testDeviceConfig.apiAccessToken,
+                    useBase64 = any(),
                 )
             } returns ApiResult.success(errorResponse)
 
@@ -353,6 +355,7 @@ class TrmnlDisplayRepositoryTest {
                 apiService.getNextDisplayData(
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = byosDeviceConfig.apiAccessToken,
+                    useBase64 = any(),
                 )
             } returns ApiResult.success(successResponse)
 
@@ -369,6 +372,7 @@ class TrmnlDisplayRepositoryTest {
                 apiService.getNextDisplayData(
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = byosDeviceConfig.apiAccessToken,
+                    useBase64 = any(),
                 )
             }
         }
@@ -396,6 +400,7 @@ class TrmnlDisplayRepositoryTest {
                 apiService.getNextDisplayData(
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = byodDeviceConfig.apiAccessToken,
+                    useBase64 = any(),
                 )
             } returns ApiResult.success(successResponse)
 
@@ -412,6 +417,7 @@ class TrmnlDisplayRepositoryTest {
                 apiService.getNextDisplayData(
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = byodDeviceConfig.apiAccessToken,
+                    useBase64 = any(),
                 )
             }
         }

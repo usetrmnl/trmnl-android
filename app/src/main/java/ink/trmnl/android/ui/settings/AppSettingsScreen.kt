@@ -101,7 +101,10 @@ import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
 import ink.trmnl.android.util.CoilRequestUtils
 import ink.trmnl.android.util.NextImageRefreshDisplayInfo
 import ink.trmnl.android.util.isHttpError
+import ink.trmnl.android.util.isValidMacAddress
+import ink.trmnl.android.util.isValidUrl
 import ink.trmnl.android.util.nextRunTime
+import ink.trmnl.android.util.normalizeMacAddress
 import ink.trmnl.android.util.toColor
 import ink.trmnl.android.util.toDisplayString
 import ink.trmnl.android.util.toIcon
@@ -113,7 +116,6 @@ import kotlinx.parcelize.Parcelize
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.regex.Pattern
 
 /**
  * Screen for configuring the TRMNL mirror app settings.
@@ -134,6 +136,7 @@ data class AppSettingsScreen(
         val deviceType: TrmnlDeviceType,
         val serverBaseUrl: String,
         val accessToken: String,
+        val deviceMacId: String,
         val usesFakeApiData: Boolean,
         val isLoading: Boolean = false,
         val validationResult: ValidationResult? = null,
@@ -148,6 +151,10 @@ data class AppSettingsScreen(
         ) : ValidationResult()
 
         data class InvalidServerUrl(
+            val message: String,
+        ) : ValidationResult()
+
+        data class InvalidDeviceMacId(
             val message: String,
         ) : ValidationResult()
 
@@ -196,6 +203,13 @@ data class AppSettingsScreen(
         ) : Event()
 
         /**
+         * Event triggered when the device ID (MAC address) is changed.
+         */
+        data class DeviceMacIdChanged(
+            val deviceMacId: String,
+        ) : Event()
+
+        /**
          * Event triggered when the info icon is clicked.
          */
         data object AppInfoPressed : Event()
@@ -222,6 +236,7 @@ class AppSettingsPresenter
             var deviceType by remember { mutableStateOf(TrmnlDeviceType.TRMNL) }
             var serverBaseUrl by remember { mutableStateOf("") }
             var accessToken by remember { mutableStateOf("") }
+            var deviceMacId by remember { mutableStateOf("") }
             var isLoading by remember { mutableStateOf(false) }
             var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
             val usesFakeApiData = repositoryConfigProvider.shouldUseFakeData
@@ -243,6 +258,9 @@ class AppSettingsPresenter
                     if (it.type == TrmnlDeviceType.BYOS) {
                         // On initial load, prefill only if the device type is BYOS
                         serverBaseUrl = it.apiBaseUrl
+                        it.deviceMacId?.let { savedDeviceId ->
+                            deviceMacId = savedDeviceId
+                        }
                     }
                 }
             }
@@ -251,6 +269,7 @@ class AppSettingsPresenter
                 deviceType = deviceType,
                 serverBaseUrl = serverBaseUrl,
                 accessToken = accessToken,
+                deviceMacId = deviceMacId,
                 usesFakeApiData = usesFakeApiData,
                 isLoading = isLoading,
                 validationResult = validationResult,
@@ -276,6 +295,20 @@ class AppSettingsPresenter
                                         validationResult = InvalidServerUrl("Please enter a valid HTTPS URL (e.g. https://my-terminus.com)")
                                         return@launch
                                     }
+
+                                    // If device ID is provided, validate MAC address format (only for BYOS)
+                                    if (deviceMacId.isNotBlank() && !isValidMacAddress(deviceMacId)) {
+                                        isLoading = false
+                                        validationResult =
+                                            ValidationResult.InvalidDeviceMacId(
+                                                "Please enter a valid MAC address format:\n" +
+                                                    "• XX:XX:XX:XX:XX:XX\n" +
+                                                    "• XX-XX-XX-XX-XX-XX\n" +
+                                                    "• XXXXXXXXXXXX\n" +
+                                                    "where X is a hexadecimal digit (0-9, A-F)",
+                                            )
+                                        return@launch
+                                    }
                                 }
 
                                 // Device configuration for API calls
@@ -284,6 +317,7 @@ class AppSettingsPresenter
                                         type = deviceType,
                                         apiBaseUrl = serverBaseUrl.forDevice(deviceType),
                                         apiAccessToken = accessToken,
+                                        deviceMacId = deviceMacId.ifBlank { null },
                                     )
                                 // For TRMNL mirror device type, use getCurrentDisplayData
                                 // For all other device types, use getNextDisplayData
@@ -300,6 +334,7 @@ class AppSettingsPresenter
 
                                 if (response.status.isHttpError()) {
                                     // Handle explicit error response
+                                    // FIXME - default error message is wrong, can't assume device not found
                                     val errorMessage = response.error ?: "Device not found"
                                     validationResult = Failure(errorMessage)
                                 } else if (response.imageUrl.isNotBlank()) {
@@ -330,6 +365,8 @@ class AppSettingsPresenter
                                             apiBaseUrl = serverBaseUrl.forDevice(deviceType),
                                             apiAccessToken = accessToken,
                                             refreshRateSecs = result.refreshRateSecs,
+                                            // Normalize the MAC address to standard format if provided in different format
+                                            deviceMacId = normalizeMacAddress(deviceMacId)?.ifBlank { null },
                                         ),
                                     )
                                     trmnlWorkScheduler.updateRefreshInterval(result.refreshRateSecs)
@@ -365,6 +402,12 @@ class AppSettingsPresenter
                             }
                         }
 
+                        is AppSettingsScreen.Event.DeviceMacIdChanged -> {
+                            deviceMacId = event.deviceMacId
+                            // Clear previous validation when device ID changes
+                            validationResult = null
+                        }
+
                         AppSettingsScreen.Event.AppInfoPressed -> {
                             // Navigate to AppInfoScreen
                             navigator.goTo(AppInfoScreen)
@@ -385,15 +428,6 @@ class AppSettingsPresenter
                 // For any other device type, use the default TRMNL API server URL
                 TRMNL_API_SERVER_BASE_URL
             }
-
-        private fun isValidUrl(url: String): Boolean {
-            val urlRegex =
-                Pattern.compile(
-                    "^(https?)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]",
-                    Pattern.CASE_INSENSITIVE,
-                )
-            return urlRegex.matcher(url).matches()
-        }
 
         @CircuitInject(AppSettingsScreen::class, AppScope::class)
         @AssistedFactory
@@ -513,10 +547,14 @@ fun AppSettingsContent(
             DeviceTypeSelectorConfig(
                 selectedType = state.deviceType,
                 serverUrl = state.serverBaseUrl,
+                deviceId = state.deviceMacId,
                 onTypeSelected = { state.eventSink(AppSettingsScreen.Event.DeviceTypeChanged(it)) },
                 onServerUrlChanged = { state.eventSink(AppSettingsScreen.Event.ServerUrlChanged(it)) },
+                onDeviceIdChanged = { state.eventSink(AppSettingsScreen.Event.DeviceMacIdChanged(it)) },
                 isServerUrlError = state.validationResult is InvalidServerUrl,
                 serverUrlError = (state.validationResult as? InvalidServerUrl)?.message,
+                isDeviceMacIdError = state.validationResult is ValidationResult.InvalidDeviceMacId,
+                deviceIdError = (state.validationResult as? ValidationResult.InvalidDeviceMacId)?.message,
             )
 
             // Password field with toggle visibility button
@@ -625,6 +663,24 @@ fun AppSettingsContent(
                                 )
                             }
                         }
+                        is ValidationResult.InvalidDeviceMacId -> {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text(
+                                    "❌ Device ID (Mac Address) Invalid Format",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    result.message,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
                         is ValidationResult.Failure -> {
                             // Error state remains the same
                             Column(
@@ -663,12 +719,19 @@ fun AppSettingsContent(
 private fun DeviceTypeSelectorConfig(
     selectedType: TrmnlDeviceType,
     serverUrl: String = "",
+    deviceId: String = "",
     onTypeSelected: (TrmnlDeviceType) -> Unit,
     onServerUrlChanged: (String) -> Unit,
+    onDeviceIdChanged: (String) -> Unit,
     isServerUrlError: Boolean = false,
     serverUrlError: String? = null,
+    isDeviceMacIdError: Boolean = false,
+    deviceIdError: String? = null,
     modifier: Modifier = Modifier,
 ) {
+    // Control device ID visibility
+    var deviceIdVisible by remember { mutableStateOf(false) }
+
     Column(modifier = modifier.fillMaxWidth()) {
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             TrmnlDeviceType.entries.forEachIndexed { index, deviceType ->
@@ -704,28 +767,68 @@ private fun DeviceTypeSelectorConfig(
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut(),
         ) {
-            OutlinedTextField(
-                value = serverUrl,
-                onValueChange = onServerUrlChanged,
-                label = { Text("API Server Base URL") },
-                placeholder = { Text("https://your-trmnl-server.com") },
-                isError = isServerUrlError,
-                supportingText = {
-                    if (isServerUrlError && serverUrlError != null) {
-                        Text(serverUrlError)
-                    }
-                },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                keyboardOptions =
-                    KeyboardOptions(
-                        keyboardType = KeyboardType.Uri,
-                        imeAction = ImeAction.Done,
-                    ),
-                singleLine = true,
-            )
+            Column {
+                OutlinedTextField(
+                    value = serverUrl,
+                    onValueChange = onServerUrlChanged,
+                    label = { Text("API Server Base URL") },
+                    placeholder = { Text("https://your-trmnl-server.com") },
+                    isError = isServerUrlError,
+                    supportingText = {
+                        if (isServerUrlError && serverUrlError != null) {
+                            Text(serverUrlError)
+                        }
+                    },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Uri,
+                            imeAction = ImeAction.Done,
+                        ),
+                    singleLine = true,
+                )
+
+                // Device ID (MAC address) input field
+                OutlinedTextField(
+                    value = deviceId,
+                    onValueChange = onDeviceIdChanged,
+                    label = { Text("Device ID (MAC Address)") },
+                    placeholder = { Text("aa:bb:cc:dd:ee:ff") },
+                    isError = isDeviceMacIdError,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 0.dp, bottom = 8.dp),
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Done,
+                        ),
+                    visualTransformation = if (deviceIdVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    singleLine = true,
+                    supportingText = {
+                        if (isDeviceMacIdError && deviceIdError != null) {
+                            Text(deviceIdError)
+                        } else {
+                            Text("Optional: Used for Terminus server APIs")
+                        }
+                    },
+                    trailingIcon = {
+                        IconButton(onClick = { deviceIdVisible = !deviceIdVisible }) {
+                            Icon(
+                                painter =
+                                    painterResource(
+                                        if (deviceIdVisible) R.drawable.visibility_off_24dp else R.drawable.visibility_24dp,
+                                    ),
+                                contentDescription = if (deviceIdVisible) "Hide device ID" else "Show device ID",
+                            )
+                        }
+                    },
+                )
+            }
         }
     }
 }
@@ -900,6 +1003,7 @@ private fun PreviewAppSettingsContentInitial() {
                     deviceType = TrmnlDeviceType.TRMNL,
                     serverBaseUrl = "https://example.com",
                     accessToken = "",
+                    deviceMacId = "aa:bb:cc:dd:ee:ff",
                     usesFakeApiData = true,
                     isLoading = false,
                     validationResult = null,
@@ -920,6 +1024,7 @@ private fun PreviewAppSettingsContentLoading() {
                     deviceType = TrmnlDeviceType.TRMNL,
                     serverBaseUrl = "https://example.com",
                     accessToken = "some-token",
+                    deviceMacId = "aa:bb:cc:dd:ee:ff",
                     usesFakeApiData = false,
                     isLoading = true,
                     validationResult = null,
@@ -940,6 +1045,7 @@ private fun PreviewAppSettingsContentSuccess() {
                     deviceType = TrmnlDeviceType.TRMNL,
                     serverBaseUrl = "https://example.com",
                     accessToken = "valid-token-123",
+                    deviceMacId = "aa:bb:cc:dd:ee:ff",
                     usesFakeApiData = false,
                     isLoading = false,
                     validationResult =
@@ -964,6 +1070,7 @@ private fun PreviewAppSettingsContentFailure() {
                     deviceType = TrmnlDeviceType.TRMNL,
                     serverBaseUrl = "https://example.com",
                     accessToken = "invalid-token",
+                    deviceMacId = "aa:bb:cc:dd:ee:ff",
                     usesFakeApiData = false,
                     isLoading = false,
                     validationResult =
@@ -991,6 +1098,7 @@ private fun PreviewAppSettingsContentWithWork() {
                     deviceType = TrmnlDeviceType.TRMNL,
                     serverBaseUrl = "https://example.com",
                     accessToken = "valid-token-123",
+                    deviceMacId = "aa:bb:cc:dd:ee:ff",
                     usesFakeApiData = false,
                     isLoading = false,
                     validationResult = null, // Can also be Success state
@@ -1021,6 +1129,7 @@ private fun PreviewWorkScheduleStatusCardScheduled() {
                     deviceType = TrmnlDeviceType.TRMNL,
                     serverBaseUrl = "https://example.com",
                     accessToken = "some-token",
+                    deviceMacId = "AA:BB:CC:DD:EE:FF",
                     usesFakeApiData = false,
                     nextRefreshJobInfo =
                         NextImageRefreshDisplayInfo(
@@ -1045,6 +1154,7 @@ private fun PreviewWorkScheduleStatusCardNoWork() {
                     deviceType = TrmnlDeviceType.TRMNL,
                     serverBaseUrl = "https://example.com",
                     accessToken = "some-token",
+                    deviceMacId = "aa:bb:cc:dd:ee:ff",
                     usesFakeApiData = false,
                     nextRefreshJobInfo = null,
                     eventSink = {},

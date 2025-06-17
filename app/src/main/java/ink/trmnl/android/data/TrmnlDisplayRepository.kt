@@ -53,6 +53,11 @@ class TrmnlDisplayRepository
                     .getNextDisplayData(
                         fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, NEXT_PLAYLIST_SCREEN_API_PATH),
                         accessToken = trmnlDeviceConfig.apiAccessToken,
+                        // Send device MAC ID if available (used for BYOS service)
+                        deviceMacId = trmnlDeviceConfig.deviceMacId,
+                        // TEMP FIX: Use Base64 encoding to avoid relative path issue
+                        // See https://github.com/usetrmnl/trmnl-android/issues/76#issuecomment-2980018109
+                        useBase64 = trmnlDeviceConfig.type == TrmnlDeviceType.BYOS,
                     )
 
             when (result) {

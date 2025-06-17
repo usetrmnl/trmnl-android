@@ -2,6 +2,7 @@ package ink.trmnl.android.network.model
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
+import ink.trmnl.android.util.HTTP_NONE
 
 /**
  * Data class representing the response from the TRMNL API for display data.
@@ -34,10 +35,34 @@ import com.squareup.moshi.JsonClass
  * ```json
  * {"status":500,"error":"Device not found","reset_firmware":true}
  * ```
+ *
+ * Sample response from BYOS Hanami server:
+ * ```json
+ * {
+ *   "filename": "demo.bmp",
+ *   "firmware_url": "http://localhost:2443/assets/firmware/1.4.8.bin",
+ *   "image_url": "https://localhost:2443/assets/screens/A1B2C3D4E5F6/demo.bmp",
+ *   "image_url_timeout": 0,
+ *   "refresh_rate": 130,
+ *   "reset_firmware": false,
+ *   "special_function": "sleep",
+ *   "update_firmware": false
+ * }
+ * ```
  */
 @JsonClass(generateAdapter = true)
 data class TrmnlDisplayResponse(
-    val status: Int,
+    /**
+     * Status code indicating the result of the request.
+     * - 0: Success
+     * - 500: Error (e.g., device not found)
+     *
+     * Also on `byos_hanami`, the status code is not provided.
+     * See
+     * - https://github.com/usetrmnl/byos_hanami?tab=readme-ov-file#apis
+     * - https://discord.com/channels/1281055965508141100/1331360842809348106/1383221807716237433
+     */
+    val status: Int = HTTP_NONE,
     @Json(name = "image_url") val imageUrl: String?,
     @Json(name = "filename") val imageName: String?,
     @Json(name = "update_firmware") val updateFirmware: Boolean?,

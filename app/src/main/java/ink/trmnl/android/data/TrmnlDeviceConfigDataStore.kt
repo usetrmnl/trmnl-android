@@ -52,6 +52,7 @@ class TrmnlDeviceConfigDataStore
             private val API_BASE_URL_KEY = stringPreferencesKey("api_base_url")
             private val REFRESH_RATE_SEC_KEY = longPreferencesKey("refresh_rate_seconds")
             private val CONFIG_JSON_KEY = stringPreferencesKey("config_json")
+            private val DEVICE_MAC_ID_KEY = stringPreferencesKey("device_mac_id")
         }
 
         private val deviceTypeAdapter = moshi.adapter(TrmnlDeviceType::class.java)
@@ -97,6 +98,14 @@ class TrmnlDeviceConfigDataStore
             }
 
         /**
+         * Gets the device MAC address as a Flow
+         */
+        val deviceMacIdFlow: Flow<String?> =
+            context.deviceConfigStore.data.map { preferences ->
+                preferences[DEVICE_MAC_ID_KEY]
+            }
+
+        /**
          * Gets the complete device config as a Flow
          */
         val deviceConfigFlow: Flow<TrmnlDeviceConfig?> =
@@ -123,12 +132,14 @@ class TrmnlDeviceConfigDataStore
                     val token = preferences[ACCESS_TOKEN_KEY]
                     val url = preferences[API_BASE_URL_KEY] ?: TRMNL_API_SERVER_BASE_URL
                     val refreshRate = preferences[REFRESH_RATE_SEC_KEY] ?: DEFAULT_REFRESH_INTERVAL_SEC
+                    val deviceMacId = preferences[DEVICE_MAC_ID_KEY]
 
                     if (token != null) {
                         TrmnlDeviceConfig(
                             type = type,
                             apiBaseUrl = url,
                             apiAccessToken = token,
+                            deviceMacId = deviceMacId,
                             refreshRateSecs = refreshRate,
                         )
                     } else {
@@ -152,6 +163,11 @@ class TrmnlDeviceConfigDataStore
                     preferences[ACCESS_TOKEN_KEY] = config.apiAccessToken
                     preferences[API_BASE_URL_KEY] = config.apiBaseUrl
                     preferences[REFRESH_RATE_SEC_KEY] = config.refreshRateSecs
+
+                    // Save device ID if available
+                    config.deviceMacId?.let { deviceMacId ->
+                        preferences[DEVICE_MAC_ID_KEY] = deviceMacId
+                    }
                 }
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Failed to save device config")
@@ -191,6 +207,19 @@ class TrmnlDeviceConfigDataStore
         suspend fun saveRefreshRateSeconds(seconds: Long) {
             context.deviceConfigStore.edit { preferences ->
                 preferences[REFRESH_RATE_SEC_KEY] = seconds
+            }
+        }
+
+        /**
+         * Saves the device ID (MAC address)
+         */
+        suspend fun saveDeviceMacId(deviceMacId: String?) {
+            context.deviceConfigStore.edit { preferences ->
+                if (deviceMacId != null) {
+                    preferences[DEVICE_MAC_ID_KEY] = deviceMacId
+                } else {
+                    preferences.remove(DEVICE_MAC_ID_KEY)
+                }
             }
         }
 
