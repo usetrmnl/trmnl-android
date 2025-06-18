@@ -229,63 +229,20 @@ class TrmnlDisplayRepository
             trmnlDeviceConfig: TrmnlDeviceConfig,
             failure: ApiResult.Failure<Unit>,
         ): TrmnlDisplayInfo =
-            when (failure) {
-                /**
-                 * Handles API-specific failures, returning a [TrmnlDisplayInfo] with a generic API failure message.
-                 */
-                is ApiResult.Failure.ApiFailure -> {
-                    TrmnlDisplayInfo(
-                        status = HTTP_500,
-                        trmnlDeviceType = trmnlDeviceConfig.type,
-                        imageUrl = "",
-                        imageFileName = "",
-                        error = "API failure",
-                        refreshIntervalSeconds = 0L,
-                    )
-                }
-
-                /**
-                 * Handles HTTP failures, including the HTTP status code and error message in the result.
-                 */
-                is ApiResult.Failure.HttpFailure -> {
-                    TrmnlDisplayInfo(
-                        status = HTTP_500,
-                        trmnlDeviceType = trmnlDeviceConfig.type,
-                        imageUrl = "",
-                        imageFileName = "",
-                        error = "HTTP failure: ${failure.code}, error: ${failure.error}",
-                        refreshIntervalSeconds = 0L,
-                    )
-                }
-
-                /**
-                 * Handles network-related failures, including the localized error message in the result.
-                 */
-                is ApiResult.Failure.NetworkFailure -> {
-                    TrmnlDisplayInfo(
-                        status = HTTP_500,
-                        trmnlDeviceType = trmnlDeviceConfig.type,
-                        imageUrl = "",
-                        imageFileName = "",
-                        error = "Network failure: ${failure.error.localizedMessage}",
-                        refreshIntervalSeconds = 0L,
-                    )
-                }
-
-                /**
-                 * Handles unknown failures, including the localized error message in the result.
-                 */
-                is ApiResult.Failure.UnknownFailure -> {
-                    TrmnlDisplayInfo(
-                        status = HTTP_500,
-                        trmnlDeviceType = trmnlDeviceConfig.type,
-                        imageUrl = "",
-                        imageFileName = "",
-                        error = "Unknown failure: ${failure.error.localizedMessage}",
-                        refreshIntervalSeconds = 0L,
-                    )
-                }
-            }
+            TrmnlDisplayInfo(
+                status = HTTP_500,
+                trmnlDeviceType = trmnlDeviceConfig.type,
+                imageUrl = "",
+                imageFileName = "",
+                error =
+                    when (failure) {
+                        is ApiResult.Failure.ApiFailure -> "API request failed to process response"
+                        is ApiResult.Failure.HttpFailure -> "HTTP failure: ${failure.code}, error: ${failure.error}"
+                        is ApiResult.Failure.NetworkFailure -> "Network failure: ${failure.error.localizedMessage}"
+                        is ApiResult.Failure.UnknownFailure -> "Unknown failure: ${failure.error.localizedMessage}"
+                    },
+                refreshIntervalSeconds = 0L,
+            )
 
         /**
          * Right now there is no good known way to determine if a device requires setup.
