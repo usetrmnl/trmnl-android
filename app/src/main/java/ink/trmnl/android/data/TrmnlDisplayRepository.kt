@@ -14,7 +14,6 @@ import ink.trmnl.android.network.TrmnlApiService.Companion.CURRENT_PLAYLIST_SCRE
 import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_PLAYLIST_SCREEN_API_PATH
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
 import ink.trmnl.android.network.util.extractHttpResponseMetadata
-import ink.trmnl.android.util.ERROR_TYPE_DEVICE_SETUP_REQUIRED
 import ink.trmnl.android.util.HTTP_500
 import ink.trmnl.android.util.isHttpOk
 import timber.log.Timber
@@ -73,7 +72,7 @@ class TrmnlDisplayRepository
                     val response: TrmnlDisplayResponse = result.value
 
                     if (isDeviceSetupRequired(trmnlDeviceConfig, response)) {
-                        return setupRequiredTrmnlDisplayInfo(trmnlDeviceConfig)
+                        return TrmnlDisplayInfo.setupRequired()
                     }
 
                     val displayInfo =
@@ -256,8 +255,8 @@ class TrmnlDisplayRepository
             trmnlDeviceConfig: TrmnlDeviceConfig,
             response: TrmnlDisplayResponse,
         ): Boolean =
-            trmnlDeviceConfig.type == TrmnlDeviceType.BYOS &&
-                response.imageFileName?.startsWith("setup", ignoreCase = true) == true &&
+            (trmnlDeviceConfig.type == TrmnlDeviceType.BYOS) &&
+                (response.imageFileName?.startsWith("setup", ignoreCase = true) == true) &&
                 // This ensures that no screen is generated yet for the device
                 // Example (when device is not set up):
                 // -- "filename": "setup"
@@ -265,22 +264,5 @@ class TrmnlDisplayRepository
                 // Example (when device is set up):
                 // -- "filename": "setup.png"
                 // -- "image_url": "https://my-trmnl-hub.com/assets/screens/ABCDEF123/setup.png",
-                response.imageUrl?.contains("screens", ignoreCase = true) == false
-
-        /**
-         * Creates a [TrmnlDisplayInfo] indicating that the device requires setup.
-         *
-         * This is used when the device is not yet configured and needs to be set up before it can display content.
-         * @see ERROR_TYPE_DEVICE_SETUP_REQUIRED
-         * @see [isDeviceSetupRequired]
-         */
-        private fun setupRequiredTrmnlDisplayInfo(trmnlDeviceConfig: TrmnlDeviceConfig): TrmnlDisplayInfo =
-            TrmnlDisplayInfo(
-                status = HTTP_500,
-                trmnlDeviceType = trmnlDeviceConfig.type,
-                imageUrl = "",
-                imageFileName = ERROR_TYPE_DEVICE_SETUP_REQUIRED,
-                error = "Device setup required",
-                refreshIntervalSeconds = 0L,
-            )
+                (response.imageUrl?.contains("screens", ignoreCase = true) == false)
     }
