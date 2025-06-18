@@ -13,6 +13,7 @@ import ink.trmnl.android.network.TrmnlApiService
 import ink.trmnl.android.network.TrmnlApiService.Companion.CURRENT_PLAYLIST_SCREEN_API_PATH
 import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_PLAYLIST_SCREEN_API_PATH
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
+import ink.trmnl.android.network.util.constructApiUrl
 import ink.trmnl.android.network.util.extractHttpResponseMetadata
 import ink.trmnl.android.util.HTTP_500
 import ink.trmnl.android.util.isHttpOk
@@ -203,19 +204,6 @@ class TrmnlDisplayRepository
                 }
             }
         }
-
-        /**
-         * Constructs the full URL for API requests based on the configured base URL for device.
-         */
-        private fun constructApiUrl(
-            baseUrl: String,
-            endpoint: String,
-        ): String =
-            if (baseUrl.endsWith("/")) {
-                "${baseUrl}$endpoint"
-            } else {
-                "$baseUrl/$endpoint"
-            }
 
         /**
          * Converts an API failure result into a [TrmnlDisplayInfo] object with appropriate error details.
