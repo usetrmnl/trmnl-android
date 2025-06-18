@@ -349,6 +349,12 @@ class TrmnlDisplayRepository
             trmnlDeviceConfig.type == TrmnlDeviceType.BYOS &&
                 response.imageFileName?.startsWith("setup", ignoreCase = true) == true &&
                 // This ensures that no screen is generated yet for the device
+                // Example (when device is not set up):
+                // -- "filename": "setup"
+                // -- "image_url": "/assets/setup-A2B2C2.svg"
+                // Example (when device is set up):
+                // -- "filename": "setup.png"
+                // -- "image_url": "https://my-trmnl-hub.com/assets/screens/ABCDEF123/setup.png",
                 response.imageUrl?.contains("screens", ignoreCase = true) == false
 
         /**
