@@ -896,7 +896,7 @@ private fun DeviceTypeSelectorConfig(
                     value = deviceId,
                     onValueChange = onDeviceIdChanged,
                     label = { Text("Device ID (MAC Address)") },
-                    placeholder = { Text("aa:bb:cc:dd:ee:ff") },
+                    placeholder = { Text("A1:B2:C3:D4:E5:F6") },
                     isError = isDeviceMacIdError,
                     modifier =
                         Modifier
@@ -913,7 +913,7 @@ private fun DeviceTypeSelectorConfig(
                         if (isDeviceMacIdError && deviceIdError != null) {
                             Text(deviceIdError)
                         } else {
-                            Text("Optional: Used for Terminus server APIs")
+                            Text("Required: Used for Terminus server APIs")
                         }
                     },
                     trailingIcon = {
