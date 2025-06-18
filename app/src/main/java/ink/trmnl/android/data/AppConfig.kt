@@ -5,6 +5,12 @@ package ink.trmnl.android.data
  */
 object AppConfig {
     /**
+     * Number of HTTP request-response log entries to keep in the data store before they are pruned.
+     * See [ink.trmnl.android.data.log.TrmnlRefreshLogManager].
+     */
+    const val MAX_LOG_ENTRIES = 100
+
+    /**
      * Duration in milliseconds to wait before automatically hiding the app config window.
      */
     const val AUTO_HIDE_APP_CONFIG_WINDOW_MS: Long = 4_000L // 4 seconds
