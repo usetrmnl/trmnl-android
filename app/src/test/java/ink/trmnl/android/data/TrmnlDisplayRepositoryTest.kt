@@ -7,6 +7,7 @@ import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.network.TrmnlApiService
 import ink.trmnl.android.network.model.TrmnlCurrentImageResponse
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
+import ink.trmnl.android.network.util.constructApiUrl
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -282,20 +283,11 @@ class TrmnlDisplayRepositoryTest {
             val urlWithoutSlash = "https://example.com"
             val expectedWithoutSlash = "https://example.com/api/endpoint"
 
-            // Use reflection to access private method
-            val method =
-                TrmnlDisplayRepository::class.java.getDeclaredMethod(
-                    "constructApiUrl",
-                    String::class.java,
-                    String::class.java,
-                )
-            method.isAccessible = true
-
             // Act & Assert
-            assertThat(method.invoke(repository, urlWithSlash, "api/endpoint"))
+            assertThat(constructApiUrl(urlWithSlash, "api/endpoint"))
                 .isEqualTo(expectedWithSlash)
 
-            assertThat(method.invoke(repository, urlWithoutSlash, "api/endpoint"))
+            assertThat(constructApiUrl(urlWithoutSlash, "api/endpoint"))
                 .isEqualTo(expectedWithoutSlash)
         }
 
