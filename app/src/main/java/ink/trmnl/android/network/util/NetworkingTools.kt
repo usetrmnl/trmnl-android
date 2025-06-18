@@ -5,6 +5,19 @@ import com.slack.eithernet.InternalEitherNetApi
 import ink.trmnl.android.data.HttpResponseMetadata
 
 /**
+ * Constructs the full URL for API requests based on the configured base URL for device.
+ */
+internal fun constructApiUrl(
+    baseUrl: String,
+    endpoint: String,
+): String =
+    if (baseUrl.endsWith("/")) {
+        "${baseUrl}$endpoint"
+    } else {
+        "$baseUrl/$endpoint"
+    }
+
+/**
  * Extracts HTTP response metadata from an ApiResult.Success instance.
  * The metadata is retrieved from the okhttp3.Response object stored in the ApiResult's tags.
  *

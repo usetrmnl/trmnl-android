@@ -35,4 +35,22 @@ data class TrmnlDisplayInfo constructor(
      * Contains useful information for debugging and logging.
      */
     val httpResponseMetadata: HttpResponseMetadata? = null,
-)
+) {
+    companion object {
+        /**
+         * Creates a [TrmnlDisplayInfo] indicating that the device requires setup.
+         *
+         * This is used when the device is not yet configured and needs to be set up before it can display content.
+         * @see ERROR_TYPE_DEVICE_SETUP_REQUIRED
+         */
+        fun setupRequired(): TrmnlDisplayInfo =
+            TrmnlDisplayInfo(
+                status = HTTP_500,
+                trmnlDeviceType = TrmnlDeviceType.BYOS,
+                imageUrl = "",
+                imageFileName = ERROR_TYPE_DEVICE_SETUP_REQUIRED,
+                error = "Device setup required",
+                refreshIntervalSeconds = 0L,
+            )
+    }
+}
