@@ -1,10 +1,11 @@
 package ink.trmnl.android.data
 
 import com.slack.eithernet.ApiResult
-import com.slack.eithernet.InternalEitherNetApi
 import com.slack.eithernet.exceptionOrNull
 import com.squareup.anvil.annotations.optional.SingleIn
 import ink.trmnl.android.BuildConfig.USE_FAKE_API
+import ink.trmnl.android.data.fake.generateFakeDeviceSetupInfo
+import ink.trmnl.android.data.fake.generateFakeTrmnlDisplayInfo
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
@@ -12,8 +13,8 @@ import ink.trmnl.android.network.TrmnlApiService
 import ink.trmnl.android.network.TrmnlApiService.Companion.CURRENT_PLAYLIST_SCREEN_API_PATH
 import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_PLAYLIST_SCREEN_API_PATH
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
+import ink.trmnl.android.network.util.extractHttpResponseMetadata
 import ink.trmnl.android.util.ERROR_TYPE_DEVICE_SETUP_REQUIRED
-import ink.trmnl.android.util.HTTP_200
 import ink.trmnl.android.util.HTTP_500
 import ink.trmnl.android.util.isHttpOk
 import timber.log.Timber
@@ -48,7 +49,7 @@ class TrmnlDisplayRepository
 
             if (repositoryConfigProvider.shouldUseFakeData) {
                 // Avoid using real API in debug mode
-                return fakeTrmnlDisplayInfo(apiUsed = "next-image")
+                return generateFakeTrmnlDisplayInfo(imageMetadataStore = imageMetadataStore, apiUsed = "next-image")
             }
 
             val result =
@@ -118,7 +119,7 @@ class TrmnlDisplayRepository
 
             if (repositoryConfigProvider.shouldUseFakeData) {
                 // Avoid using real API in debug mode
-                return fakeTrmnlDisplayInfo(apiUsed = "current-image")
+                return generateFakeTrmnlDisplayInfo(imageMetadataStore = imageMetadataStore, apiUsed = "current-image")
             }
 
             val result =
@@ -174,7 +175,7 @@ class TrmnlDisplayRepository
 
             if (repositoryConfigProvider.shouldUseFakeData) {
                 // Avoid using real API in debug mode
-                return fakeTrmnlDeviceSetupInfo()
+                return generateFakeDeviceSetupInfo()
             }
 
             val result =
@@ -203,43 +204,6 @@ class TrmnlDisplayRepository
                 }
             }
         }
-
-        /**
-         * Generates fake display info for debugging purposes without wasting an API request.
-         *
-         * ℹ️ This is only used when [RepositoryConfigProvider.shouldUseFakeData] is true.
-         */
-        private suspend fun fakeTrmnlDisplayInfo(apiUsed: String): TrmnlDisplayInfo {
-            Timber.d("DEBUG: Using mock data for display info")
-            val timestampMin = System.currentTimeMillis() / 60_000 // Changes every minute
-            val mockImageUrl = "https://picsum.photos/300/200?grayscale&time=$timestampMin&api=$apiUsed"
-            val mockRefreshRate = 600L
-
-            // Save mock data to the data store
-            imageMetadataStore.saveImageMetadata(mockImageUrl, mockRefreshRate)
-
-            return TrmnlDisplayInfo(
-                status = HTTP_200,
-                trmnlDeviceType = TrmnlDeviceType.TRMNL,
-                imageUrl = mockImageUrl,
-                imageFileName = "mocked-image-" + mockImageUrl.substringAfterLast('?'),
-                error = null,
-                refreshIntervalSeconds = mockRefreshRate,
-            )
-        }
-
-        /**
-         * Generates fake setup info for debugging purposes without wasting an API request.
-         *
-         * ℹ️ This is only used when [RepositoryConfigProvider.shouldUseFakeData] is true.
-         */
-        private fun fakeTrmnlDeviceSetupInfo(): DeviceSetupInfo =
-            DeviceSetupInfo(
-                success = true,
-                deviceMacId = "A1:B2:C3:D4:E5:F6",
-                apiKey = "mocked-api-key-${System.currentTimeMillis()}",
-                message = "Mocked device setup successful",
-            )
 
         /**
          * Constructs the full URL for API requests based on the configured base URL for device.
@@ -322,35 +286,6 @@ class TrmnlDisplayRepository
                     )
                 }
             }
-
-        /**
-         * Extracts HTTP response metadata from an ApiResult.Success instance.
-         * The metadata is retrieved from the okhttp3.Response object stored in the ApiResult's tags.
-         *
-         * @param apiResult The successful API result containing response metadata
-         * @return HttpResponseMetadata object containing useful response information, or null if not available
-         */
-        @OptIn(InternalEitherNetApi::class)
-        private fun extractHttpResponseMetadata(apiResult: ApiResult.Success<*>): HttpResponseMetadata? {
-            val httpResponse = apiResult.tags[okhttp3.Response::class] as? okhttp3.Response ?: return null
-
-            // Calculate the request duration using the timestamps from the response
-            val requestDuration = httpResponse.receivedResponseAtMillis - httpResponse.sentRequestAtMillis
-
-            return HttpResponseMetadata(
-                url = httpResponse.request.url.toString(),
-                protocol = httpResponse.protocol.toString(),
-                statusCode = httpResponse.code,
-                message = httpResponse.message,
-                contentType = httpResponse.header("Content-Type"),
-                contentLength = httpResponse.header("Content-Length")?.toLongOrNull() ?: -1,
-                serverName = httpResponse.header("Server"),
-                requestDuration = requestDuration,
-                etag = httpResponse.header("etag"),
-                requestId = httpResponse.header("x-request-id"),
-                timestamp = System.currentTimeMillis(),
-            )
-        }
 
         /**
          * Right now there is no good known way to determine if a device requires setup.
