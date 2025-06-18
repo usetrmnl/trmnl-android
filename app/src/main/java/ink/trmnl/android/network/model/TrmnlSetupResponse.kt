@@ -1,4 +1,4 @@
-package ink.trmnl.android.model
+package ink.trmnl.android.network.model
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass

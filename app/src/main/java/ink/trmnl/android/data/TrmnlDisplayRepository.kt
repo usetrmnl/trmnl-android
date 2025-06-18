@@ -172,6 +172,11 @@ class TrmnlDisplayRepository
                 Timber.w("Device setup is only applicable for BYOS devices.")
             }
 
+            if (repositoryConfigProvider.shouldUseFakeData) {
+                // Avoid using real API in debug mode
+                return fakeTrmnlDeviceSetupInfo()
+            }
+
             val result =
                 apiService.setupNewDevice(
                     fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, TrmnlApiService.SETUP_API_PATH),
@@ -222,6 +227,19 @@ class TrmnlDisplayRepository
                 refreshIntervalSeconds = mockRefreshRate,
             )
         }
+
+        /**
+         * Generates fake setup info for debugging purposes without wasting an API request.
+         *
+         * ℹ️ This is only used when [RepositoryConfigProvider.shouldUseFakeData] is true.
+         */
+        private fun fakeTrmnlDeviceSetupInfo(): DeviceSetupInfo =
+            DeviceSetupInfo(
+                success = true,
+                deviceMacId = "A1:B2:C3:D4:E5:F6",
+                apiKey = "mocked-api-key-${System.currentTimeMillis()}",
+                message = "Mocked device setup successful",
+            )
 
         /**
          * Constructs the full URL for API requests based on the configured base URL for device.
@@ -349,6 +367,12 @@ class TrmnlDisplayRepository
             trmnlDeviceConfig.type == TrmnlDeviceType.BYOS &&
                 response.imageFileName?.startsWith("setup", ignoreCase = true) == true &&
                 // This ensures that no screen is generated yet for the device
+                // Example (when device is not set up):
+                // -- "filename": "setup"
+                // -- "image_url": "/assets/setup-A2B2C2.svg"
+                // Example (when device is set up):
+                // -- "filename": "setup.png"
+                // -- "image_url": "https://my-trmnl-hub.com/assets/screens/ABCDEF123/setup.png",
                 response.imageUrl?.contains("screens", ignoreCase = true) == false
 
         /**
