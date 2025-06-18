@@ -2,9 +2,9 @@ package ink.trmnl.android.network
 
 import com.slack.eithernet.ApiResult
 import ink.trmnl.android.data.TrmnlDisplayRepository
-import ink.trmnl.android.model.TrmnlSetupResponse
 import ink.trmnl.android.network.model.TrmnlCurrentImageResponse
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
+import ink.trmnl.android.network.model.TrmnlSetupResponse
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Headers
