@@ -53,4 +53,6 @@ jobs:
         with:
           name: trmnl-mirror-app
           path: artifact/trmnl-mirror-v${{ steps.version.outputs.VERSION }}.apk
-          retention-days: 7
+          # Use maximum allowed retention period
+          # https://github.com/actions/upload-artifact?tab=readme-ov-file#retention-period
+          retention-days: 90
