@@ -196,7 +196,56 @@ This document outlines the requirements for the TRMNL Display Mirror Android app
 | ARCH-08 | JSON Parsing                                                          | Moshi for JSON serialization/deserialization                      |
 | ARCH-09 | Threading/Concurrency                                                 | Kotlin Coroutines for async operations                            |
 
-## 6. Limitations and Constraints
+## 6. Implementation Considerations for Cross-Platform Development
+
+This section provides guidance for teams implementing the TRMNL Display app on other platforms, ensuring feature parity while leveraging platform-specific capabilities.
+
+### iOS Specific
+
+| ID     | Consideration                                                             |
+|--------|---------------------------------------------------------------------------|
+| IOS-01 | Use KeychainAccess or Keychain Services for secure token storage.         |
+| IOS-02 | Implement BGAppRefreshTask for background refresh operations.             |
+| IOS-03 | Consider SwiftUI for modern UI implementation or UIKit for broader compatibility. |
+| IOS-04 | Use UserDefaults for non-sensitive configuration storage.                 |
+| IOS-05 | Use URLSession for API communication with proper authentication handling. |
+| IOS-06 | Implement UIApplication.shared.isIdleTimerDisabled for keeping screen on. |
+| IOS-07 | Use Kingfisher or SDWebImage for efficient image loading and caching.     |
+| IOS-08 | Implement WidgetKit for optional home screen widget display.              |
+| IOS-09 | Use Combine or async/await for asynchronous operations.                   |
+| IOS-10 | Consider implementing handoff for continuity between iOS and macOS.       |
+
+### Flutter Specific
+
+| ID     | Consideration                                                                |
+|--------|------------------------------------------------------------------------------|
+| FLT-01 | Use flutter_secure_storage for token storage.                                |
+| FLT-02 | Implement workmanager or flutter_background_fetch for background operations. |
+| FLT-03 | Use Riverpod, Provider, or Bloc pattern for state management.               |
+| FLT-04 | Consider using shared_preferences for non-sensitive configuration storage.   |
+| FLT-05 | Implement wakelock plugin for keeping the screen on.                         |
+| FLT-06 | Use cached_network_image or extended_image for image caching and loading.    |
+| FLT-07 | Utilize dio or http package with interceptors for API communication.         |
+| FLT-08 | Implement adaptive_theme for supporting light/dark modes.                    |
+| FLT-09 | Use responsive_framework for handling different screen sizes.                |
+| FLT-10 | Consider hive or objectbox for efficient local storage/caching.              |
+
+### React Native Specific
+
+| ID     | Consideration                                                                |
+|--------|------------------------------------------------------------------------------|
+| RN-01  | Use react-native-keychain for secure token storage.                          |
+| RN-02  | Implement react-native-background-tasks for background operations.           |
+| RN-03  | Use Redux Toolkit or Context API with hooks for state management.            |
+| RN-04  | Consider using @react-native-async-storage/async-storage for configuration.  |
+| RN-05  | Implement react-native-keep-awake for keeping the screen on.                 |
+| RN-06  | Use react-native-fast-image for efficient image caching and loading.         |
+| RN-07  | Utilize axios with interceptors for API communication.                       |
+| RN-08  | Implement react-native-paper or Native Base for consistent UI components.    |
+| RN-09  | Use react-native-device-info for platform-specific adaptations.              |
+| RN-10  | Consider react-native-reanimated for smooth animations and transitions.      |
+
+## 7. Limitations and Constraints
 
 | ID     | Limitation/Constraint                                                                                        |
 |--------|--------------------------------------------------------------------------------------------------------------|
@@ -207,5 +256,10 @@ This document outlines the requirements for the TRMNL Display Mirror Android app
 | LIM-05 | Custom server URLs for BYOS must use HTTPS for security reasons.                                             |
 | LIM-06 | Device MAC address format must follow standard formats (XX:XX:XX:XX:XX:XX, XX-XX-XX-XX-XX-XX, or XXXXXXXXXXXX). |
 | LIM-07 | Support is limited to Android API level 28 (Android 9.0 Pie) and above.                                      |
+| LIM-08 | Background refresh capabilities vary across platforms (iOS: ~15 minutes, Flutter/React Native: dependent on platform implementation). |
+| LIM-09 | Cross-platform implementations must maintain visual and functional consistency despite platform differences. |
+| LIM-10 | iOS will require additional privacy descriptions in info.plist for network and background usage.             |
+| LIM-11 | Flutter has more limited e-ink display optimization capabilities compared to native implementations.         |
+| LIM-12 | React Native may have performance limitations when handling large image rendering on low-end devices.        |
 
-This PRD provides a comprehensive guide for implementing and maintaining the TRMNL Display app. Development teams should use this document to ensure the application meets all required functionality.
+This PRD provides a comprehensive guide for implementing and maintaining the TRMNL Display app. Development teams should use this document to ensure the application meets all required functionality while following platform-specific best practices.
