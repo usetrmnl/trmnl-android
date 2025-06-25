@@ -29,3 +29,13 @@ plugins {
     // Also see: https://github.com/ZacSweers/anvil/blob/main/FORK.md
     alias(libs.plugins.anvil) apply false
 }
+
+// Task to build F-Droid APK
+tasks.register("buildFDroid") {
+    description = "Builds the F-Droid APK variant"
+    dependsOn(":app:assembleFdroidRelease")
+
+    doLast {
+        println("F-Droid APK built successfully at: app/build/outputs/apk/fdroid/release/")
+    }
+}

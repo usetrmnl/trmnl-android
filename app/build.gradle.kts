@@ -65,12 +65,40 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
         
+        // Special build type for F-Droid
+        create("fdroidRelease") {
+            initWith(getByName("release"))
+            
+            // For F-Droid builds
+            matchingFallbacks += "release"
+            
+            // Ensures no Google Play dependencies
+            buildConfigField("Boolean", "USE_FAKE_API", "false")
+            buildConfigField("Boolean", "FDROID_BUILD", "true")
+        }
+        
         debug {
             // Allow developers to configure this value for debug builds
             // Use fake API response for local development and testing purposes.
             buildConfigField("Boolean", "USE_FAKE_API", "true")
+            buildConfigField("Boolean", "FDROID_BUILD", "false")
 
             signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
+    // Add product flavors for F-Droid compatibility
+    flavorDimensions += "store"
+    productFlavors {
+        create("standard") {
+            dimension = "store"
+            // Standard flavor with all features
+        }
+        
+        create("fdroid") {
+            dimension = "store"
+            // F-Droid specific configuration
+            // No non-free dependencies
         }
     }
 
@@ -98,7 +126,10 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.text.google.fonts)
+    
+    // Google Fonts - Only include for standard flavor, not for F-Droid
+    "standardImplementation"(libs.androidx.ui.text.google.fonts)
+    
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.window)
     implementation(libs.androidx.work.runtime.ktx)
