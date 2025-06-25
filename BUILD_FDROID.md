@@ -52,7 +52,7 @@ The app can be submitted to F-Droid through:
 2. A merge request to the F-Droid data repository
 
 Ensure the following are available:
-- Source code is publicly accessible on GitHub
+- Source code is publicly accessible on GitHub: https://github.com/usetrmnl/trmnl-android
 - The app is licensed under the MIT license
 - F-Droid metadata is complete
 - The app builds successfully with the F-Droid build system
