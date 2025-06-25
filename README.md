@@ -55,6 +55,23 @@ The app is available on F-Droid, providing a free and open source Android app re
 ## <img src="project-resources/logo/android-logo-head.svg" width="60" alt="android logo"/>Android Development & Contribution Guide
 See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on how to get started and contribute to the project.
 
+### Build Variants
+The app supports multiple build variants:
+- **Standard**: The default variant with all features
+- **F-Droid**: A variant optimized for F-Droid distribution without Google dependencies
+
+To build specific variants:
+```bash
+# Build the standard release variant
+./gradlew buildStandard
+
+# Build the F-Droid release variant
+./gradlew buildFDroid
+
+# Build all variants
+./gradlew buildAllFlavors
+```
+
 ---
 
 ## Related References 📖
