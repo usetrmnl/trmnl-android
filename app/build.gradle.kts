@@ -51,6 +51,7 @@ android {
             // Always force `USE_FAKE_API` to `false` for release builds
             // See https://github.com/usetrmnl/trmnl-android/issues/16
             buildConfigField("Boolean", "USE_FAKE_API", "false")
+            buildConfigField("Boolean", "FDROID_BUILD", "false")
 
             // Enables code shrinking, obfuscation, and optimization
             isMinifyEnabled = true
@@ -63,18 +64,6 @@ android {
                 "proguard-rules.pro",
             )
             signingConfig = signingConfigs.getByName("release")
-        }
-        
-        // Special build type for F-Droid
-        create("fdroidRelease") {
-            initWith(getByName("release"))
-            
-            // For F-Droid builds
-            matchingFallbacks += "release"
-            
-            // Ensures no Google Play dependencies
-            buildConfigField("Boolean", "USE_FAKE_API", "false")
-            buildConfigField("Boolean", "FDROID_BUILD", "true")
         }
         
         debug {
@@ -99,6 +88,7 @@ android {
             dimension = "store"
             // F-Droid specific configuration
             // No non-free dependencies
+            buildConfigField("Boolean", "FDROID_BUILD", "true")
         }
     }
 

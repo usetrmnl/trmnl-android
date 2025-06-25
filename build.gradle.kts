@@ -34,7 +34,7 @@ plugins {
 tasks.register("buildFDroid") {
     description = "Builds the F-Droid APK variant"
     dependsOn(":app:assembleFdroidRelease")
-
+    
     doLast {
         println("F-Droid APK built successfully at: app/build/outputs/apk/fdroid/release/")
     }

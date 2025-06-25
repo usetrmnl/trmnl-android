@@ -20,6 +20,12 @@ To build the F-Droid version locally:
 
 This will generate an APK in `app/build/outputs/apk/fdroid/release/` that is suitable for F-Droid.
 
+Alternatively, you can use the convenience task:
+
+```bash
+./gradlew buildFDroid
+```
+
 ## F-Droid Metadata
 
 The F-Droid specific metadata is located in:
