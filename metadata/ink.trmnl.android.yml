@@ -1,6 +1,8 @@
+# https://f-droid.org/en/docs/Build_Metadata_Reference/
 ---
 Categories:
   - System
+  - Internet
 License: MIT
 AuthorName: TRMNL
 AuthorEmail: support@usetrmnl.com
@@ -9,7 +11,6 @@ WebSite: https://github.com/usetrmnl/trmnl-android
 SourceCode: https://github.com/usetrmnl/trmnl-android
 IssueTracker: https://github.com/usetrmnl/trmnl-android/issues
 Changelog: https://github.com/usetrmnl/trmnl-android/releases
-Donate: 
 
 AutoName: TRMNL Display Mirror
 Summary: Mirror TRMNL e-ink displays on Android devices
@@ -33,21 +34,22 @@ Description: |-
     The app works without Google Play Services and is suitable for e-ink tablets and other Android devices running Android 9.0 (API 28) or higher.
 
 RepoType: git
-Repo: https://github.com/usetrmnl/trmnl-android
+Repo: https://github.com/usetrmnl/trmnl-android.git
 
 Builds:
-  - versionName: 1.9.0
-    versionCode: 11
-    commit: v1.9.0
+  - versionName: '1.9.1'
+    versionCode: 12
+    commit: v1.9.1
     subdir: app
     gradle:
       - assembleFdroidRelease
-    prebuild: ''
+    # app/build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk
+    output: build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk
 
 MaintainerNotes: |-
-    This app uses the fdroid flavor to avoid Google Fonts dependency.
+    This app uses the F-Droid flavor for gradle build.
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.9.0
-CurrentVersionCode: 11
+CurrentVersion: '1.9.1'
+CurrentVersionCode: 12

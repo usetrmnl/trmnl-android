@@ -19,8 +19,8 @@ android {
         // Can't be lower than 28, See https://github.com/usetrmnl/trmnl-android/pull/56
         minSdk = 28
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.9.0"
+        versionCode = 12 // Also update `metadata/ink.trmnl.android.yml`
+        versionName = "1.9.1" // Also update `metadata/ink.trmnl.android.yml`
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -62,7 +62,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            signingConfig = signingConfigs.getByName("release")
         }
         
         debug {
@@ -81,6 +80,9 @@ android {
             dimension = "store"
             // Standard flavor with all features
             buildConfigField("Boolean", "FDROID_BUILD", "false")
+
+            // Apply signing only for standard flavor
+            signingConfig = signingConfigs.getByName("release")
         }
         
         create("fdroid") {
@@ -88,6 +90,7 @@ android {
             // F-Droid specific configuration
             // No non-free dependencies
             buildConfigField("Boolean", "FDROID_BUILD", "true")
+            // ℹ️ No signing config for F-Droid flavor (F-Droid handles signing)
         }
     }
 
