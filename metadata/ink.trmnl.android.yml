@@ -10,11 +10,11 @@ SourceCode: https://github.com/usetrmnl/trmnl-android
 IssueTracker: https://github.com/usetrmnl/trmnl-android/issues
 Changelog: https://github.com/usetrmnl/trmnl-android/releases
 
-AutoName: TRMNL Display Mirror
+AutoName: TRMNL Mirror
 Summary: Mirror TRMNL e-ink displays on Android devices
 Description: |-
   TRMNL Display Mirror serves as a digital display mirror for TRMNL e-ink devices. The app connects to the TRMNL API, fetches display data, and shows it on Android devices.
-  
+
   Key Features:
   • Token-based authentication with TRMNL/BYOS API
   • Automatic periodic image refresh from the server
@@ -23,12 +23,12 @@ Description: |-
   • Support for custom server URLs for BYOS installations
   • Refresh history logging for tracking & validation
   • Support for standard TRMNL, BYOD (Bring Your Own Device), and BYOS (Bring Your Own Server) configurations
-  
+
   The app requires a valid access token or device MAC address to connect to TRMNL services. You can obtain this through:
   • Owning a TRMNL device with the developer edition add-on
   • Purchasing the BYOD product
   • Having a self-serve installation of TRMNL service using BYOS
-  
+
   The app works without Google Play Services and is suitable for e-ink tablets and other Android devices running Android 9.0 (API 28) or higher.
 
 RepoType: git
