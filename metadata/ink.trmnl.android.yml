@@ -35,9 +35,9 @@ RepoType: git
 Repo: https://github.com/usetrmnl/trmnl-android.git
 
 Builds:
-  - versionName: 1.9.2
-    versionCode: 13
-    commit: v1.9.2
+  - versionName: 1.9.3
+    versionCode: 14
+    commit: v1.9.3
     subdir: app
     gradle:
       - fdroid
@@ -47,5 +47,5 @@ MaintainerNotes: This app uses the F-Droid flavor for gradle build.
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.9.2
-CurrentVersionCode: 13
+CurrentVersion: 1.9.3
+CurrentVersionCode: 14
