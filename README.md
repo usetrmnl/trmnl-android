@@ -36,7 +36,7 @@ Here are some of the known ways you can get access to the `access-token`.
 Check installable APK from Assets in [latest release](https://github.com/usetrmnl/trmnl-android/releases).
 
 ### 📱 F-Droid
-The app is available on F-Droid, providing a free and open source Android app repository.
+The app will *soon* be available on F-Droid, providing a free and open source Android app repository.
 1. Add the F-Droid repository to your F-Droid client
 2. Search for "TRMNL Display Mirror"
 3. Install the app
