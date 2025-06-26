@@ -1,0 +1,5 @@
+- Updated to the latest version (1.9.0)
+- Support for custom server URLs for BYOS installations
+- Improved refresh history logging
+- Various UI improvements and bug fixes
+- Optimized performance for e-ink displays

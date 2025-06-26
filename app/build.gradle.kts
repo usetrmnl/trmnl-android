@@ -74,6 +74,23 @@ android {
         }
     }
 
+    // Add product flavors for F-Droid compatibility
+    flavorDimensions += "store"
+    productFlavors {
+        create("standard") {
+            dimension = "store"
+            // Standard flavor with all features
+            buildConfigField("Boolean", "FDROID_BUILD", "false")
+        }
+        
+        create("fdroid") {
+            dimension = "store"
+            // F-Droid specific configuration
+            // No non-free dependencies
+            buildConfigField("Boolean", "FDROID_BUILD", "true")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -98,7 +115,6 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.text.google.fonts)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.window)
     implementation(libs.androidx.work.runtime.ktx)
