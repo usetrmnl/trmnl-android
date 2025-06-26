@@ -51,7 +51,6 @@ android {
             // Always force `USE_FAKE_API` to `false` for release builds
             // See https://github.com/usetrmnl/trmnl-android/issues/16
             buildConfigField("Boolean", "USE_FAKE_API", "false")
-            buildConfigField("Boolean", "FDROID_BUILD", "false")
 
             // Enables code shrinking, obfuscation, and optimization
             isMinifyEnabled = true
@@ -70,7 +69,6 @@ android {
             // Allow developers to configure this value for debug builds
             // Use fake API response for local development and testing purposes.
             buildConfigField("Boolean", "USE_FAKE_API", "true")
-            buildConfigField("Boolean", "FDROID_BUILD", "false")
 
             signingConfig = signingConfigs.getByName("debug")
         }
@@ -82,6 +80,7 @@ android {
         create("standard") {
             dimension = "store"
             // Standard flavor with all features
+            buildConfigField("Boolean", "FDROID_BUILD", "false")
         }
         
         create("fdroid") {
