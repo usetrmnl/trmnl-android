@@ -12,8 +12,15 @@ import ink.trmnl.android.R
 val ebGaramondFontFamily =
     FontFamily(
         Font(R.font.eb_garamond_regular, FontWeight.Normal),
+        Font(R.font.eb_garamond_medium, FontWeight.Medium),
+        Font(R.font.eb_garamond_semibold, FontWeight.SemiBold),
         Font(R.font.eb_garamond_bold, FontWeight.Bold),
+        Font(R.font.eb_garamond_extrabold, FontWeight.ExtraBold),
         Font(R.font.eb_garamond_italic, FontWeight.Normal, FontStyle.Italic),
+        Font(R.font.eb_garamond_medium_italic, FontWeight.Medium, FontStyle.Italic),
+        Font(R.font.eb_garamond_semibold_italic, FontWeight.SemiBold, FontStyle.Italic),
+        Font(R.font.eb_garamond_bold_italic, FontWeight.Bold, FontStyle.Italic),
+        Font(R.font.eb_garamond_extrabold_italic, FontWeight.ExtraBold, FontStyle.Italic),
     )
 
 // Both body and display use the same font family
