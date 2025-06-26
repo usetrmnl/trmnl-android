@@ -117,8 +117,7 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     
-    // Google Fonts - Only include for standard flavor, not for F-Droid
-    "standardImplementation"(libs.androidx.ui.text.google.fonts)
+    // Bundled fonts are used for both flavors, Google Fonts dependency removed
     
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.window)

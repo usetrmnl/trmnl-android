@@ -1,33 +1,24 @@
 package ink.trmnl.android.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import ink.trmnl.android.R
 
-val provider =
-    GoogleFont.Provider(
-        providerAuthority = "com.google.android.gms.fonts",
-        providerPackage = "com.google.android.gms",
-        certificates = R.array.com_google_android_gms_fonts_certs,
+// Create FontFamily from bundled font resources
+// These are included directly in the app package for F-Droid compatibility
+val ebGaramondFontFamily =
+    FontFamily(
+        Font(R.font.eb_garamond_regular, FontWeight.Normal),
+        Font(R.font.eb_garamond_bold, FontWeight.Bold),
+        Font(R.font.eb_garamond_italic, FontWeight.Normal, FontStyle.Italic),
     )
 
-val bodyFontFamily =
-    FontFamily(
-        Font(
-            googleFont = GoogleFont("EB Garamond"),
-            fontProvider = provider,
-        ),
-    )
-
-val displayFontFamily =
-    FontFamily(
-        Font(
-            googleFont = GoogleFont("EB Garamond"),
-            fontProvider = provider,
-        ),
-    )
+// Both body and display use the same font family
+val bodyFontFamily = ebGaramondFontFamily
+val displayFontFamily = ebGaramondFontFamily
 
 // Default Material 3 typography values
 val baseline = Typography()

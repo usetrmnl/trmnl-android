@@ -3,12 +3,17 @@ package ink.trmnl.android.ui.theme
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.font.FontFamily
 
-// For F-Droid version, we use system fonts instead of Google Fonts
-val bodyFontFamily = FontFamily.SansSerif
-val displayFontFamily = FontFamily.Serif
+/**
+ * F-Droid implementation of typography using system fonts
+ * This replaces the Google Fonts implementation in the main source with system fonts
+ */
+
+// For F-Droid builds, we'll use the system default font family
+private val bodyFontFamily = FontFamily.Default
+private val displayFontFamily = FontFamily.Default
 
 // Default Material 3 typography values
-val baseline = Typography()
+private val baseline = Typography()
 
 val AppTypography =
     Typography(
