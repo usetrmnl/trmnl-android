@@ -48,4 +48,4 @@ MaintainerNotes: This app uses the F-Droid flavor for gradle build.
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
 CurrentVersion: 1.9.2
-CurrentVersionCode: 12
+CurrentVersionCode: 13
