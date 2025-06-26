@@ -40,13 +40,13 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p artifact
-          cp app/build/outputs/apk/fdroid/release/app-fdroid-release.apk artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}.apk
+          cp app/build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}-unsigned.apk
 
       - name: Upload F-Droid APK
         uses: actions/upload-artifact@v4
         with:
-          name: trmnl-mirror-fdroid
-          path: artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}.apk
+          name: trmnl-mirror-fdroid-unsigned
+          path: artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}-unsigned.apk
           # Use maximum allowed retention period
           # https://github.com/actions/upload-artifact?tab=readme-ov-file#retention-period
           retention-days: 90
