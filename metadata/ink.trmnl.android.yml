@@ -42,7 +42,8 @@ Builds:
     commit: v1.9.1
     subdir: app
     gradle:
-      - assembleFdroidRelease
+      # F-droid build will append assemble to run: `assembleFdroidRelease`
+      - fdroidRelease
     # app/build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk
     output: build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk
 
