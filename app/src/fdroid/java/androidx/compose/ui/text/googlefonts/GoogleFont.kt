@@ -21,7 +21,7 @@ class GoogleFont(
 /**
  * F-Droid compatible mock implementation of Font for Google Fonts
  */
-@Suppress("UNUSED_PARAMETER")
+@Suppress("UNUSED_PARAMETER", "FunctionName")
 fun Font(
     googleFont: GoogleFont,
     fontProvider: GoogleFont.Provider,

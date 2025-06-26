@@ -4,11 +4,10 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.font.FontFamily
 
 /**
- * F-Droid implementation of typography using system fonts
- * This replaces the Google Fonts implementation in the main source with system fonts
+ * F-Droid implementation of typography using system fonts.
+ * This replaces the Google Fonts implementation in the main source with system fonts.
+ * For F-Droid builds, we'll use the system default font family.
  */
-
-// For F-Droid builds, we'll use the system default font family
 private val bodyFontFamily = FontFamily.Default
 private val displayFontFamily = FontFamily.Default
 
