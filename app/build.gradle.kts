@@ -115,9 +115,6 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
-    
-    // Bundled fonts are used for both flavors, Google Fonts dependency removed
-    
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.window)
     implementation(libs.androidx.work.runtime.ktx)
