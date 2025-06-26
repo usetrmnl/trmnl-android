@@ -19,8 +19,8 @@ android {
         // Can't be lower than 28, See https://github.com/usetrmnl/trmnl-android/pull/56
         minSdk = 28
         targetSdk = 35
-        versionCode = 13 // Also update `metadata/ink.trmnl.android.yml`
-        versionName = "1.9.2" // Also update `metadata/ink.trmnl.android.yml`
+        versionCode = 14 // Also update `metadata/ink.trmnl.android.yml`
+        versionName = "1.9.3" // Also update `metadata/ink.trmnl.android.yml`
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
