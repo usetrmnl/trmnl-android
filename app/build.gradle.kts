@@ -14,13 +14,22 @@ android {
     compileSdk = 35
 
     defaultConfig {
+        // The application ID is the unique identifier for the app on the Play Store and other app stores.
         applicationId = "ink.trmnl.android"
+        
         // Minimum SDK is Android 9.0 (Pie) with 94% Android devices coverage
         // Can't be lower than 28, See https://github.com/usetrmnl/trmnl-android/pull/56
         minSdk = 28
-        targetSdk = 35
-        versionCode = 15 // Also update `metadata/ink.trmnl.android.yml`
-        versionName = "1.9.4" // Also update `metadata/ink.trmnl.android.yml`
+
+        // See https://apilevels.com/
+        targetSdk = 35 // Android 15.0 (Vanilla Ice Cream)
+        
+        // App versioning is scattered across multiple files.
+        // 👇🏽 Use the following workflow to update versions everywhere automatically ♻️
+        // https://github.com/usetrmnl/trmnl-android/actions/workflows/version-management.yml
+        versionCode = 15
+        versionName = "1.9.4"
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
