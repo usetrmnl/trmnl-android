@@ -88,7 +88,7 @@ To build specific variants:
 ./gradlew buildAllFlavors
 ```
 
-For more details on the F-Droid build process, see [BUILD_FDROID.md](BUILD_FDROID.md). App! This document provides guidelines and instructions to help you contribute effectively.
+For more details on the F-Droid build process, see [BUILD_FDROID.md](BUILD_FDROID.md). This document provides guidelines and instructions to help you contribute effectively.
 
 
 ### Release Process
