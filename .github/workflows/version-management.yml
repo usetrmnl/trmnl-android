@@ -1,16 +1,19 @@
 # This GitHub Actions workflow is intended for version management within the trmnl-android project.
 # The workflow helps ensure consistent and automated version control processes for the repository.
+# 
+# 🔍 TIP: Run `scripts/show_version_info.sh` locally to display current versions and get suggestions
+# for the next version number before running this workflow.
 name: Version Management
 
 on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: 'Version name (semantic version e.g. 1.9.5)'
+        description: 'Version name (semantic version e.g. 1.9.5) - Run scripts/show_version_info.sh for suggestions'
         required: true
         type: string
       version_code:
-        description: 'Version code (integer, must increase with each release)'
+        description: 'Version code (integer, must increase with each release) - Run scripts/show_version_info.sh for suggestions'
         required: true
         type: string
       git_tag:
@@ -18,7 +21,7 @@ on:
         required: false
         type: string
       release_notes:
-        description: 'Release notes (comma-separated items)'
+        description: 'Release notes (comma-separated items, e.g. "Fixed crash in settings, Added new feature")'
         required: true
         type: string
       create_pr:
