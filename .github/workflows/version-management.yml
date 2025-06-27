@@ -60,6 +60,8 @@ jobs:
         run: |
           BRANCH="${{ inputs.branch_name }}-${{ inputs.version_name }}"
           git checkout -b $BRANCH
+          # Make sure we're working with a clean branch that's not dependent on origin
+          git update-ref -d refs/remotes/origin/$BRANCH || true
           echo "BRANCH_NAME=$BRANCH" >> $GITHUB_ENV
 
       - name: Update app/build.gradle.kts
@@ -108,6 +110,12 @@ jobs:
           echo "✓ Changes committed and pushed to ${{ github.ref_name }}"
           echo "✓ Created and pushed tag ${{ env.GIT_TAG }}"
 
+      # Push changes directly to the new branch before creating PR to avoid "unknown revision" errors
+      - name: Push branch for PR
+        if: ${{ inputs.create_pr == true }}
+        run: |
+          git push -u origin ${{ env.BRANCH_NAME }} --force
+          
       - name: Create Pull Request
         if: ${{ inputs.create_pr == true }}
         uses: peter-evans/create-pull-request@v6
@@ -129,3 +137,4 @@ jobs:
             After merging this PR, please create a tag with: `git tag ${{ env.GIT_TAG }} && git push origin ${{ env.GIT_TAG }}`
           branch: ${{ env.BRANCH_NAME }}
           base: ${{ github.ref_name }}
+          branch-exists-action: update
