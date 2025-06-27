@@ -88,6 +88,14 @@ To build specific variants:
 ./gradlew buildAllFlavors
 ```
 
+For more details on the F-Droid build process, see [BUILD_FDROID.md](BUILD_FDROID.md). App! This document provides guidelines and instructions to help you contribute effectively.
+
+
+### Release Process
+
+For instructions on creating new releases and managing versions across the project, see the [Release Checklist](RELEASE_CHECKLIST.md).
+
+
 ### Snapshot Builds
 Automatic snapshot release builds are available in the [release workflow](https://github.com/usetrmnl/trmnl-android/actions/workflows/android-release.yml) artifacts.
 

@@ -55,10 +55,6 @@ The app will *soon* be available on F-Droid, providing a free and open source An
 ## <img src="project-resources/logo/android-logo-head.svg" width="60" alt="android logo"/>Android Development & Contribution Guide
 See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on how to get started and contribute to the project.
 
-### Release Process
-
-For instructions on creating new releases and managing versions across the project, see the [Release Checklist](RELEASE_CHECKLIST.md).
-
 ---
 
 ## Related References 📖
