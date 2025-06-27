@@ -1,0 +1,4 @@
+- Updated to the latest version (1.9.4)
+Support for custom server URLs for BYOS installations
+- improved refresh history logging
+- various UI improvements and bug fixes

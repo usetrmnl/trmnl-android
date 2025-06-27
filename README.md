@@ -55,8 +55,9 @@ The app will *soon* be available on F-Droid, providing a free and open source An
 ## <img src="project-resources/logo/android-logo-head.svg" width="60" alt="android logo"/>Android Development & Contribution Guide
 See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on how to get started and contribute to the project.
 
-### Build Variants
-The app supports multiple build variants:
+### Building the App
+
+This app supports multiple build variants:
 - **Standard**: The default variant with all features
 - **F-Droid**: A variant optimized for F-Droid distribution without Google dependencies
 
@@ -71,6 +72,50 @@ To build specific variants:
 # Build all variants
 ./gradlew buildAllFlavors
 ```
+
+### Release Management
+
+The project uses a centralized versioning system to avoid duplicate version information. All version information is stored in a single `version.properties` file.
+
+#### How it works
+
+1. `version.properties` serves as the source of truth for:
+   - Version code
+   - Version name
+   - Git tag
+   - Release notes
+
+2. Gradle tasks synchronize this information across:
+   - build.gradle.kts
+   - metadata/ink.trmnl.android.yml (F-Droid metadata)
+   - Fastlane changelog files
+
+#### Creating a new release
+
+1. Update version information:
+   ```bash
+   # Run the version update script to interactively update version.properties
+   ./scripts/update_version.sh
+   ```
+
+2. Synchronize version information across the project:
+   ```bash
+   # Updates all files with version information from version.properties
+   ./gradlew syncVersionInfo
+   
+   # Validates that version information is in sync
+   ./gradlew validateVersionSync
+   
+   # Or simply run both together
+   ./gradlew prepareRelease
+   ```
+
+3. Commit, tag and push:
+   ```bash
+   git commit -am "Prepare release X.Y.Z"
+   git tag vX.Y.Z
+   git push && git push origin vX.Y.Z
+   ```
 
 ---
 
