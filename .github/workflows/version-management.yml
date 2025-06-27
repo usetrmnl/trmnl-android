@@ -3,6 +3,10 @@
 # 
 # 🔍 TIP: Run `scripts/show_version_info.sh` locally to display current versions and get suggestions
 # for the next version number before running this workflow.
+#
+# Due to security restrictions, when PR is opened the workflows are not triggered automatically.
+# To trigger the workflows, you can make an empty commit with the following command:
+# ```git commit --allow-empty -m "chore: empty commit for triggering workflows" && git push```
 name: Version Management
 
 on:
