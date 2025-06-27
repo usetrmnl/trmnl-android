@@ -71,6 +71,23 @@ To build a debug APK:
 ./gradlew assembleDebug
 ```
 
+### Build Variants
+The app supports multiple build variants:
+- **Standard**: The default variant with all features
+- **F-Droid**: A variant optimized for F-Droid distribution without Google dependencies
+
+To build specific variants:
+```bash
+# Build the standard release variant
+./gradlew buildStandard
+
+# Build the F-Droid release variant
+./gradlew buildFDroid
+
+# Build all variants
+./gradlew buildAllFlavors
+```
+
 ### Snapshot Builds
 Automatic snapshot release builds are available in the [release workflow](https://github.com/usetrmnl/trmnl-android/actions/workflows/android-release.yml) artifacts.
 
