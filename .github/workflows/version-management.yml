@@ -1,3 +1,5 @@
+# This GitHub Actions workflow is intended for version management within the trmnl-android project.
+# The workflow helps ensure consistent and automated version control processes for the repository.
 name: Version Management
 
 on:
@@ -23,7 +25,7 @@ on:
         description: 'Create PR instead of direct commit'
         required: false
         type: boolean
-        default: false
+        default: true
       branch_name:
         description: 'Branch name for PR (only used if create_pr is true)'
         required: false
