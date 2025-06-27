@@ -137,4 +137,3 @@ jobs:
             After merging this PR, please create a tag with: `git tag ${{ env.GIT_TAG }} && git push origin ${{ env.GIT_TAG }}`
           branch: ${{ env.BRANCH_NAME }}
           base: ${{ github.ref_name }}
-          branch-exists-action: update
