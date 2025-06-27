@@ -178,6 +178,16 @@ jobs:
             - Updated F-Droid metadata
             - Created changelog file
             
-            After merging this PR, please create a tag with: `git tag ${{ env.GIT_TAG }} && git push origin ${{ env.GIT_TAG }}`
+            After merging this PR, please create a tag with: 
+            ```sh
+            git checkout main && git pull origin main
+            git tag ${{ env.GIT_TAG }} && git push origin ${{ env.GIT_TAG }}
+            ```
+            
+            **Note**: Due to security restrictions, when this PR is opened, the CI workflows are not triggered automatically. To trigger the workflows, you can make an empty commit with the following command:
+            
+            ```sh
+            git commit --allow-empty -m "chore: empty commit for triggering workflows" && git push
+            ```
           branch: ${{ env.BRANCH_NAME }}
           base: ${{ github.ref_name }}
