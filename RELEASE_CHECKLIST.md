@@ -44,7 +44,7 @@ This will display:
 
 This automated process ensures consistency across all version-related files without manual edits.
 
-## 4. Post-release tasks
+### 4. Post-release tasks
 
 After the version management workflow has completed:
 
