@@ -34,7 +34,8 @@ fi
 # Find and list changelog files
 echo "📝 Changelog files:"
 if [ -d "$ROOT_DIR/fastlane/metadata/android/en-US/changelogs" ]; then
-  for file in "$ROOT_DIR/fastlane/metadata/android/en-US/changelogs"/*.txt; do
+  # Using find with sort -V to ensure version-sorted order of changelog files
+  for file in $(find "$ROOT_DIR/fastlane/metadata/android/en-US/changelogs" -name "*.txt" | sort -V); do
     if [ -f "$file" ]; then
       VERSION=$(basename "$file" .txt)
       echo "  - Version $VERSION:"
