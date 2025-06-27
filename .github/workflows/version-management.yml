@@ -1,0 +1,126 @@
+name: Version Management
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name (semantic version e.g. 1.9.5)'
+        required: true
+        type: string
+      version_code:
+        description: 'Version code (integer, must increase with each release)'
+        required: true
+        type: string
+      git_tag:
+        description: 'Git tag for this release (defaults to v + version_name)'
+        required: false
+        type: string
+      release_notes:
+        description: 'Release notes (comma-separated items)'
+        required: true
+        type: string
+      create_pr:
+        description: 'Create PR instead of direct commit'
+        required: false
+        type: boolean
+        default: false
+      branch_name:
+        description: 'Branch name for PR (only used if create_pr is true)'
+        required: false
+        type: string
+        default: 'version-bump'
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set git user
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+      - name: Set git tag if not provided
+        if: ${{ inputs.git_tag == '' }}
+        run: echo "GIT_TAG=v${{ inputs.version_name }}" >> $GITHUB_ENV
+        
+      - name: Use provided git tag
+        if: ${{ inputs.git_tag != '' }}
+        run: echo "GIT_TAG=${{ inputs.git_tag }}" >> $GITHUB_ENV
+
+      - name: Create branch if creating PR
+        if: ${{ inputs.create_pr == true }}
+        run: |
+          BRANCH="${{ inputs.branch_name }}-${{ inputs.version_name }}"
+          git checkout -b $BRANCH
+          echo "BRANCH_NAME=$BRANCH" >> $GITHUB_ENV
+
+      - name: Update app/build.gradle.kts
+        run: |
+          sed -i "s/versionCode = [0-9]\\+/versionCode = ${{ inputs.version_code }}/g" app/build.gradle.kts
+          sed -i "s/versionName = \"[^\"]*\"/versionName = \"${{ inputs.version_name }}\"/g" app/build.gradle.kts
+          echo "✓ Updated app/build.gradle.kts with version ${{ inputs.version_name }} (${{ inputs.version_code }})"
+      
+      - name: Update F-Droid metadata file
+        run: |
+          if [ -f "metadata/ink.trmnl.android.yml" ]; then
+            sed -i "s/CurrentVersion: .*/CurrentVersion: ${{ inputs.version_name }}/g" metadata/ink.trmnl.android.yml
+            sed -i "s/CurrentVersionCode: [0-9]\\+/CurrentVersionCode: ${{ inputs.version_code }}/g" metadata/ink.trmnl.android.yml
+            sed -i "s/versionName: .*/versionName: ${{ inputs.version_name }}/g" metadata/ink.trmnl.android.yml
+            sed -i "s/versionCode: [0-9]\\+/versionCode: ${{ inputs.version_code }}/g" metadata/ink.trmnl.android.yml
+            sed -i "s/commit: .*/commit: ${{ env.GIT_TAG }}/g" metadata/ink.trmnl.android.yml
+            echo "✓ Updated metadata/ink.trmnl.android.yml with version ${{ inputs.version_name }} (${{ inputs.version_code }})"
+          else
+            echo "Warning: metadata/ink.trmnl.android.yml not found"
+          fi
+
+      - name: Create changelog file
+        run: |
+          mkdir -p fastlane/metadata/android/en-US/changelogs
+          echo "- Updated to the latest version (${{ inputs.version_name }})" > fastlane/metadata/android/en-US/changelogs/${{ inputs.version_code }}.txt
+          
+          # Process release notes
+          IFS=',' read -ra NOTES <<< "${{ inputs.release_notes }}"
+          for note in "${NOTES[@]}"; do
+            # Trim whitespace and add bullet point
+            trimmed_note=$(echo "$note" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+            echo "- $trimmed_note" >> fastlane/metadata/android/en-US/changelogs/${{ inputs.version_code }}.txt
+          done
+          
+          echo "✓ Created changelog file at fastlane/metadata/android/en-US/changelogs/${{ inputs.version_code }}.txt"
+          cat fastlane/metadata/android/en-US/changelogs/${{ inputs.version_code }}.txt
+
+      - name: Commit changes directly
+        if: ${{ inputs.create_pr == false }}
+        run: |
+          git add app/build.gradle.kts metadata/ fastlane/
+          git commit -m "chore: prepare release ${{ inputs.version_name }}"
+          git tag ${{ env.GIT_TAG }}
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin ${{ env.GIT_TAG }}
+          echo "✓ Changes committed and pushed to ${{ github.ref_name }}"
+          echo "✓ Created and pushed tag ${{ env.GIT_TAG }}"
+
+      - name: Create Pull Request
+        if: ${{ inputs.create_pr == true }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: prepare release ${{ inputs.version_name }}"
+          title: "Prepare release ${{ inputs.version_name }}"
+          body: |
+            This PR updates the version to ${{ inputs.version_name }} (${{ inputs.version_code }})
+            
+            ### Release Notes:
+            ${{ inputs.release_notes }}
+            
+            ### Changes:
+            - Updated app/build.gradle.kts
+            - Updated F-Droid metadata
+            - Created changelog file
+            
+            After merging this PR, please create a tag with: `git tag ${{ env.GIT_TAG }} && git push origin ${{ env.GIT_TAG }}`
+          branch: ${{ env.BRANCH_NAME }}
+          base: ${{ github.ref_name }}
