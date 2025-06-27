@@ -64,6 +64,46 @@ jobs:
           git update-ref -d refs/remotes/origin/$BRANCH || true
           echo "BRANCH_NAME=$BRANCH" >> $GITHUB_ENV
 
+      - name: Extract current version info
+        id: current_version
+        run: |
+          CURRENT_VERSION_CODE=$(grep -o 'versionCode = [0-9]\+' app/build.gradle.kts | awk '{print $3}')
+          CURRENT_VERSION_NAME=$(grep -o 'versionName = "[^"]*"' app/build.gradle.kts | sed 's/versionName = "\(.*\)"/\1/')
+          echo "CURRENT_VERSION_CODE=$CURRENT_VERSION_CODE" >> $GITHUB_ENV
+          echo "CURRENT_VERSION_NAME=$CURRENT_VERSION_NAME" >> $GITHUB_ENV
+          echo "Current version: $CURRENT_VERSION_NAME ($CURRENT_VERSION_CODE)"
+          
+      - name: Validate version is not downgraded
+        run: |
+          if [ ${{ inputs.version_code }} -le ${{ env.CURRENT_VERSION_CODE }} ]; then
+            echo "::error::Version code downgrade detected! New version code (${{ inputs.version_code }}) must be greater than current version code (${{ env.CURRENT_VERSION_CODE }})."
+            exit 1
+          fi
+          
+          # Simple version comparison using version components
+          IFS='.' read -ra CURRENT_VERSION_PARTS <<< "${{ env.CURRENT_VERSION_NAME }}"
+          IFS='.' read -ra NEW_VERSION_PARTS <<< "${{ inputs.version_name }}"
+          
+          # Compare major version
+          if [ ${NEW_VERSION_PARTS[0]} -lt ${CURRENT_VERSION_PARTS[0]} ]; then
+            echo "::error::Major version downgrade detected! New version (${{ inputs.version_name }}) has a lower major version than current version (${{ env.CURRENT_VERSION_NAME }})."
+            exit 1
+          elif [ ${NEW_VERSION_PARTS[0]} -eq ${CURRENT_VERSION_PARTS[0]} ]; then
+            # Same major version, check minor version
+            if [ ${NEW_VERSION_PARTS[1]} -lt ${CURRENT_VERSION_PARTS[1]} ]; then
+              echo "::error::Minor version downgrade detected! New version (${{ inputs.version_name }}) has a lower minor version than current version (${{ env.CURRENT_VERSION_NAME }})."
+              exit 1
+            elif [ ${NEW_VERSION_PARTS[1]} -eq ${CURRENT_VERSION_PARTS[1]} ]; then
+              # Same minor version, check patch version
+              if [ ${NEW_VERSION_PARTS[2]} -le ${CURRENT_VERSION_PARTS[2]} ]; then
+                echo "::error::Patch version not incremented! New version (${{ inputs.version_name }}) must have a higher patch version than current version (${{ env.CURRENT_VERSION_NAME }})."
+                exit 1
+              fi
+            fi
+          fi
+          
+          echo "✓ Version validation successful. Version will be upgraded from ${{ env.CURRENT_VERSION_NAME }} (${{ env.CURRENT_VERSION_CODE }}) to ${{ inputs.version_name }} (${{ inputs.version_code }})"
+
       - name: Update app/build.gradle.kts
         run: |
           sed -i "s/versionCode = [0-9]\\+/versionCode = ${{ inputs.version_code }}/g" app/build.gradle.kts
