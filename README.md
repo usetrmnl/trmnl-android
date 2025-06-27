@@ -72,38 +72,9 @@ To build specific variants:
 ./gradlew buildAllFlavors
 ```
 
-### Version Management
+### Release Process
 
-The project uses GitHub Actions to manage version synchronization across different files:
-
-- `app/build.gradle.kts`: Contains the app's version code and name
-- `metadata/ink.trmnl.android.yml`: Contains F-Droid metadata and versioning
-- `fastlane/metadata/android/en-US/changelogs/`: Contains version-specific changelog files
-
-#### Creating a new release
-
-1. **Check current version information**:
-   ```bash
-   # Show current version information and suggested next version
-   ./scripts/show_version_info.sh
-   ```
-
-2. **Run the Version Management workflow**:
-   - Go to GitHub Actions → Version Management workflow
-   - Click "Run workflow"
-   - Enter the required information:
-     - **Version name**: Semantic version (e.g., 1.9.5)
-     - **Version code**: Integer value, must increase with each release
-     - **Git tag** (optional): Defaults to v + version name
-     - **Release notes**: Comma-separated release notes
-     - **Create PR**: Whether to create a pull request or commit directly
-
-3. **Wait for workflow completion**:
-   - The workflow will update all necessary files
-   - It will create or update the changelog
-   - It will commit changes and create a git tag
-
-This automated process ensures consistency across all version-related files without manual edits.
+For instructions on creating new releases and managing versions across the project, see the [Release Checklist](RELEASE_CHECKLIST.md).
 
 ---
 
