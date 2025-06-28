@@ -47,11 +47,11 @@ android {
             storeFile = file("${rootProject.projectDir}/keystore/trmnl-app-release.keystore")
 
             // Values come from CI/CD secrets or local secret.properties file
-            // Note: keyPassword is intentionally omitted - this keystore works when
-            // jarsigner uses the store password for both store and key access
+            // Note: keyPassword is set to the same value as storePassword because this PKCS12 keystore
+            // requires the store password to be used for both store and key access
             storePassword = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as String?
             keyAlias = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS") as String?
-            // keyPassword = ... // Intentionally omitted - see note above
+            keyPassword = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as String?
         }
     }
 
