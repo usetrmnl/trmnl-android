@@ -38,7 +38,7 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/trmnl-app-release.keystore
       
       - name: Build Release APK
-        run: ./gradlew assembleStandardRelease
+        run: ./gradlew assembleRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -53,7 +53,7 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p artifact
-          cp app/build/outputs/apk/standard/release/app-standard-release.apk artifact/trmnl-mirror-v${{ steps.version.outputs.VERSION }}.apk
+          cp app/build/outputs/apk/release/app-release.apk artifact/trmnl-mirror-v${{ steps.version.outputs.VERSION }}.apk
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4

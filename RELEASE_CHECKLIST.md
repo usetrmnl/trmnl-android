@@ -55,8 +55,8 @@ After the version management workflow has completed:
 
 2. **Verify the build works with the new version**:
    ```bash
-   # Build both variants to ensure they work
-   ./gradlew buildStandard buildFDroid
+   # Build release variant to ensure it works
+   ./gradlew assembleRelease
    ```
 
 3. **Create a GitHub release**:
@@ -64,7 +64,7 @@ After the version management workflow has completed:
    - Select the tag created by the workflow
    - Title: "TRMNL Android v{VERSION_NAME}"
    - Description: Copy content from the changelog file
-   - Attach the built APKs
+   - Attach the built APK
 
 ## Troubleshooting
 

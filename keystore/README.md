@@ -40,10 +40,9 @@ The following GitHub Actions secrets are required:
 
 ### CI/CD Workflows Using Production Keystore
 
-- **`android-release.yml`**: Builds and signs standard release APKs
-- **`fdroid-build.yml`**: Builds and signs F-Droid release APKs
+- **`android-release.yml`**: Builds and signs release APKs using the production keystore in CI, with debug keystore fallback for local builds
 
-Both workflows decode the keystore from the base64 secret and provide the necessary environment variables for signing.
+The workflow decodes the keystore from the base64 secret and provides the necessary environment variables for signing.
 
 ## Related Resources
 - https://developer.android.com/studio/publish/app-signing
