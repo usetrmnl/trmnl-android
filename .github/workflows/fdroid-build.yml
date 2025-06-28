@@ -35,29 +35,84 @@ jobs:
           if [[ -n "${{ secrets.KEYSTORE_BASE64 }}" && -n "${{ secrets.KEYSTORE_PASSWORD }}" && -n "${{ secrets.KEY_ALIAS }}" && -n "${{ secrets.KEY_PASSWORD }}" ]]; then
             echo "✅ Keystore secrets found, setting up release signing"
             
-            # Decode the base64 keystore to a file
-            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/keystore/release.keystore
+            # Decode the base64 keystore to a file with careful handling of padding
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode -i > ${{ github.workspace }}/keystore/release.keystore 2>/dev/null || echo "⚠️ Base64 decoding error"
             
             # Verify the keystore was properly decoded
             if [ -s ${{ github.workspace }}/keystore/release.keystore ]; then
               echo "✅ Keystore decoded successfully ($(wc -c < ${{ github.workspace }}/keystore/release.keystore) bytes)"
+              
+              # Verify keystore integrity using keytool
+              if keytool -list -keystore ${{ github.workspace }}/keystore/release.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" > /dev/null 2>&1; then
+                echo "✅ Keystore verified successfully with provided password"
+              else
+                echo "⚠️ Keystore verification failed with provided password - will use debug keystore as fallback"
+                cp "${GITHUB_WORKSPACE}/keystore/debug.keystore" ${{ github.workspace }}/keystore/release.keystore
+              fi
             else
               echo "⚠️ Keystore decoding failed, will use debug keystore as fallback"
+              cp "${GITHUB_WORKSPACE}/keystore/debug.keystore" ${{ github.workspace }}/keystore/release.keystore
             fi
           else
             echo "⚠️ Keystore secrets not found, will use debug keystore as fallback"
+            cp "${GITHUB_WORKSPACE}/keystore/debug.keystore" ${{ github.workspace }}/keystore/release.keystore
+          fi
+          
+          # Final check to ensure keystore exists
+          if [ -f "${{ github.workspace }}/keystore/release.keystore" ]; then
+            echo "🔑 Keystore ready at: ${{ github.workspace }}/keystore/release.keystore"
+            ls -la ${{ github.workspace }}/keystore/
+          else
+            echo "❌ Keystore setup failed completely"
+            exit 1
           fi
       
       - name: Run F-Droid Tests
         run: ./gradlew testFdroidDebugUnitTest
         
+      - name: Display Keystore Info
+        run: |
+          echo "Checking keystore before build:"
+          file ${{ github.workspace }}/keystore/release.keystore
+          
+          # Try to list contents without showing sensitive info
+          if keytool -list -keystore ${{ github.workspace }}/keystore/release.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" 2>/dev/null | grep -q "Entry type:"; then
+            echo "✅ Keystore can be read with the provided password"
+          else
+            echo "⚠️ Cannot read keystore entries with the provided password"
+          fi
+          
+          # Check for common keystore types
+          for type in "JKS" "PKCS12" "JCEKS"; do
+            if keytool -list -keystore ${{ github.workspace }}/keystore/release.keystore -storetype $type -storepass "${{ secrets.KEYSTORE_PASSWORD }}" 2>/dev/null | grep -q "Entry type:"; then
+              echo "✓ Keystore works with type $type"
+              break
+            fi
+          done
+      
       - name: Build F-Droid APK
         env:
           RELEASE_KEYSTORE_PATH: ${{ github.workspace }}/keystore/release.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew buildFDroid
+        run: |
+          # Print debug info about environment
+          echo "🔑 Using keystore: $RELEASE_KEYSTORE_PATH"
+          echo "👤 Using key alias: $KEY_ALIAS"
+          
+          # Try with verbose output to diagnose issues
+          ./gradlew assembleFdroidRelease --stacktrace --info || {
+            echo "⚠️ Build failed with full signing, trying with explicit signing params"
+            
+            # Try with explicit signing config (sometimes this helps)
+            ./gradlew assembleFdroidRelease \
+              -Pandroid.injected.signing.store.file=$RELEASE_KEYSTORE_PATH \
+              -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
+              -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+              -Pandroid.injected.signing.key.password=$KEY_PASSWORD \
+              --stacktrace
+          }
 
       - name: Extract version name
         id: version
@@ -69,13 +124,35 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p artifact
-          cp app/build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}-unsigned.apk
+          
+          # Check for both potential output paths
+          if [ -f "app/build/outputs/apk/fdroid/release/app-fdroid-release.apk" ]; then
+            cp app/build/outputs/apk/fdroid/release/app-fdroid-release.apk artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}.apk
+            echo "✓ Found and copied signed APK"
+          elif [ -f "app/build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk" ]; then
+            cp app/build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}-unsigned.apk
+            echo "⚠️ Found and copied unsigned APK - signing may have failed"
+          else
+            echo "❌ Could not find any output APK!"
+            find app/build/outputs -name "*.apk" | sort
+            exit 1
+          fi
 
       - name: Upload F-Droid APK
         uses: actions/upload-artifact@v4
         with:
-          name: trmnl-mirror-fdroid-unsigned
-          path: artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}-unsigned.apk
+          name: trmnl-mirror-fdroid-build
+          path: artifact/*.apk
           # Use maximum allowed retention period
           # https://github.com/actions/upload-artifact?tab=readme-ov-file#retention-period
           retention-days: 90
+          
+      - name: Upload Build Reports (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fdroid-build-reports
+          path: |
+            app/build/reports/
+            app/build/outputs/logs/
+          retention-days: 5
