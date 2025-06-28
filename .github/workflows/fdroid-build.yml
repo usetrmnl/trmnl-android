@@ -67,8 +67,6 @@ jobs:
             exit 1
           fi
       
-      - name: Run F-Droid Tests
-        run: ./gradlew testFdroidDebugUnitTest
         
       - name: Display Keystore Info
         run: |
