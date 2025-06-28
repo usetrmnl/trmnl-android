@@ -29,8 +29,24 @@ jobs:
       - name: Run F-Droid Tests
         run: ./gradlew testFdroidDebugUnitTest
         
+      - name: Decode Keystore
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+          echo "✓ Keystore decoded successfully"
+
+      - name: Setup Signing Environment
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "CI=true" >> $GITHUB_ENV
+          echo "KEYSTORE_PATH=$GITHUB_WORKSPACE/release.keystore" >> $GITHUB_ENV
+          echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
+          echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+          echo "✓ Signing environment variables set"
+      
       - name: Build F-Droid APK
-        run: ./gradlew buildFDroid
+        run: ./gradlew assembleFdroidRelease
 
       - name: Extract version name
         id: version
@@ -42,13 +58,13 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p artifact
-          cp app/build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}-unsigned.apk
+          cp app/build/outputs/apk/fdroid/release/app-fdroid-release.apk artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}.apk
 
       - name: Upload F-Droid APK
         uses: actions/upload-artifact@v4
         with:
-          name: trmnl-mirror-fdroid-unsigned
-          path: artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}-unsigned.apk
+          name: trmnl-mirror-fdroid
+          path: artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}.apk
           # Use maximum allowed retention period
           # https://github.com/actions/upload-artifact?tab=readme-ov-file#retention-period
           retention-days: 90

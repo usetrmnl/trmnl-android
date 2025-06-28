@@ -106,17 +106,19 @@ android {
             dimension = "store"
             // Standard flavor with all features
             buildConfigField("Boolean", "FDROID_BUILD", "false")
-
-            // Apply signing only for standard flavor
+            
+            // Apply signing for standard flavor
             signingConfig = signingConfigs.getByName("release")
         }
         
         create("fdroid") {
             dimension = "store"
             // F-Droid specific configuration
-            // No non-free dependencies
+            // No non-free dependencies, but still signed
             buildConfigField("Boolean", "FDROID_BUILD", "true")
-            // ℹ️ No signing config for F-Droid flavor (F-Droid handles signing)
+            
+            // Apply the same signing configuration for F-Droid builds
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

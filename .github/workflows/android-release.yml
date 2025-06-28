@@ -55,7 +55,7 @@ jobs:
       - name: Build Release APK
         run: ./gradlew assembleStandardRelease
 
-      # Also build F-Droid release (unsigned)
+      # Also build F-Droid release (now also signed)
       - name: Build F-Droid Release
         run: ./gradlew assembleFdroidRelease
 
@@ -95,7 +95,7 @@ jobs:
       - name: Upload F-Droid Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: trmnl-mirror-fdroid
+          name: trmnl-mirror-fdroid-signed
           path: artifact/fdroid/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}.apk
           retention-days: 90
           

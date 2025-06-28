@@ -39,7 +39,12 @@ The app's build configuration checks if it's running in a CI environment:
 
 ## F-Droid Builds
 
-The F-Droid build flavor is not signed, as F-Droid handles the signing process with its own keys. This is configured in the app's `build.gradle.kts` file.
+The F-Droid build flavor is signed using the same signing configuration as the standard build flavor. This means:
+
+1. For local development, the F-Droid APK is signed with the debug keystore
+2. For CI builds (GitHub Actions), the F-Droid APK is signed with the production keystore
+
+Note that F-Droid will still rebuild and resign the app with their own signing key when including it in their repository. This is part of F-Droid's standard process and is independent of our signing configuration.
 
 ## Verifying the Configuration
 
