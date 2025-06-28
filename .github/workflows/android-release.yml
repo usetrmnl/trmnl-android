@@ -6,7 +6,7 @@ name: Android Release Build
 #
 # See:
 # - https://github.com/usetrmnl/trmnl-android/tree/main/keystore
-# - https://github.com/usetrmnl/trmnl-android/blob/main/app/build.gradle.kts#L44-L55
+# - https://github.com/usetrmnl/trmnl-android/blob/main/app/build.gradle.kts (signing configuration)
 
 
 on:

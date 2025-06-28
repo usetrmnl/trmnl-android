@@ -25,7 +25,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Run test and lint
-        run: ./gradlew lintKotlin testStandardDebugUnitTest --parallel --daemon
+        run: ./gradlew lintKotlin testDebugUnitTest --parallel --daemon
 
       - name: Build with Gradle
-        run: ./gradlew assembleStandardDebug --parallel --daemon
+        run: ./gradlew assembleDebug --parallel --daemon
