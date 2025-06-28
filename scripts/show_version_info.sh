@@ -19,15 +19,15 @@ echo "  - Version Code: $VERSION_CODE"
 echo "  - Version Name: $VERSION_NAME"
 echo
 
-# Extract version from F-Droid metadata
+# Extract version from metadata (optional)
 if [ -f "$ROOT_DIR/metadata/ink.trmnl.android.yml" ]; then
-  echo "🤖 From F-Droid metadata:"
-  FDROID_VERSION=$(grep -o 'CurrentVersion: .*' "$ROOT_DIR/metadata/ink.trmnl.android.yml" | awk '{print $2}')
-  FDROID_CODE=$(grep -o 'CurrentVersionCode: [0-9]*' "$ROOT_DIR/metadata/ink.trmnl.android.yml" | awk '{print $2}')
-  FDROID_TAG=$(grep -o 'commit: .*' "$ROOT_DIR/metadata/ink.trmnl.android.yml" | awk '{print $2}')
-  echo "  - Version Code: $FDROID_CODE"
-  echo "  - Version Name: $FDROID_VERSION"
-  echo "  - Git Tag: $FDROID_TAG"
+  echo "📄 From metadata/ink.trmnl.android.yml:"
+  METADATA_VERSION=$(grep -o 'CurrentVersion: .*' "$ROOT_DIR/metadata/ink.trmnl.android.yml" | awk '{print $2}' || echo "N/A")
+  METADATA_CODE=$(grep -o 'CurrentVersionCode: [0-9]*' "$ROOT_DIR/metadata/ink.trmnl.android.yml" | awk '{print $2}' || echo "N/A")
+  METADATA_TAG=$(grep -o 'commit: .*' "$ROOT_DIR/metadata/ink.trmnl.android.yml" | awk '{print $2}' || echo "N/A")
+  echo "  - Version Code: $METADATA_CODE"
+  echo "  - Version Name: $METADATA_VERSION"
+  echo "  - Git Tag: $METADATA_TAG"
   echo
 fi
 

@@ -29,35 +29,3 @@ plugins {
     // Also see: https://github.com/ZacSweers/anvil/blob/main/FORK.md
     alias(libs.plugins.anvil) apply false
 }
-
-// Task to build F-Droid APK
-tasks.register("buildFDroid") {
-    description = "Builds the F-Droid APK variant"
-    dependsOn(":app:assembleFdroidRelease")
-    
-    doLast {
-        println("F-Droid APK built successfully at: app/build/outputs/apk/fdroid/release/")
-    }
-}
-
-// Task to build standard APK for GitHub workflows
-tasks.register("buildStandard") {
-    description = "Builds the standard APK variant"
-    dependsOn(":app:assembleStandardRelease")
-    
-    doLast {
-        println("Standard APK built successfully at: app/build/outputs/apk/standard/release/")
-    }
-}
-
-// Task to verify all flavors build correctly
-tasks.register("buildAllFlavors") {
-    description = "Builds all flavor variants (Standard and F-Droid)"
-    dependsOn("buildStandard", "buildFDroid")
-    
-    doLast {
-        println("All flavor variants built successfully")
-        println("Standard APK: app/build/outputs/apk/standard/release/")
-        println("F-Droid APK: app/build/outputs/apk/fdroid/release/")
-    }
-}

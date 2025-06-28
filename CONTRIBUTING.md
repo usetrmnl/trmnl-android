@@ -78,18 +78,11 @@ The app supports multiple build variants:
 
 To build specific variants:
 ```bash
-# Build the standard release variant
-./gradlew buildStandard
-
-# Build the F-Droid release variant
-./gradlew buildFDroid
-
-# Build all variants
-./gradlew buildAllFlavors
+# Build the release variant
+./gradlew assembleRelease
 ```
 
-For more details on the F-Droid build process, see [BUILD_FDROID.md](BUILD_FDROID.md). This document provides guidelines and instructions to help you contribute effectively.
-
+This command builds a single, signed APK that works both locally (with debug keystore fallback) and in CI (with production keystore).
 
 ### Release Process
 

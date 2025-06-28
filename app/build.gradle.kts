@@ -71,6 +71,16 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+
+            // Sign release builds with production keystore in CI, fallback to debug keystore locally
+            signingConfig = if (signingConfigs.getByName("release").storeFile?.exists() == true &&
+                               signingConfigs.getByName("release").storePassword != null &&
+                               signingConfigs.getByName("release").keyAlias != null) {
+                signingConfigs.getByName("release")
+            } else {
+                println("⚠️  Production keystore not available, falling back to debug keystore for release build")
+                signingConfigs.getByName("debug")
+            }
         }
         
         debug {
@@ -79,30 +89,6 @@ android {
             buildConfigField("Boolean", "USE_FAKE_API", "true")
 
             signingConfig = signingConfigs.getByName("debug")
-        }
-    }
-
-    // Add product flavors for F-Droid compatibility
-    flavorDimensions += "store"
-    productFlavors {
-        create("standard") {
-            dimension = "store"
-            // Standard flavor with all features
-            buildConfigField("Boolean", "FDROID_BUILD", "false")
-
-            // Apply signing only for standard flavor
-            signingConfig = signingConfigs.getByName("release")
-        }
-        
-        create("fdroid") {
-            dimension = "store"
-            // F-Droid specific configuration
-            // No non-free dependencies
-            buildConfigField("Boolean", "FDROID_BUILD", "true")
-            
-            // ℹ️ Also sign the F-Droid build with the release keystore
-            // F-Droid will use reproducible builds process to validate authenticity
-            signingConfig = signingConfigs.getByName("release")
         }
     }
 
