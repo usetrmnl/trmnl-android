@@ -17,9 +17,9 @@ Repo: https://github.com/usetrmnl/trmnl-android.git
 Binaries: https://github.com/usetrmnl/trmnl-android/releases/download/v%v/trmnl-mirror-v%v.apk
 
 Builds:
-  - versionName: 1.9.4
-    versionCode: 15
-    commit: v1.9.4
+  - versionName: 1.9.6
+    versionCode: 17
+    commit: v1.9.6
     subdir: app
     gradle:
       - yes
@@ -28,5 +28,5 @@ AllowedAPKSigningKeys: 6e223dde257ec61506728c4cb5002885ac5d8799bf55c2d783d39a26c
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 1.9.4
-CurrentVersionCode: 15
+CurrentVersion: 1.9.6
+CurrentVersionCode: 17
