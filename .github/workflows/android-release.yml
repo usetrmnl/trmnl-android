@@ -36,28 +36,58 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
       
+      # Make sure CI environment variable is always set - this helps build.gradle.kts identify CI builds
+      - name: Set CI Environment Variable
+        run: echo "CI=true" >> $GITHUB_ENV
+        
+      - name: Check for Keystore Secret
+        id: check_keystore
+        run: |
+          if [[ -n "${{ secrets.KEYSTORE_BASE64 }}" && "${{ secrets.KEYSTORE_BASE64 }}" != "" ]]; then
+            echo "has_keystore=true" >> $GITHUB_OUTPUT
+            echo "Found keystore secret, will attempt to use it"
+          else
+            echo "has_keystore=false" >> $GITHUB_OUTPUT
+            echo "No keystore secret found, will use debug keystore"
+          fi
+      
       - name: Decode Keystore
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        if: steps.check_keystore.outputs.has_keystore == 'true'
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
-          echo "✓ Keystore decoded successfully"
+          if [ -s release.keystore ]; then
+            echo "✓ Keystore decoded successfully"
+          else
+            echo "::warning::Keystore file is empty after decoding, will fall back to debug keystore"
+            rm -f release.keystore
+            exit 0  # Continue workflow even if this step fails
+          fi
 
-      - name: Setup Signing Environment
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      - name: Setup Release Signing Environment
+        if: steps.check_keystore.outputs.has_keystore == 'true' && hashFiles('release.keystore')
         run: |
-          echo "CI=true" >> $GITHUB_ENV
           echo "KEYSTORE_PATH=$GITHUB_WORKSPACE/release.keystore" >> $GITHUB_ENV
           echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
           echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
           echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
-          echo "✓ Signing environment variables set"
+          echo "✓ Signing environment variables set for production keystore"
+          
+      - name: Setup Debug Signing Environment (Fallback)
+        if: steps.check_keystore.outputs.has_keystore != 'true' || !hashFiles('release.keystore')
+        run: |
+          echo "Using debug keystore as fallback"
+          echo "✓ Debug keystore will be used automatically by Gradle"
       
       - name: Build Release APK
-        run: ./gradlew assembleStandardRelease
+        run: |
+          # Add verbose output for signing config to help diagnose issues
+          ./gradlew assembleStandardRelease --info
 
       # Also build F-Droid release (now also signed)
       - name: Build F-Droid Release
-        run: ./gradlew assembleFdroidRelease
+        run: |
+          # Add verbose output for signing config to help diagnose issues
+          ./gradlew assembleFdroidRelease --info
 
       - name: Extract version name
         id: version

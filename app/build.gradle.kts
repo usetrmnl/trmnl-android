@@ -50,12 +50,25 @@ android {
                 val keystorePath = System.getenv("KEYSTORE_PATH")
                 if (keystorePath != null && file(keystorePath).exists()) {
                     storeFile = file(keystorePath)
-                    storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-                    keyAlias = System.getenv("KEY_ALIAS") ?: ""
-                    keyPassword = System.getenv("KEY_PASSWORD") ?: ""
-                    println("Using CI signing configuration with keystore: $keystorePath")
+                    val storePass = System.getenv("KEYSTORE_PASSWORD")
+                    val keyAliasEnv = System.getenv("KEY_ALIAS")
+                    val keyPassEnv = System.getenv("KEY_PASSWORD")
+                    
+                    // Only use the CI keystore if all required environment variables are provided
+                    if (!storePass.isNullOrEmpty() && !keyAliasEnv.isNullOrEmpty() && !keyPassEnv.isNullOrEmpty()) {
+                        storePassword = storePass
+                        keyAlias = keyAliasEnv
+                        keyPassword = keyPassEnv
+                        println("✅ Using CI signing configuration with keystore: $keystorePath")
+                    } else {
+                        println("⚠️ Missing required signing credentials. Fallback to debug keystore.")
+                        storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
+                        storePassword = "android"
+                        keyAlias = "androiddebugkey"
+                        keyPassword = "android"
+                    }
                 } else {
-                    println("Warning: CI keystore not found at $keystorePath. Fallback to debug keystore.")
+                    println("⚠️ CI keystore not found at $keystorePath. Fallback to debug keystore.")
                     storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
                     storePassword = "android"
                     keyAlias = "androiddebugkey"
@@ -63,7 +76,7 @@ android {
                 }
             } else {
                 // For local development, use the debug keystore
-                println("Using debug keystore for release builds (local development)")
+                println("ℹ️ Using debug keystore for release builds (local development)")
                 storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
                 storePassword = "android"
                 keyAlias = "androiddebugkey"
