@@ -42,16 +42,21 @@ android {
         }
         
         create("release") {
-            // Uses the same debug keystore for release builds to enable CLI building
-            // ⚠️ This is temporary solution as app is still under development
-            //    It allows early adopters to test drive the app without us worrying about signing key.
-            //    - 📚 https://github.com/usetrmnl/trmnl-android/blob/main/keystore/README.md
-            storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
-
-            // ℹ️ When time comes, these values should come from `secret.properties` file or CI/CD secrets.
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+            // Check if running in GitHub Actions CI environment
+            val isRunningOnCI = System.getenv("GITHUB_ACTIONS").equals("true", ignoreCase = true)
+            val keystorePath = System.getenv("RELEASE_KEYSTORE_PATH") ?: "${rootProject.projectDir}/keystore/debug.keystore"
+            
+            storeFile = file(keystorePath)
+            
+            // Use CI secrets if available, otherwise fallback to debug keystore values
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "android"
+            keyAlias = System.getenv("KEY_ALIAS") ?: "androiddebugkey" 
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
+            
+            logger.lifecycle("---- Release Signing Config ----")
+            logger.lifecycle("🔑 Using keystore: ${storeFile?.absolutePath}")
+            logger.lifecycle("🔒 Is CI build: $isRunningOnCI")
+            logger.lifecycle("-------------------------")
         }
     }
 
@@ -90,7 +95,7 @@ android {
             // Standard flavor with all features
             buildConfigField("Boolean", "FDROID_BUILD", "false")
 
-            // Apply signing only for standard flavor
+            // Apply signing for standard flavor
             signingConfig = signingConfigs.getByName("release")
         }
         
@@ -99,7 +104,9 @@ android {
             // F-Droid specific configuration
             // No non-free dependencies
             buildConfigField("Boolean", "FDROID_BUILD", "true")
-            // ℹ️ No signing config for F-Droid flavor (F-Droid handles signing)
+            
+            // Also apply release signing for F-Droid flavor when building locally or in CI
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

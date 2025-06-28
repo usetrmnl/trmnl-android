@@ -9,7 +9,7 @@ The app includes specific configurations for F-Droid compatibility:
 1. A dedicated `fdroid` product flavor that excludes Google Fonts
 2. A specific `fdroidRelease` build type 
 3. System fonts are used instead of Google Fonts for the F-Droid version
-4. The F-Droid build is **not signed** (as per [PR #106](https://github.com/usetrmnl/trmnl-android/pull/106)) - F-Droid handles the signing process
+4. The F-Droid build is signed with the same signing configuration as the standard build, and F-Droid uses reproducible builds mechanism to verify the APK
 
 ## Building the F-Droid Version
 
@@ -19,7 +19,7 @@ To build the F-Droid version locally:
 ./gradlew assembleFdroidRelease
 ```
 
-This will generate an unsigned APK in `app/build/outputs/apk/fdroid/release/` that is suitable for F-Droid submission. Unlike the standard release build, the F-Droid build variant does not have a signing configuration, as F-Droid's build system will handle the signing process.
+This will generate a signed APK in `app/build/outputs/apk/fdroid/release/` that is suitable for F-Droid submission. The F-Droid build will be signed with your release key when building locally or in CI, and F-Droid's build system will verify the APK through their reproducible builds mechanism.
 
 Alternatively, you can use the convenience task:
 
@@ -58,4 +58,4 @@ Ensure the following are available:
 - F-Droid metadata is complete
 - The app builds successfully with the F-Droid build system
 
-Note that F-Droid will build and sign the app themselves using their own signing key. Our build process intentionally does not include a signing configuration for the F-Droid variant (as implemented in [PR #106](https://github.com/usetrmnl/trmnl-android/pull/106)).
+Note that F-Droid uses a reproducible builds approach - they will build the app from source and verify it matches the developer-signed APK. This ensures the published APK comes directly from the developer while still verifying it was built from the exact source code. For details, see the [F-Droid Reproducible Builds documentation](https://f-droid.org/en/docs/Reproducible_Builds/).
