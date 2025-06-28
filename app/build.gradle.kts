@@ -42,16 +42,16 @@ android {
         }
         
         create("release") {
-            // Uses the same debug keystore for release builds to enable CLI building
-            // ⚠️ This is temporary solution as app is still under development
-            //    It allows early adopters to test drive the app without us worrying about signing key.
-            //    - 📚 https://github.com/usetrmnl/trmnl-android/blob/main/keystore/README.md
-            storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
+            // Production keystore for release builds
+            // The keystore file should be decoded from KEYSTORE_BASE64 secret in CI/CD
+            storeFile = file("${rootProject.projectDir}/keystore/trmnl-app-release.keystore")
 
-            // ℹ️ When time comes, these values should come from `secret.properties` file or CI/CD secrets.
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+            // Values come from CI/CD secrets or local secret.properties file
+            // Note: keyPassword is set to the same value as storePassword because this PKCS12 keystore
+            // requires the store password to be used for both store and key access
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as String?
+            keyAlias = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS") as String?
+            keyPassword = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as String?
         }
     }
 
@@ -99,7 +99,10 @@ android {
             // F-Droid specific configuration
             // No non-free dependencies
             buildConfigField("Boolean", "FDROID_BUILD", "true")
-            // ℹ️ No signing config for F-Droid flavor (F-Droid handles signing)
+            
+            // ℹ️ Also sign the F-Droid build with the release keystore
+            // F-Droid will use reproducible builds process to validate authenticity
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

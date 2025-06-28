@@ -1,11 +1,14 @@
 name: F-Droid Build
 
+# Builds a signed F-Droid APK using the production keystore.
+# F-Droid will verify the signature during their reproducible build process.
+
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  # This allows manual triggering of the workflow, which results in making F-Droid APK build
+  # This allows manual triggering of the workflow, which results in making a signed F-Droid APK build
   # Go to the "Actions" tab the repository, select this workflow, and click the "Run workflow" button to run it manually.
   workflow_dispatch: 
 
@@ -25,9 +28,16 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+      
+      - name: Decode keystore from base64
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/trmnl-app-release.keystore
         
       - name: Build F-Droid APK
         run: ./gradlew buildFDroid
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
 
       - name: Extract version name
         id: version
@@ -39,13 +49,13 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p artifact
-          cp app/build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}-unsigned.apk
+          cp app/build/outputs/apk/fdroid/release/app-fdroid-release.apk artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}.apk
 
       - name: Upload F-Droid APK
         uses: actions/upload-artifact@v4
         with:
-          name: trmnl-mirror-fdroid-unsigned
-          path: artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}-unsigned.apk
+          name: trmnl-mirror-fdroid-signed
+          path: artifact/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}.apk
           # Use maximum allowed retention period
           # https://github.com/actions/upload-artifact?tab=readme-ov-file#retention-period
           retention-days: 90
