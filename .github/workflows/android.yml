@@ -23,41 +23,9 @@ jobs:
       # https://github.com/gradle/actions/tree/main/setup-gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-        
-      - name: Set up keystore
-        run: |
-          # Create directory to store the keystore
-          mkdir -p ${{ github.workspace }}/keystore
-          
-          # Check if keystore secrets are available
-          if [[ -n "${{ secrets.KEYSTORE_BASE64 }}" && -n "${{ secrets.KEYSTORE_PASSWORD }}" && -n "${{ secrets.KEY_ALIAS }}" && -n "${{ secrets.KEY_PASSWORD }}" ]]; then
-            echo "✅ Keystore secrets found, setting up release signing"
-            
-            # Decode the base64 keystore to a file
-            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/keystore/release.keystore
-            
-            # Verify the keystore was properly decoded
-            if [ -s ${{ github.workspace }}/keystore/release.keystore ]; then
-              echo "✅ Keystore decoded successfully ($(wc -c < ${{ github.workspace }}/keystore/release.keystore) bytes)"
-            else
-              echo "⚠️ Keystore decoding failed, will use debug keystore as fallback"
-            fi
-          else
-            echo "⚠️ Keystore secrets not found, will use debug keystore as fallback"
-          fi
 
       - name: Run test and lint
-        env:
-          RELEASE_KEYSTORE_PATH: ${{ github.workspace }}/keystore/release.keystore
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew lintKotlin testStandardDebugUnitTest --parallel --daemon
 
       - name: Build with Gradle
-        env:
-          RELEASE_KEYSTORE_PATH: ${{ github.workspace }}/keystore/release.keystore
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleStandardDebug --parallel --daemon
