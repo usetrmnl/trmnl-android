@@ -43,36 +43,65 @@ android {
         
         create("release") {
             // Check if we're running in CI environment
-            val isRunningOnCI = System.getenv("CI") == "true"
+            val isRunningOnCI = System.getenv("CI") == "true" || project.hasProperty("CI")
             println("🔍 CI Environment Variable: $isRunningOnCI")
             
             if (isRunningOnCI) {
-                // Use CI secrets for signing when running on GitHub Actions
-                val keystorePath = System.getenv("KEYSTORE_PATH")
+                // Try multiple sources for the keystore path
+                var keystorePath: String? = System.getenv("KEYSTORE_PATH")
+                if (keystorePath.isNullOrEmpty() && project.hasProperty("KEYSTORE_PATH")) {
+                    keystorePath = project.property("KEYSTORE_PATH") as String
+                }
+                
                 println("🔍 KEYSTORE_PATH: ${keystorePath ?: "not set"}")
                 println("🔍 KEYSTORE_PATH exists: ${if (keystorePath != null) file(keystorePath).exists() else false}")
                 
-                if (keystorePath != null && file(keystorePath).exists()) {
-                    // Print keystore file info
-                    println("🔍 Keystore file size: ${file(keystorePath).length()} bytes")
+                // Check for explicit keystore file
+                val explicitKeystoreFile = file("$rootDir/release.keystore")
+                if (explicitKeystoreFile.exists()) {
+                    println("🔍 Found explicit keystore at ${explicitKeystoreFile.absolutePath}")
+                }
+                
+                if ((keystorePath != null && file(keystorePath).exists()) || explicitKeystoreFile.exists()) {
+                    val actualKeystoreFile = if (keystorePath != null && file(keystorePath).exists()) {
+                        file(keystorePath)
+                    } else {
+                        explicitKeystoreFile
+                    }
                     
-                    val storePass = System.getenv("KEYSTORE_PASSWORD")
-                    val keyAliasEnv = System.getenv("KEY_ALIAS") 
-                    val keyPassEnv = System.getenv("KEY_PASSWORD")
+                    // Print keystore file info
+                    println("🔍 Using keystore: ${actualKeystoreFile.absolutePath}")
+                    println("🔍 Keystore file size: ${actualKeystoreFile.length()} bytes")
+                    
+                    // Try multiple sources for credentials
+                    var storePass = System.getenv("KEYSTORE_PASSWORD")
+                    if (storePass.isNullOrEmpty() && project.hasProperty("KEYSTORE_PASSWORD")) {
+                        storePass = project.property("KEYSTORE_PASSWORD") as String
+                    }
+                    
+                    var keyAliasEnv = System.getenv("KEY_ALIAS")
+                    if (keyAliasEnv.isNullOrEmpty() && project.hasProperty("KEY_ALIAS")) {
+                        keyAliasEnv = project.property("KEY_ALIAS") as String
+                    }
+                    
+                    var keyPassEnv = System.getenv("KEY_PASSWORD")
+                    if (keyPassEnv.isNullOrEmpty() && project.hasProperty("KEY_PASSWORD")) {
+                        keyPassEnv = project.property("KEY_PASSWORD") as String
+                    }
                     
                     println("🔍 KEYSTORE_PASSWORD is set: ${!storePass.isNullOrEmpty()}")
                     println("🔍 KEY_ALIAS is set: ${!keyAliasEnv.isNullOrEmpty()}")
                     println("🔍 KEY_PASSWORD is set: ${!keyPassEnv.isNullOrEmpty()}")
                     
-                    // Only use the CI keystore if all required environment variables are provided
+                    // Only use the CI keystore if all required credentials are provided
                     if (!storePass.isNullOrEmpty() && !keyAliasEnv.isNullOrEmpty() && !keyPassEnv.isNullOrEmpty()) {
                         try {
-                            storeFile = file(keystorePath)
+                            storeFile = actualKeystoreFile
                             storePassword = storePass
                             keyAlias = keyAliasEnv
                             keyPassword = keyPassEnv
-                            println("✅ Using CI signing configuration with keystore: $keystorePath")
-                            println("✅ StoreFile: ${storeFile?.absolutePath}")
+                            println("✅ Configured signing with keystore: ${actualKeystoreFile.absolutePath}")
+                            println("✅ StoreFile path: ${storeFile?.absolutePath}")
                             println("✅ KeyAlias: $keyAlias")
                         } catch (e: Exception) {
                             println("❌ Error setting up signing: ${e.message}")
@@ -90,7 +119,7 @@ android {
                         keyPassword = "android"
                     }
                 } else {
-                    println("⚠️ CI keystore not found at $keystorePath. Fallback to debug keystore.")
+                    println("⚠️ Keystore not found. Fallback to debug keystore.")
                     storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
                     storePassword = "android"
                     keyAlias = "androiddebugkey"

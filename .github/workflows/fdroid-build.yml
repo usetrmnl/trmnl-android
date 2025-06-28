@@ -64,19 +64,46 @@ jobs:
           # Check if the keystore file was created and has content
           if [ -s release.keystore ]; then
             echo "✓ Keystore decoded successfully"
-            # Validate keystore file format with keytool
-            if keytool -list -keystore release.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" > /dev/null 2>&1; then
+            echo "Keystore file size: $(wc -c < release.keystore) bytes"
+            
+            # Test different password combinations to debug issues
+            echo "Testing keystore with provided password..."
+            keytool -list -keystore release.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" > /tmp/keytool-output.txt 2>&1 || echo "Failed with provided password"
+            
+            if grep -q "Keystore type:" /tmp/keytool-output.txt; then
               echo "✓ Keystore format is valid and password is correct"
-              # Print some basic info about the keystore (no sensitive data)
-              keytool -list -keystore release.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" | grep -v Fingerprint
+              cat /tmp/keytool-output.txt | grep -v Fingerprint
             else
-              echo "::error::Keystore format is invalid or password is incorrect"
-              # Try with empty password to see if that works
-              if keytool -list -keystore release.keystore -storepass "" > /dev/null 2>&1; then
-                echo "::warning::Keystore works with empty password - check your KEYSTORE_PASSWORD secret"
+              echo "::warning::Keystore format is invalid or password is incorrect with provided password"
+              
+              # Try with empty password
+              echo "Testing keystore with empty password..."
+              keytool -list -keystore release.keystore -storepass "" > /tmp/keytool-empty.txt 2>&1 || echo "Failed with empty password"
+              
+              if grep -q "Keystore type:" /tmp/keytool-empty.txt; then
+                echo "::warning::Keystore works with EMPTY PASSWORD - update your KEYSTORE_PASSWORD secret!"
+                # Use empty password moving forward
+                echo "KEYSTORE_PASSWORD_OVERRIDE=" >> $GITHUB_ENV
+              else
+                # Try with default "android" password
+                echo "Testing keystore with 'android' as password..."
+                keytool -list -keystore release.keystore -storepass "android" > /tmp/keytool-android.txt 2>&1 || echo "Failed with 'android' password"
+                
+                if grep -q "Keystore type:" /tmp/keytool-android.txt; then
+                  echo "::warning::Keystore works with 'android' as password - update your KEYSTORE_PASSWORD secret!"
+                  # Use android password moving forward
+                  echo "KEYSTORE_PASSWORD_OVERRIDE=android" >> $GITHUB_ENV
+                fi
               fi
-              # Don't exit here, let it try to use the keystore anyway
             fi
+            
+            # Try to get basic info about the keystore
+            echo "Available aliases in the keystore:"
+            keytool -list -keystore release.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" 2>/dev/null | grep "," || echo "Could not list aliases"
+            
+            # Create a copy for debugging
+            cp release.keystore "$GITHUB_WORKSPACE/release.keystore.copy"
+            chmod 644 "$GITHUB_WORKSPACE/release.keystore.copy"
           else
             echo "::warning::Keystore file is empty after decoding, will fall back to debug keystore"
             rm -f release.keystore
@@ -88,22 +115,25 @@ jobs:
           # Set absolute path to keystore
           KEYSTORE_FULL_PATH="$GITHUB_WORKSPACE/release.keystore"
           echo "KEYSTORE_PATH=$KEYSTORE_FULL_PATH" >> $GITHUB_ENV
-          echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+          if [ -n "$KEYSTORE_PASSWORD_OVERRIDE" ]; then
+            echo "Using password override: $KEYSTORE_PASSWORD_OVERRIDE"
+            echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD_OVERRIDE" >> $GITHUB_ENV
+          else
+            echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+          fi
           echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
           echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
           
           # Verify file permissions and existence
           ls -la "$KEYSTORE_FULL_PATH"
           
-          # Create a simple script to test keystore access
-          cat > test-keystore.sh << 'EOF'
-          #!/bin/bash
+          # Test keystore access directly with the file path (not using env vars)
           echo "Testing keystore access..."
-          keytool -list -keystore "$KEYSTORE_PATH" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" 2>&1 || echo "Failed to access keystore"
-          EOF
+          keytool -list -keystore "$KEYSTORE_FULL_PATH" -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -alias "${{ secrets.KEY_ALIAS }}" 2>&1 || echo "Failed to access keystore"
           
-          chmod +x test-keystore.sh
-          ./test-keystore.sh
+          # Print information about the keystore (without exposing secrets)
+          echo "Keystore details:"
+          keytool -list -keystore "$KEYSTORE_FULL_PATH" -storepass "${{ secrets.KEYSTORE_PASSWORD }}" | grep "Keystore" || echo "Could not read keystore information"
           
           echo "✓ Signing environment variables set for production keystore"
           
@@ -145,9 +175,23 @@ jobs:
             ls -la "$KEYSTORE_PATH"
           fi
           
+          # Create a properties file for signing
+          if [ -f "$KEYSTORE_PATH" ]; then
+            echo "Creating gradle.properties with signing information..."
+            cat > ~/.gradle/gradle.properties << EOF
+            CI=true
+            KEYSTORE_PATH=$KEYSTORE_PATH
+            KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD
+            KEY_ALIAS=$KEY_ALIAS
+            KEY_PASSWORD=$KEY_PASSWORD
+            EOF
+            chmod 600 ~/.gradle/gradle.properties
+            echo "✓ Created gradle.properties file"
+          fi
+          
           # Try to build with debug level logging
-          echo "Building F-Droid APK with debug logging..."
-          ./gradlew assembleFdroidRelease --debug
+          echo "Building F-Droid APK with info logging..."
+          ./gradlew assembleFdroidRelease --info
 
       - name: Extract version name
         id: version
