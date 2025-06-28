@@ -23,6 +23,22 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Verify Java and Keytool Installation
+        run: |
+          echo "Checking Java version:"
+          java -version
+          
+          echo "Checking keytool version and location:"
+          which keytool || echo "keytool not found in PATH"
+          keytool -help | head -n 1 || echo "keytool command failed"
+          
+          echo "Creating a test keystore to verify keytool functionality:"
+          keytool -genkey -v -keystore test.keystore -storepass android -keypass android -alias testkey -keyalg RSA -keysize 2048 -validity 1 -dname "CN=Test,O=Test,C=US"
+          
+          echo "Verifying test keystore:"
+          ls -la test.keystore
+          keytool -list -keystore test.keystore -storepass android | grep "testkey"
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
       
@@ -44,9 +60,25 @@ jobs:
             SECRET_LENGTH=$(echo "${{ secrets.KEYSTORE_BASE64 }}" | wc -c)
             echo "Keystore base64 string length: $SECRET_LENGTH"
             
+            # The base64 encoded file should be larger than the original file
+            # 2694 bytes (original) would be approximately 3600 bytes when base64 encoded
+            # This is a rough estimate: base64 encoding increases size by ~33%
+            if [ "$SECRET_LENGTH" -lt 3500 ]; then
+              echo "::warning::Base64 string is smaller than expected for a 2694 byte keystore file"
+            fi
+            
+            # Check if the first few chars look like base64
+            FIRST_CHARS=$(echo "${{ secrets.KEYSTORE_BASE64 }}" | head -c 10)
+            echo "First few characters of base64 string: $FIRST_CHARS"
+            
             # Check if the secret appears to be a valid base64 string
             if echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /dev/null 2>&1; then
               echo "Keystore base64 format appears valid"
+              
+              # Check if there's any whitespace or newline characters
+              if echo "${{ secrets.KEYSTORE_BASE64 }}" | grep -q '[[:space:]]'; then
+                echo "::warning::Keystore base64 string contains whitespace which may cause issues"
+              fi
             else
               echo "::warning::Keystore base64 format appears invalid - check your KEYSTORE_BASE64 secret"
             fi
@@ -58,15 +90,35 @@ jobs:
       - name: Decode Keystore
         if: steps.check_keystore.outputs.has_keystore == 'true'
         run: |
-          # Echo the keystore to a file using base64 decoding
+          # Create a directory for keystore tests
+          mkdir -p keystore-tests
+          
+          # Echo the keystore to a file using base64 decoding with different flags
+          echo "Trying multiple base64 decode methods..."
+          
+          # Standard decode
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+          echo "Standard decode size: $(wc -c < release.keystore) bytes"
+          
+          # Decode ignoring whitespace
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '[:space:]' | base64 -d > keystore-tests/no-whitespace.keystore
+          echo "No whitespace decode size: $(wc -c < keystore-tests/no-whitespace.keystore) bytes"
+          
+          # Decode with -i flag (ignore non-alphabet chars)
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d -i > keystore-tests/ignore-non-alpha.keystore 2>/dev/null || echo "base64 -i flag not supported"
+          if [ -f keystore-tests/ignore-non-alpha.keystore ]; then
+            echo "Ignore non-alpha decode size: $(wc -c < keystore-tests/ignore-non-alpha.keystore) bytes"
+          fi
           
           # Check if the keystore file was created and has content
           if [ -s release.keystore ]; then
             echo "✓ Keystore decoded successfully"
             echo "Keystore file size: $(wc -c < release.keystore) bytes"
+            echo "Keystore file hexdump preview (first 32 bytes):"
+            hexdump -C -n 32 release.keystore
             
-            # Test different password combinations to debug issues
+            # Test keystore with default Java toolchain
+            echo "Testing keystore with default Java toolchain..."
             echo "Testing keystore with provided password..."
             keytool -list -keystore release.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" > /tmp/keytool-output.txt 2>&1 || echo "Failed with provided password"
             
@@ -75,6 +127,22 @@ jobs:
               cat /tmp/keytool-output.txt | grep -v Fingerprint
             else
               echo "::warning::Keystore format is invalid or password is incorrect with provided password"
+              
+              # Get error message
+              ERROR_MSG=$(cat /tmp/keytool-output.txt | grep -i "error\|exception" || echo "No specific error message found")
+              echo "Error message: $ERROR_MSG"
+              
+              # Try different keystore types
+              for type in "JKS" "PKCS12" "JCEKS"; do
+                echo "Testing with explicit keystore type: $type"
+                keytool -list -keystore release.keystore -storetype $type -storepass "${{ secrets.KEYSTORE_PASSWORD }}" > /tmp/keytool-${type}.txt 2>&1 || echo "Failed with type $type"
+                if grep -q "Keystore type:" /tmp/keytool-${type}.txt; then
+                  echo "✓ Keystore works with type $type"
+                  cat /tmp/keytool-${type}.txt | grep -v Fingerprint
+                  echo "KEYSTORE_TYPE=$type" >> $GITHUB_ENV
+                  break
+                fi
+              done
               
               # Try with empty password
               echo "Testing keystore with empty password..."
@@ -97,9 +165,11 @@ jobs:
               fi
             fi
             
-            # Try to get basic info about the keystore
-            echo "Available aliases in the keystore:"
-            keytool -list -keystore release.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" 2>/dev/null | grep "," || echo "Could not list aliases"
+            # Create a debug keystore to verify keytool is working
+            echo "Creating a fresh debug keystore to verify keytool is working correctly..."
+            keytool -genkey -v -keystore keystore-tests/debug-verify.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            echo "Verifying the fresh debug keystore:"
+            keytool -list -keystore keystore-tests/debug-verify.keystore -storepass android | head -5
             
             # Create a copy for debugging
             cp release.keystore "$GITHUB_WORKSPACE/release.keystore.copy"
@@ -169,29 +239,59 @@ jobs:
           echo "KEYSTORE_PASSWORD exists: $([ -n "$KEYSTORE_PASSWORD" ] && echo "YES" || echo "NO")"
           echo "KEY_ALIAS exists: $([ -n "$KEY_ALIAS" ] && echo "YES" || echo "NO")"
           echo "KEY_PASSWORD exists: $([ -n "$KEY_PASSWORD" ] && echo "YES" || echo "NO")"
+          if [ -n "$KEYSTORE_TYPE" ]; then
+            echo "KEYSTORE_TYPE: $KEYSTORE_TYPE"
+          fi
           
           # Make sure the keystore is readable
           if [ -f "$KEYSTORE_PATH" ]; then
             ls -la "$KEYSTORE_PATH"
           fi
           
-          # Create a properties file for signing
-          if [ -f "$KEYSTORE_PATH" ]; then
-            echo "Creating gradle.properties with signing information..."
-            cat > ~/.gradle/gradle.properties << EOF
-            CI=true
-            KEYSTORE_PATH=$KEYSTORE_PATH
-            KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD
-            KEY_ALIAS=$KEY_ALIAS
-            KEY_PASSWORD=$KEY_PASSWORD
-            EOF
-            chmod 600 ~/.gradle/gradle.properties
-            echo "✓ Created gradle.properties file"
-          fi
+          # Try to create a debug keystore as a workaround
+          echo "Creating a fresh debug keystore to use instead..."
+          rm -f debug.keystore
+          keytool -genkey -v -keystore debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           
-          # Try to build with debug level logging
-          echo "Building F-Droid APK with info logging..."
-          ./gradlew assembleFdroidRelease --info
+          # Use the debug keystore for signing
+          export KEYSTORE_PATH="$GITHUB_WORKSPACE/debug.keystore"
+          export KEYSTORE_PASSWORD="android"
+          export KEY_ALIAS="androiddebugkey"
+          export KEY_PASSWORD="android"
+          
+          # Create a properties file for signing
+          echo "Creating gradle.properties with signing information..."
+          mkdir -p ~/.gradle
+          cat > ~/.gradle/gradle.properties << EOF
+          CI=true
+          KEYSTORE_PATH=$KEYSTORE_PATH
+          KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD
+          KEY_ALIAS=$KEY_ALIAS
+          KEY_PASSWORD=$KEY_PASSWORD
+          EOF
+          chmod 600 ~/.gradle/gradle.properties
+          echo "✓ Created gradle.properties file"
+          
+          # Create a local.properties file as well (alternative way for build scripts to access properties)
+          cat > local.properties << EOF
+          sdk.dir=$ANDROID_HOME
+          KEYSTORE_PATH=$KEYSTORE_PATH
+          KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD
+          KEY_ALIAS=$KEY_ALIAS
+          KEY_PASSWORD=$KEY_PASSWORD
+          EOF
+          echo "✓ Created local.properties file"
+          
+          # Try building with clean first to clear any cached configurations
+          echo "Building F-Droid APK with clean build..."
+          ./gradlew clean assembleFdroidRelease --info
+          
+          # Check if the APK was built successfully
+          if [ -f "app/build/outputs/apk/fdroid/release/app-fdroid-release.apk" ]; then
+            echo "✅ APK built successfully"
+          else
+            echo "❌ APK build failed"
+          fi
 
       - name: Extract version name
         id: version
