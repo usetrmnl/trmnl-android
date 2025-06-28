@@ -42,16 +42,33 @@ android {
         }
         
         create("release") {
-            // Uses the same debug keystore for release builds to enable CLI building
-            // ⚠️ This is temporary solution as app is still under development
-            //    It allows early adopters to test drive the app without us worrying about signing key.
-            //    - 📚 https://github.com/usetrmnl/trmnl-android/blob/main/keystore/README.md
-            storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
-
-            // ℹ️ When time comes, these values should come from `secret.properties` file or CI/CD secrets.
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+            // Check if we're running in CI environment
+            val isRunningOnCI = System.getenv("CI") == "true"
+            
+            if (isRunningOnCI) {
+                // Use CI secrets for signing when running on GitHub Actions
+                val keystorePath = System.getenv("KEYSTORE_PATH")
+                if (keystorePath != null && file(keystorePath).exists()) {
+                    storeFile = file(keystorePath)
+                    storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+                    keyAlias = System.getenv("KEY_ALIAS") ?: ""
+                    keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+                    println("Using CI signing configuration with keystore: $keystorePath")
+                } else {
+                    println("Warning: CI keystore not found at $keystorePath. Fallback to debug keystore.")
+                    storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
+                    storePassword = "android"
+                    keyAlias = "androiddebugkey"
+                    keyPassword = "android"
+                }
+            } else {
+                // For local development, use the debug keystore
+                println("Using debug keystore for release builds (local development)")
+                storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
         }
     }
 

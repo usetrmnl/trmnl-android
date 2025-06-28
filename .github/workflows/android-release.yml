@@ -4,16 +4,19 @@ name: Android Release Build
 # This allows developers and testers to easily download the latest release APK.
 # This is also useful to download the APK and add to to the GitHub release.
 #
-# See:
-# - https://github.com/usetrmnl/trmnl-android/tree/main/keystore
-# - https://github.com/usetrmnl/trmnl-android/blob/main/app/build.gradle.kts#L44-L55
-
+# The workflow uses GitHub secrets for signing the APK:
+# - KEYSTORE_BASE64: The base64-encoded keystore file
+# - KEYSTORE_PASSWORD: The keystore password
+# - KEY_ALIAS: The key alias
+# - KEY_PASSWORD: The key password
 
 on:
   push:
     branches: [ "main" ]
-  # This allows manual triggering of the workflow, which results in making Android Release APK build
-  # Go to the "Actions" tab the repository, select this workflow, and click the "Run workflow" button to run it manually.
+  # This is triggered when a release is published
+  release:
+    types: [published]
+  # This allows manual triggering of the workflow
   workflow_dispatch: 
 
 jobs:
@@ -33,8 +36,28 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
       
+      - name: Decode Keystore
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+          echo "✓ Keystore decoded successfully"
+
+      - name: Setup Signing Environment
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "CI=true" >> $GITHUB_ENV
+          echo "KEYSTORE_PATH=$GITHUB_WORKSPACE/release.keystore" >> $GITHUB_ENV
+          echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
+          echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+          echo "✓ Signing environment variables set"
+      
       - name: Build Release APK
         run: ./gradlew assembleStandardRelease
+
+      # Also build F-Droid release (unsigned)
+      - name: Build F-Droid Release
+        run: ./gradlew assembleFdroidRelease
 
       - name: Extract version name
         id: version
@@ -43,16 +66,67 @@ jobs:
           echo "VERSION=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "App version name extracted: $VERSION_NAME"
 
-      - name: Rename APK
+      - name: Prepare artifacts
         run: |
-          mkdir -p artifact
-          cp app/build/outputs/apk/standard/release/app-standard-release.apk artifact/trmnl-mirror-v${{ steps.version.outputs.VERSION }}.apk
+          mkdir -p artifact/standard artifact/fdroid
+          cp app/build/outputs/apk/standard/release/app-standard-release.apk artifact/standard/trmnl-mirror-v${{ steps.version.outputs.VERSION }}.apk
+          cp app/build/outputs/apk/fdroid/release/app-fdroid-release.apk artifact/fdroid/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}.apk
+          
+          # Generate info file with build details
+          cat > artifact/build-info.txt << EOF
+          Build Date: $(date)
+          Version: ${{ steps.version.outputs.VERSION }}
+          Commit: ${{ github.sha }}
+          Workflow: ${{ github.workflow }}
+          Runner: ${{ runner.os }}
+          EOF
+          
+          echo "✓ Artifacts prepared for upload"
 
-      - name: Upload Release APK
+      - name: Upload Standard Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: trmnl-mirror-app
-          path: artifact/trmnl-mirror-v${{ steps.version.outputs.VERSION }}.apk
+          name: trmnl-mirror-standard
+          path: artifact/standard/trmnl-mirror-v${{ steps.version.outputs.VERSION }}.apk
           # Use maximum allowed retention period
           # https://github.com/actions/upload-artifact?tab=readme-ov-file#retention-period
           retention-days: 90
+          
+      - name: Upload F-Droid Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: trmnl-mirror-fdroid
+          path: artifact/fdroid/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}.apk
+          retention-days: 90
+          
+      - name: Upload Build Info
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-info
+          path: artifact/build-info.txt
+          retention-days: 90
+          
+      # If this is running due to a GitHub release, attach the APKs to the release
+      - name: Attach APKs to GitHub Release
+        if: github.event_name == 'release'
+        run: |
+          # Get release upload URL
+          UPLOAD_URL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.ref_name }} | \
+            jq -r .upload_url | sed 's/{.*}//')
+            
+          # Upload Standard APK
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @artifact/standard/trmnl-mirror-v${{ steps.version.outputs.VERSION }}.apk \
+            "${UPLOAD_URL}?name=trmnl-mirror-v${{ steps.version.outputs.VERSION }}.apk"
+            
+          # Upload F-Droid APK
+          curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @artifact/fdroid/trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}.apk \
+            "${UPLOAD_URL}?name=trmnl-mirror-fdroid-v${{ steps.version.outputs.VERSION }}.apk"
+            
+          echo "✓ APKs attached to GitHub release"

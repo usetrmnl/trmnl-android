@@ -64,7 +64,9 @@ After the version management workflow has completed:
    - Select the tag created by the workflow
    - Title: "TRMNL Android v{VERSION_NAME}"
    - Description: Copy content from the changelog file
-   - Attach the built APKs
+   - Publishing the release will automatically trigger the Android Release workflow
+   - The workflow will build and sign the app using the secure production keys
+   - The signed APKs will be attached to the release automatically
 
 ## Troubleshooting
 
