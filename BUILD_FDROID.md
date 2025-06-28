@@ -9,7 +9,7 @@ The app includes specific configurations for F-Droid compatibility:
 1. A dedicated `fdroid` product flavor that excludes Google Fonts
 2. A specific `fdroidRelease` build type 
 3. System fonts are used instead of Google Fonts for the F-Droid version
-4. The F-Droid build is **not signed** (as per [PR #106](https://github.com/usetrmnl/trmnl-android/pull/106)) - F-Droid handles the signing process
+4. The F-Droid build is **signed** with the production keystore for consistency across all distribution channels
 
 ## Building the F-Droid Version
 
@@ -19,7 +19,9 @@ To build the F-Droid version locally:
 ./gradlew assembleFdroidRelease
 ```
 
-This will generate an unsigned APK in `app/build/outputs/apk/fdroid/release/` that is suitable for F-Droid submission. Unlike the standard release build, the F-Droid build variant does not have a signing configuration, as F-Droid's build system will handle the signing process.
+This will generate a signed APK in `app/build/outputs/apk/fdroid/release/` using the production keystore. The F-Droid build variant now uses the same signing configuration as the standard release build, ensuring consistency across all distribution channels.
+
+> **Note**: F-Droid's reproducible build process will verify that the APK can be rebuilt with the same signature, ensuring the integrity of the build process.
 
 Alternatively, you can use the convenience task:
 

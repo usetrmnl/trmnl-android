@@ -14,15 +14,20 @@ signing the app during development.
 
 ## Production Keystore
 
-The production keystore (`trmnl-app-release.keystore`) is used for release builds and is stored as a base64-encoded secret in GitHub Actions. The keystore is decoded during CI/CD builds.
+The production keystore (`trmnl-app-release.keystore`) is used for all release builds (both standard and F-Droid flavors) and is stored as a base64-encoded secret in GitHub Actions. The keystore is decoded during CI/CD builds.
+
+### Build Flavors Using Production Keystore
+
+- **Standard Release**: Signs APKs for general distribution
+- **F-Droid Release**: Signs APKs for F-Droid distribution (F-Droid will verify the signature during their reproducible build process)
 
 ### Important Notes About the Production Keystore
 
 The production keystore has a specific configuration quirk that's important to understand:
 
 - **Store Password**: Used to access the keystore file
-- **Key Password**: The keystore was created with a key password, but due to PKCS12 format behavior, the private key is only accessible when jarsigner uses the store password for both store and key access
-- **Solution**: The `keyPassword` parameter is intentionally omitted from the Android build configuration, allowing the Android build system to use the store password for both purposes
+- **Key Password**: The keystore was created with a key password, but due to PKCS12 format behavior, both `storePassword` and `keyPassword` are set to the same value in the build configuration
+- **Solution**: The Android Gradle Plugin requires both passwords to be explicitly set, so we use the store password for both purposes
 
 This is a known characteristic of certain PKCS12 keystores where explicit key passwords can cause "key associated with alias not a private key" errors, even when the keystore is completely valid.
 
@@ -30,10 +35,15 @@ This is a known characteristic of certain PKCS12 keystores where explicit key pa
 
 The following GitHub Actions secrets are required:
 - `KEYSTORE_BASE64`: Base64-encoded production keystore file
-- `KEYSTORE_PASSWORD`: Password for accessing the keystore
+- `KEYSTORE_PASSWORD`: Password for accessing the keystore (used for both store and key access)
 - `KEY_ALIAS`: Alias of the signing key within the keystore
 
-Note that `KEY_PASSWORD` is not used in the build configuration due to the keystore behavior described above.
+### CI/CD Workflows Using Production Keystore
+
+- **`android-release.yml`**: Builds and signs standard release APKs
+- **`fdroid-build.yml`**: Builds and signs F-Droid release APKs
+
+Both workflows decode the keystore from the base64 secret and provide the necessary environment variables for signing.
 
 ## Related Resources
 - https://developer.android.com/studio/publish/app-signing

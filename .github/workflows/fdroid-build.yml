@@ -1,11 +1,14 @@
 name: F-Droid Build
 
+# Builds a signed F-Droid APK using the production keystore.
+# F-Droid will verify the signature during their reproducible build process.
+
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  # This allows manual triggering of the workflow, which results in making F-Droid APK build
+  # This allows manual triggering of the workflow, which results in making a signed F-Droid APK build
   # Go to the "Actions" tab the repository, select this workflow, and click the "Run workflow" button to run it manually.
   workflow_dispatch: 
 

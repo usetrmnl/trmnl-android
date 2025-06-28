@@ -41,7 +41,7 @@ Builds:
     subdir: app
     gradle:
       - fdroid
-    output: build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk
+    output: build/outputs/apk/fdroid/release/app-fdroid-release.apk
 
 MaintainerNotes: This app uses the F-Droid flavor for gradle build.
 
