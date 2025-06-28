@@ -44,22 +44,44 @@ android {
         create("release") {
             // Check if we're running in CI environment
             val isRunningOnCI = System.getenv("CI") == "true"
+            println("🔍 CI Environment Variable: $isRunningOnCI")
             
             if (isRunningOnCI) {
                 // Use CI secrets for signing when running on GitHub Actions
                 val keystorePath = System.getenv("KEYSTORE_PATH")
+                println("🔍 KEYSTORE_PATH: ${keystorePath ?: "not set"}")
+                println("🔍 KEYSTORE_PATH exists: ${if (keystorePath != null) file(keystorePath).exists() else false}")
+                
                 if (keystorePath != null && file(keystorePath).exists()) {
-                    storeFile = file(keystorePath)
+                    // Print keystore file info
+                    println("🔍 Keystore file size: ${file(keystorePath).length()} bytes")
+                    
                     val storePass = System.getenv("KEYSTORE_PASSWORD")
-                    val keyAliasEnv = System.getenv("KEY_ALIAS")
+                    val keyAliasEnv = System.getenv("KEY_ALIAS") 
                     val keyPassEnv = System.getenv("KEY_PASSWORD")
+                    
+                    println("🔍 KEYSTORE_PASSWORD is set: ${!storePass.isNullOrEmpty()}")
+                    println("🔍 KEY_ALIAS is set: ${!keyAliasEnv.isNullOrEmpty()}")
+                    println("🔍 KEY_PASSWORD is set: ${!keyPassEnv.isNullOrEmpty()}")
                     
                     // Only use the CI keystore if all required environment variables are provided
                     if (!storePass.isNullOrEmpty() && !keyAliasEnv.isNullOrEmpty() && !keyPassEnv.isNullOrEmpty()) {
-                        storePassword = storePass
-                        keyAlias = keyAliasEnv
-                        keyPassword = keyPassEnv
-                        println("✅ Using CI signing configuration with keystore: $keystorePath")
+                        try {
+                            storeFile = file(keystorePath)
+                            storePassword = storePass
+                            keyAlias = keyAliasEnv
+                            keyPassword = keyPassEnv
+                            println("✅ Using CI signing configuration with keystore: $keystorePath")
+                            println("✅ StoreFile: ${storeFile?.absolutePath}")
+                            println("✅ KeyAlias: $keyAlias")
+                        } catch (e: Exception) {
+                            println("❌ Error setting up signing: ${e.message}")
+                            // Fallback to debug keystore
+                            storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")
+                            storePassword = "android"
+                            keyAlias = "androiddebugkey"
+                            keyPassword = "android"
+                        }
                     } else {
                         println("⚠️ Missing required signing credentials. Fallback to debug keystore.")
                         storeFile = file("${rootProject.projectDir}/keystore/debug.keystore")

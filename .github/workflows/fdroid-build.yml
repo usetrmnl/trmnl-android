@@ -39,6 +39,17 @@ jobs:
           if [[ -n "${{ secrets.KEYSTORE_BASE64 }}" && "${{ secrets.KEYSTORE_BASE64 }}" != "" ]]; then
             echo "has_keystore=true" >> $GITHUB_OUTPUT
             echo "Found keystore secret, will attempt to use it"
+            
+            # Print secret length without revealing content
+            SECRET_LENGTH=$(echo "${{ secrets.KEYSTORE_BASE64 }}" | wc -c)
+            echo "Keystore base64 string length: $SECRET_LENGTH"
+            
+            # Check if the secret appears to be a valid base64 string
+            if echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /dev/null 2>&1; then
+              echo "Keystore base64 format appears valid"
+            else
+              echo "::warning::Keystore base64 format appears invalid - check your KEYSTORE_BASE64 secret"
+            fi
           else
             echo "has_keystore=false" >> $GITHUB_OUTPUT
             echo "No keystore secret found, will use debug keystore"
@@ -47,34 +58,96 @@ jobs:
       - name: Decode Keystore
         if: steps.check_keystore.outputs.has_keystore == 'true'
         run: |
+          # Echo the keystore to a file using base64 decoding
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+          
+          # Check if the keystore file was created and has content
           if [ -s release.keystore ]; then
             echo "✓ Keystore decoded successfully"
+            # Validate keystore file format with keytool
+            if keytool -list -keystore release.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" > /dev/null 2>&1; then
+              echo "✓ Keystore format is valid and password is correct"
+              # Print some basic info about the keystore (no sensitive data)
+              keytool -list -keystore release.keystore -storepass "${{ secrets.KEYSTORE_PASSWORD }}" | grep -v Fingerprint
+            else
+              echo "::error::Keystore format is invalid or password is incorrect"
+              # Try with empty password to see if that works
+              if keytool -list -keystore release.keystore -storepass "" > /dev/null 2>&1; then
+                echo "::warning::Keystore works with empty password - check your KEYSTORE_PASSWORD secret"
+              fi
+              # Don't exit here, let it try to use the keystore anyway
+            fi
           else
             echo "::warning::Keystore file is empty after decoding, will fall back to debug keystore"
             rm -f release.keystore
-            exit 0  # Continue workflow even if this step fails
           fi
 
       - name: Setup Release Signing Environment
         if: steps.check_keystore.outputs.has_keystore == 'true' && hashFiles('release.keystore')
         run: |
-          echo "KEYSTORE_PATH=$GITHUB_WORKSPACE/release.keystore" >> $GITHUB_ENV
+          # Set absolute path to keystore
+          KEYSTORE_FULL_PATH="$GITHUB_WORKSPACE/release.keystore"
+          echo "KEYSTORE_PATH=$KEYSTORE_FULL_PATH" >> $GITHUB_ENV
           echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
           echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> $GITHUB_ENV
           echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
+          
+          # Verify file permissions and existence
+          ls -la "$KEYSTORE_FULL_PATH"
+          
+          # Create a simple script to test keystore access
+          cat > test-keystore.sh << 'EOF'
+          #!/bin/bash
+          echo "Testing keystore access..."
+          keytool -list -keystore "$KEYSTORE_PATH" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" 2>&1 || echo "Failed to access keystore"
+          EOF
+          
+          chmod +x test-keystore.sh
+          ./test-keystore.sh
+          
           echo "✓ Signing environment variables set for production keystore"
           
       - name: Setup Debug Signing Environment (Fallback)
         if: steps.check_keystore.outputs.has_keystore != 'true' || !hashFiles('release.keystore')
         run: |
           echo "Using debug keystore as fallback"
-          echo "✓ Debug keystore will be used automatically by Gradle"
+          
+          # Create a fresh debug keystore as fallback
+          echo "Creating a fresh debug keystore as fallback..."
+          rm -f debug.keystore
+          keytool -genkey -v -keystore debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          
+          # Export this keystore path as env var
+          echo "KEYSTORE_PATH=$GITHUB_WORKSPACE/debug.keystore" >> $GITHUB_ENV
+          echo "KEYSTORE_PASSWORD=android" >> $GITHUB_ENV
+          echo "KEY_ALIAS=androiddebugkey" >> $GITHUB_ENV
+          echo "KEY_PASSWORD=android" >> $GITHUB_ENV
+          
+          echo "✓ Debug keystore created and environment variables set"
       
       - name: Build F-Droid APK
         run: |
-          # Add verbose output for signing config to help diagnose issues
-          ./gradlew assembleFdroidRelease --info
+          # Print out environment information for debugging (no secrets)
+          echo "Building with Java version:"
+          java -version
+          
+          # List the environment variables being used (without revealing secrets)
+          echo "Environment variables used for signing:"
+          echo "CI=${CI}"
+          echo "KEYSTORE_PATH exists: $([ -n "$KEYSTORE_PATH" ] && echo "YES" || echo "NO")"
+          echo "KEYSTORE_PATH file exists: $([ -f "$KEYSTORE_PATH" ] && echo "YES" || echo "NO")"
+          echo "KEYSTORE_PASSWORD exists: $([ -n "$KEYSTORE_PASSWORD" ] && echo "YES" || echo "NO")"
+          echo "KEY_ALIAS exists: $([ -n "$KEY_ALIAS" ] && echo "YES" || echo "NO")"
+          echo "KEY_PASSWORD exists: $([ -n "$KEY_PASSWORD" ] && echo "YES" || echo "NO")"
+          
+          # Make sure the keystore is readable
+          if [ -f "$KEYSTORE_PATH" ]; then
+            ls -la "$KEYSTORE_PATH"
+          fi
+          
+          # Try to build with debug level logging
+          echo "Building F-Droid APK with debug logging..."
+          ./gradlew assembleFdroidRelease --debug
 
       - name: Extract version name
         id: version
