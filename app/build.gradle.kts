@@ -117,6 +117,15 @@ android {
         compose = true
         buildConfig = true
     }
+
+    // Disables encrypted signing block added by AGP (not supported by F-Droid)
+    // See https://gitlab.com/fdroid/fdroiddata/-/merge_requests/24134#note_2590441621
+    dependenciesInfo {
+        // Disables dependency metadata when building APKs.
+        includeInApk = false
+        // Disables dependency metadata when building Android App Bundles.
+        includeInBundle = false
+    }
 }
 
 dependencies {
