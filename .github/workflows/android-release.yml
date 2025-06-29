@@ -1,8 +1,9 @@
 name: Android Release Build
 
-# Workflow that builds release APK each time code changes.
+# Workflow that builds release APK for:
+# 1. Snapshot builds: Each time code changes on main branch
+# 2. Release builds: When a GitHub release is published (automatically attaches APK to release)
 # This allows developers and testers to easily download the latest release APK.
-# This is also useful to download the APK and add to to the GitHub release.
 #
 # See:
 # - https://github.com/usetrmnl/trmnl-android/tree/main/keystore
@@ -14,7 +15,10 @@ on:
     branches: [ "main" ]
   # This allows manual triggering of the workflow, which results in making Android Release APK build
   # Go to the "Actions" tab the repository, select this workflow, and click the "Run workflow" button to run it manually.
-  workflow_dispatch: 
+  workflow_dispatch:
+  # This is triggered when a release is published
+  release:
+    types: [published] 
 
 jobs:
   build-release:
@@ -32,6 +36,18 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Identify build context
+        run: |
+          echo "🔍 Build context information:"
+          echo "Event name: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Ref name: ${{ github.ref_name }}"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "🎉 Building for GitHub release: ${{ github.ref_name }}"
+          else
+            echo "📦 Building snapshot from main branch"
+          fi
       
       - name: Decode keystore from base64
         run: |
@@ -63,3 +79,48 @@ jobs:
           # Use maximum allowed retention period
           # https://github.com/actions/upload-artifact?tab=readme-ov-file#retention-period
           retention-days: 30
+
+      # If this is running due to a GitHub release, attach the APK to the release
+      - name: Attach APK to GitHub Release
+        if: github.event_name == 'release'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Attaching APK to GitHub release..."
+          
+          # Get release information
+          RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}" | \
+            jq -r .id)
+          
+          if [ "$RELEASE_ID" = "null" ]; then
+            echo "❌ Could not find release for tag ${{ github.ref_name }}"
+            exit 1
+          fi
+          
+          echo "Found release ID: $RELEASE_ID"
+          
+          # Upload APK to the release
+          APK_FILE="artifact/trmnl-mirror-v${{ steps.version.outputs.VERSION }}.apk"
+          APK_NAME="trmnl-mirror-v${{ steps.version.outputs.VERSION }}.apk"
+          
+          echo "Uploading $APK_NAME to release..."
+          
+          UPLOAD_RESPONSE=$(curl -s -w "%{http_code}" -o upload_response.json \
+            -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"$APK_FILE" \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$APK_NAME")
+          
+          HTTP_CODE="${UPLOAD_RESPONSE: -3}"
+          
+          if [ "$HTTP_CODE" = "201" ]; then
+            echo "✅ Successfully attached APK to GitHub release"
+            DOWNLOAD_URL=$(jq -r .browser_download_url upload_response.json)
+            echo "APK download URL: $DOWNLOAD_URL"
+          else
+            echo "❌ Failed to upload APK (HTTP $HTTP_CODE)"
+            cat upload_response.json
+            exit 1
+          fi
