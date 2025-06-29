@@ -93,7 +93,7 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}" | \
             jq -r .id)
           
-          if [ "$RELEASE_ID" = "null" ]; then
+          if [ "$RELEASE_ID" = "null" ] || [ -z "$RELEASE_ID" ]; then
             echo "❌ Could not find release for tag ${{ github.ref_name }}"
             exit 1
           fi
