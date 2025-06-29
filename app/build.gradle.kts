@@ -19,9 +19,9 @@ if (secretPropsFile.exists()) {
     secretProps.forEach { key: Any, value: Any ->
         project.ext.set(key.toString(), value.toString())
     }
-    println("✅ Loaded `secret.properties` with ${secretProps.size} properties")
+    logger.lifecycle("✅ Loaded `secret.properties` with ${secretProps.size} properties")
 } else {
-    println("ℹ️ `secret.properties` file not found at ${secretPropsFile.absolutePath}")
+    logger.lifecycle("ℹ️ `secret.properties` file not found at ${secretPropsFile.absolutePath}")
 }
 
 android {
