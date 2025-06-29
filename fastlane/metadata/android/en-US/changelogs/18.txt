@@ -1,0 +1,2 @@
+- Updated to the latest version (2.0.0)
+- Major release bump with app signing certificate update
