@@ -36,3 +36,4 @@ app/debug/
 app/release/
 *.salive
 app*.aab
+secret.properties

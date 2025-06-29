@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -7,6 +9,19 @@ plugins {
     alias(libs.plugins.kotlinter)
     alias(libs.plugins.ksp)
     alias(libs.plugins.anvil)
+}
+
+// Load secret.properties file for local development
+val secretPropsFile = rootProject.file("secret.properties")
+if (secretPropsFile.exists()) {
+    val secretProps = Properties()
+    secretProps.load(secretPropsFile.inputStream())
+    secretProps.forEach { key: Any, value: Any ->
+        project.ext.set(key.toString(), value.toString())
+    }
+    logger.lifecycle("✅ Loaded `secret.properties` with ${secretProps.size} properties")
+} else {
+    logger.lifecycle("ℹ️ `secret.properties` file not found at ${secretPropsFile.absolutePath}")
 }
 
 android {
@@ -49,9 +64,12 @@ android {
             // Values come from CI/CD secrets or local secret.properties file
             // Note: keyPassword is set to the same value as storePassword because this PKCS12 keystore
             // requires the store password to be used for both store and key access
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as String?
-            keyAlias = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS") as String?
-            keyPassword = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as String?
+            val storePass = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as String?
+            val keyAliasValue = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS") as String?
+            
+            storePassword = storePass
+            keyAlias = keyAliasValue
+            keyPassword = storePass
         }
     }
 
@@ -72,15 +90,9 @@ android {
                 "proguard-rules.pro",
             )
 
-            // Sign release builds with production keystore in CI, fallback to debug keystore locally
-            signingConfig = if (signingConfigs.getByName("release").storeFile?.exists() == true &&
-                               signingConfigs.getByName("release").storePassword != null &&
-                               signingConfigs.getByName("release").keyAlias != null) {
-                signingConfigs.getByName("release")
-            } else {
-                println("⚠️  Production keystore not available, falling back to debug keystore for release build")
-                signingConfigs.getByName("debug")
-            }
+            // CI: Uses environment variables from secrets
+            // Local: Uses `secret.properties` file (automatically loaded by Gradle)
+            signingConfig = signingConfigs.getByName("release")
         }
         
         debug {
