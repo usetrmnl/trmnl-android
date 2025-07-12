@@ -7,7 +7,7 @@
 # Due to security restrictions, when PR is opened the workflows are not triggered automatically.
 # To trigger the workflows, you can make an empty commit with the following command:
 # ```git commit --allow-empty -m "chore: empty commit for triggering workflows" && git push```
-name: Version Management
+name: Bump App Version
 
 on:
   workflow_dispatch:
@@ -28,13 +28,8 @@ on:
         description: 'Release notes (comma-separated items, e.g. "Fixed crash in settings, Added new feature")'
         required: true
         type: string
-      create_pr:
-        description: 'Create PR instead of direct commit'
-        required: false
-        type: boolean
-        default: true
       branch_name:
-        description: 'Branch name for PR (only used if create_pr is true)'
+        description: 'Branch name for PR'
         required: false
         type: string
         default: 'version-bump'
@@ -59,8 +54,7 @@ jobs:
         if: ${{ inputs.git_tag != '' }}
         run: echo "GIT_TAG=${{ inputs.git_tag }}" >> $GITHUB_ENV
 
-      - name: Create branch if creating PR
-        if: ${{ inputs.create_pr == true }}
+      - name: Create branch for PR
         run: |
           BRANCH="${{ inputs.branch_name }}-${{ inputs.version_name }}"
           git checkout -b $BRANCH
@@ -143,25 +137,12 @@ jobs:
           echo "✓ Created changelog file at fastlane/metadata/android/en-US/changelogs/${{ inputs.version_code }}.txt"
           cat fastlane/metadata/android/en-US/changelogs/${{ inputs.version_code }}.txt
 
-      - name: Commit changes directly
-        if: ${{ inputs.create_pr == false }}
-        run: |
-          git add app/build.gradle.kts metadata/ fastlane/
-          git commit -m "chore: prepare release ${{ inputs.version_name }}"
-          git tag ${{ env.GIT_TAG }}
-          git push origin HEAD:${{ github.ref_name }}
-          git push origin ${{ env.GIT_TAG }}
-          echo "✓ Changes committed and pushed to ${{ github.ref_name }}"
-          echo "✓ Created and pushed tag ${{ env.GIT_TAG }}"
-
       # Push changes directly to the new branch before creating PR to avoid "unknown revision" errors
       - name: Push branch for PR
-        if: ${{ inputs.create_pr == true }}
         run: |
-          git push -u origin ${{ env.BRANCH_NAME }} --force
+          git push -u origin ${{ inputs.branch_name }}-${{ inputs.version_name }} --force
           
       - name: Create Pull Request
-        if: ${{ inputs.create_pr == true }}
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -195,5 +176,5 @@ jobs:
             git checkout main && git pull origin main
             git tag v${{ inputs.version_name }} && git push origin v${{ inputs.version_name }}
             ```
-          branch: ${{ env.BRANCH_NAME }}
+          branch: ${{ inputs.branch_name }}-${{ inputs.version_name }}
           base: ${{ github.ref_name }}
