@@ -39,7 +39,7 @@ android {
         // See https://apilevels.com/
         targetSdk = 35 // Android 15.0 (Vanilla Ice Cream)
         
-        // App versioning is scattered across multiple files.
+        // ⚠️ App versioning update is required in multiple places.
         // 👇🏽 Use the following workflow to update versions everywhere automatically ♻️
         // https://github.com/usetrmnl/trmnl-android/actions/workflows/version-management.yml
         versionCode = 20
