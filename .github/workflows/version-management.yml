@@ -170,24 +170,30 @@ jobs:
           body: |
             This PR updates the version to ${{ inputs.version_name }} (${{ inputs.version_code }})
             
-            ### Release Notes:
+            ## 📋 Release Notes:
             ${{ inputs.release_notes }}
             
-            ### Changes:
+            ## 🔄 Changes Made:
             - Updated app/build.gradle.kts
             - Updated F-Droid metadata
             - Created changelog file
             
-            After merging this PR, please create a tag with: 
+            ## ⚡ Trigger CI Workflows (Do This First):
+            
+            Since this PR was created by a bot, CI workflows won't trigger automatically. To trigger them:
+            
             ```sh
-            git checkout main && git pull origin main
-            git tag ${{ env.GIT_TAG }} && git push origin ${{ env.GIT_TAG }}
+            git checkout ${{ inputs.branch_name }}-${{ inputs.version_name }}
+            git commit --allow-empty -m "chore: empty commit for triggering workflows" && git push
             ```
             
-            **Note**: Due to security restrictions, when this PR is opened, the CI workflows are not triggered automatically. To trigger the workflows, you can make an empty commit with the following command:
+            ## 🏷️ After Merging This PR:
+            
+            After merging this PR, create and push the release tag:
             
             ```sh
-            git commit --allow-empty -m "chore: empty commit for triggering workflows" && git push
+            git checkout main && git pull origin main
+            git tag v${{ inputs.version_name }} && git push origin v${{ inputs.version_name }}
             ```
           branch: ${{ env.BRANCH_NAME }}
           base: ${{ github.ref_name }}
