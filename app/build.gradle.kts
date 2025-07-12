@@ -42,8 +42,8 @@ android {
         // App versioning is scattered across multiple files.
         // 👇🏽 Use the following workflow to update versions everywhere automatically ♻️
         // https://github.com/usetrmnl/trmnl-android/actions/workflows/version-management.yml
-        versionCode = 19
-        versionName = "2.0.1"
+        versionCode = 20
+        versionName = "2.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
