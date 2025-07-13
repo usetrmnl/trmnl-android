@@ -137,16 +137,6 @@ jobs:
           echo "✓ Created changelog file at fastlane/metadata/android/en-US/changelogs/${{ inputs.version_code }}.txt"
           cat fastlane/metadata/android/en-US/changelogs/${{ inputs.version_code }}.txt
 
-      - name: Commit changes
-        run: |
-          git add app/build.gradle.kts metadata/ fastlane/
-          git commit -m "chore: prepare release ${{ inputs.version_name }}"
-
-      # Push changes directly to the new branch before creating PR to avoid "unknown revision" errors
-      - name: Push branch for PR
-        run: |
-          git push -u origin ${{ inputs.branch_name }}-${{ inputs.version_name }} --force
-          
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
