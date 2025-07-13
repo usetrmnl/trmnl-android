@@ -1,5 +1,5 @@
-# This GitHub Actions workflow is intended for version management within the trmnl-android project.
-# The workflow helps ensure consistent and automated version control processes for the repository.
+# This GitHub Actions workflow handles version management for the trmnl-android project.
+# It automates the process of updating version numbers, F-Droid metadata, and creating release PRs.
 # 
 # 🔍 TIP: Run `scripts/show_version_info.sh` locally to display current versions and get suggestions
 # for the next version number before running this workflow.
@@ -21,7 +21,7 @@ on:
         required: true
         type: string
       git_tag:
-        description: 'Git tag for this release (defaults to v + version_name)'
+        description: 'Git tag for this release (defaults to v + version_name, used for F-Droid metadata)'
         required: false
         type: string
       release_notes:
@@ -136,6 +136,11 @@ jobs:
           
           echo "✓ Created changelog file at fastlane/metadata/android/en-US/changelogs/${{ inputs.version_code }}.txt"
           cat fastlane/metadata/android/en-US/changelogs/${{ inputs.version_code }}.txt
+
+      - name: Commit changes
+        run: |
+          git add app/build.gradle.kts metadata/ fastlane/
+          git commit -m "chore: prepare release ${{ inputs.version_name }}"
 
       # Push changes directly to the new branch before creating PR to avoid "unknown revision" errors
       - name: Push branch for PR
