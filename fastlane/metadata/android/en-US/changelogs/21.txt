@@ -1,0 +1,2 @@
+- Updated to the latest version (2.0.3)
+- Disabled build obfuscation and minification for debugging
