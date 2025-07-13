@@ -57,9 +57,6 @@ jobs:
       - name: Create branch for PR
         run: |
           BRANCH="${{ inputs.branch_name }}-${{ inputs.version_name }}"
-          git checkout -b $BRANCH
-          # Make sure we're working with a clean branch that's not dependent on origin
-          git update-ref -d refs/remotes/origin/$BRANCH || true
           echo "BRANCH_NAME=$BRANCH" >> $GITHUB_ENV
 
       - name: Extract current version info
@@ -141,6 +138,10 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          add-paths: |
+            app/build.gradle.kts
+            metadata/
+            fastlane/
           commit-message: "chore: prepare release ${{ inputs.version_name }}"
           title: "Prepare release ${{ inputs.version_name }}"
           body: |
@@ -159,7 +160,7 @@ jobs:
             Since this PR was created by a bot, CI workflows won't trigger automatically. To trigger them:
             
             ```sh
-            git checkout ${{ inputs.branch_name }}-${{ inputs.version_name }}
+            git checkout ${{ env.BRANCH_NAME }}
             git commit --allow-empty -m "chore: empty commit for triggering workflows" && git push
             ```
             
@@ -171,5 +172,5 @@ jobs:
             git checkout main && git pull origin main
             git tag v${{ inputs.version_name }} && git push origin v${{ inputs.version_name }}
             ```
-          branch: ${{ inputs.branch_name }}-${{ inputs.version_name }}
-          base: ${{ github.ref_name }}
+          branch: ${{ env.BRANCH_NAME }}
+          base: main
