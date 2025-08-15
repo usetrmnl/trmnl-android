@@ -11,8 +11,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
 
 /**
- * Manages the image update process for the TRMNL mirror display.
- * Acts as a central source of truth for image updates from WorkManager.
+ * Manages the image update process for the TRMNL display.
+ *
+ * This manager handles communication between the background image refresh workers
+ * and the UI components that display the TRMNL images. It maintains a flow of
+ * image metadata that UI components can observe to update their content.
  */
 @SingleIn(AppScope::class)
 class TrmnlImageUpdateManager

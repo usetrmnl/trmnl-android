@@ -30,11 +30,13 @@ import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_EXPANDED_L
 import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOWER_BOUND
 
 /**
- * Displays a set of configuration and control actions for the TRMNL mirror display.
+ * Displays a set of configuration and control actions for the TRMNL display.
  *
- * This composable provides quick access to device configuration, manual image refresh,
- * playlist navigation, and viewing refresh logs. It adapts its layout and button sizes
- * based on the current window size class, making it suitable for both phones and tablets.
+ * This overlay provides quick access to common display controls such as:
+ * - Manual refresh functionality
+ * - Loading next playlist image
+ * - Viewing refresh history logs
+ * - Accessing app settings
  *
  * @param state The current state of the TRMNL mirror display, including refresh info and event sink.
  * @param windowSizeClass The current window size class, used to adapt the UI for different screen sizes.
@@ -109,7 +111,7 @@ internal fun OverlaySettingsView(
                 },
                 text = {
                     Text(
-                        "Configure Mirror Device",
+                        "Configure TRMNL",
                         style = fabTextStyle,
                         fontWeight = FontWeight.Bold,
                     )

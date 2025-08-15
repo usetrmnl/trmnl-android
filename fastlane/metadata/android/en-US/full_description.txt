@@ -1,4 +1,4 @@
-TRMNL Display Mirror serves as a digital display mirror for TRMNL e-ink devices. The app connects to the TRMNL API, fetches display data, and shows it on Android devices.
+TRMNL serves as a digital display for TRMNL e-ink devices and BYOS installations. The app connects to the TRMNL or BYOS API, fetches display data, and shows it on Android devices. It can function both as a mirror for existing TRMNL devices or as a standalone TRMNL display connected directly to BYOS servers.
 
 Key Features:
 • Token-based authentication with TRMNL/BYOS API
