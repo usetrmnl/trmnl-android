@@ -50,36 +50,48 @@ To update version, run the GitHub Actions workflow 'Version Management' with:
   - **Git tag** (optional): Defaults to v + version name
   - **Release notes**: Comma-separated release notes
   - **Create PR**: Whether to create a pull request or commit directly
+ 
+<img width="357" height="719" alt="Screenshot 2025-08-15 at 1 01 32 PM" src="https://github.com/user-attachments/assets/8f0b308b-dc1f-406b-82bc-6d0d9b216426" />
+
 
 ### 3. Wait for workflow completion
 
 - The workflow will update all necessary files
 - It will create or update the changelog
-- It will commit changes and create a git tag
+- It will commit changes
 
 This automated process ensures consistency across all version-related files without manual edits.
 
-### 4. Post-release tasks
+### 4. Review PR and trigger CI
 
 After the version management workflow has completed:
 
-1. **Pull the latest changes** (if you ran the workflow with direct commits):
-   ```bash
-   git pull origin main
-   ```
+1. **Review the PR** (if you ran the workflow with direct commits):
 
-2. **Verify the build works with the new version**:
-   ```bash
-   # Build release variant to ensure it works
-   ./gradlew assembleRelease
-   ```
+<img width="936" height="752" alt="Screenshot 2025-08-15 at 1 02 30 PM" src="https://github.com/user-attachments/assets/dd138659-3546-4a24-a102-59fb79d5902e" />
 
-3. **Create a GitHub release**:
+
+2. **Follow pre and post merge command guidelinse**: Merge the PR. See PR description with guides.
+3. **Download signed release build**: Use the workflow that automatically signs and builds release APK.
+
+Example PR with instructions:  
+<img width="1315" height="321" alt="Screenshot 2025-08-15 at 1 29 48 PM" src="https://github.com/user-attachments/assets/f600cb63-09f1-4731-bde5-afb54210bb5f" />
+
+Workflow containing the built APK:
+<img width="1551" height="870" alt="Screenshot 2025-08-15 at 1 30 00 PM" src="https://github.com/user-attachments/assets/5252d934-e534-4287-b95b-0f66912f90aa" />
+
+Unzipped artifact that is used for release:
+<img width="710" height="51" alt="Screenshot 2025-08-15 at 1 30 25 PM" src="https://github.com/user-attachments/assets/71c1f97e-71f5-434b-aa74-a0ec24acf194" />
+
+
+
+4. **Create a GitHub release**:
    - Go to GitHub → Releases → Draft new release
    - Select the tag created by the workflow
    - Title: "TRMNL Android v{VERSION_NAME}"
    - Description: Copy content from the changelog file
    - Attach the built APK
+  
 
 ## Troubleshooting
 
