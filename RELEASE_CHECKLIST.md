@@ -25,6 +25,21 @@ This will display:
 - Existing changelog files
 - Suggested next version
 
+<details><summary>Example Run Output</summary>
+
+```
+🚀 Suggested next version:
+  - Version Code: 22
+  - Version Name: 2.0.4
+
+To update version, run the GitHub Actions workflow 'Version Management' with:
+  - Version name: 2.0.4
+  - Version code: 22
+  - Git tag: v2.0.4 (default)
+  - Release notes: your comma-separated release notes
+```
+</details>
+
 ### 2. Run the Version Management workflow
 
 - Go to GitHub Actions → Version Management workflow
