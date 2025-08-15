@@ -1,0 +1,2 @@
+- Updated to the latest version (2.0.4)
+- Updated app name to be more generic (excludes 'mirror' from it's name)
