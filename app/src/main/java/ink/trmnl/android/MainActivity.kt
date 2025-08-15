@@ -33,8 +33,11 @@ import timber.log.Timber
 import javax.inject.Inject
 
 /**
- * Main activity for the TRMNL display mirror app.
- * This activity sets up the Circuit framework and handles navigation.
+ * Main activity for the TRMNL app.
+ *
+ * This activity serves as the entry point for the Android TRMNL application.
+ * It can function as either a mirror for existing TRMNL devices or as a
+ * standalone TRMNL display connected directly to BYOS servers.
  */
 @ContributesMultibinding(AppScope::class, boundType = Activity::class)
 @ActivityKey(MainActivity::class)

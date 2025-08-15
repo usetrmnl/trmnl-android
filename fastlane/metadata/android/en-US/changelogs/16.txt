@@ -1,2 +1,2 @@
 - Updated to the latest version (1.9.5)
-- Latest TRMNL Mirror app with F-Droid support
+- Latest TRMNL app with F-Droid support

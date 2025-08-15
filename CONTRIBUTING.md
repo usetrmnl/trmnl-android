@@ -1,10 +1,10 @@
 # Contributing Guide
 
-Thank you for your interest in contributing to TRMNL Display Mirror App! This document provides guidelines and instructions to help you contribute effectively.
+Thank you for your interest in contributing to TRMNL App! This document provides guidelines and instructions to help you contribute effectively.
 
 ## Application Overview
 
-This guide will help you get started with the TRMNL Display Mirror Android application development.
+This guide will help you get started with the TRMNL Android application development.
 
 <details>
 
@@ -22,7 +22,7 @@ The app uses a modern Android architecture with the following components:
 
 #### Key Features/Screens
 
-- Main TRMNL Mirror Display visualization in `TrmnlMirrorDisplayScreen`
+- Main TRMNL visualization in `TrmnlMirrorDisplayScreen`
 - Settings management via `AppSettingsScreen`
 - Image refresh log/history in `DisplayRefreshLogScreen`
 - Background refresh scheduling with `TrmnlWorkScheduler` & `TrmnlImageRefreshWorker`
@@ -107,11 +107,11 @@ Automatic snapshot release builds are available in the [release workflow](https:
 - [Circuit UDF Architecture](https://slackhq.github.io/circuit/)
 - [Android Work Manager](https://developer.android.com/topic/libraries/architecture/workmanager)
 
-Thank you for contributing to TRMNL Display Mirror App!
+Thank you for contributing to TRMNL App!
 
 
 ## TRMNL App Image Loading Flow
-Here is a generated sequence diagram illustrating the flow of image loading in the TRMNL Display Mirror application.
+Here is a generated sequence diagram illustrating the flow of image loading in the TRMNL application.
 
 ```mermaid
 sequenceDiagram

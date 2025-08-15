@@ -346,7 +346,7 @@ fun TrmnlMirrorDisplayContent(
     }
 }
 
-@Preview(name = "Trmnl Mirror Display Image Preview")
+@Preview(name = "TRMNL Display Image Preview")
 @PreviewScreenSizes
 @Composable
 fun PreviewTrmnlMirrorDisplayImageContent() {
@@ -365,7 +365,7 @@ fun PreviewTrmnlMirrorDisplayImageContent() {
     }
 }
 
-@Preview(name = "Trmnl Mirror Display With Controls")
+@Preview(name = "TRMNL Display With Controls")
 @PreviewScreenSizes
 @Composable
 fun PreviewTrmnlMirrorDisplayWithControls() {
@@ -384,7 +384,7 @@ fun PreviewTrmnlMirrorDisplayWithControls() {
     }
 }
 
-@Preview(name = "Trmnl Mirror Display Error Content Preview")
+@Preview(name = "TRMNL Display Error Content Preview")
 @Composable
 fun PreviewTrmnlMirrorDisplayErrorContent() {
     Surface {

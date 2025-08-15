@@ -1,14 +1,15 @@
-# TRMNL Display App - Product Requirements Document (PRD)
+# TRMNL App - Product Requirements Document (PRD)
 
 ## 1. Introduction
 
-The TRMNL Display app serves as a digital display mirror for TRMNL e-ink devices. It connects to the
-TRMNL API, fetches display data, and shows it on Android mobile devices. This app supports multiple
+The TRMNL app serves as a digital display for TRMNL e-ink devices and BYOS installations. It connects to the
+TRMNL or BYOS API, fetches display data, and shows it on Android mobile devices. This app can function both as a mirror
+for existing TRMNL devices or as a standalone TRMNL device connected directly to BYOS servers. The app supports multiple
 device types including official TRMNL devices, Bring Your Own Device (BYOD), and Bring Your Own Server
 (BYOS) configurations. The app provides automatic and manual refresh capabilities to keep the display
 synchronized with the TRMNL content.
 
-This document outlines the requirements for the TRMNL Display Mirror Android application.
+This document outlines the requirements for the TRMNL Android application.
 
 ## 2. User Requirements
 
@@ -198,7 +199,7 @@ This document outlines the requirements for the TRMNL Display Mirror Android app
 
 ## 6. Implementation Considerations for Cross-Platform Development
 
-This section provides guidance for teams implementing the TRMNL Display app on other platforms, ensuring feature parity while leveraging platform-specific capabilities.
+This section provides guidance for teams implementing the TRMNL app on other platforms, ensuring feature parity while leveraging platform-specific capabilities.
 
 ### iOS Specific
 
@@ -262,4 +263,4 @@ This section provides guidance for teams implementing the TRMNL Display app on o
 | LIM-11 | Flutter has more limited e-ink display optimization capabilities compared to native implementations.         |
 | LIM-12 | React Native may have performance limitations when handling large image rendering on low-end devices.        |
 
-This PRD provides a comprehensive guide for implementing and maintaining the TRMNL Display app. Development teams should use this document to ensure the application meets all required functionality while following platform-specific best practices.
+This PRD provides a comprehensive guide for implementing and maintaining the TRMNL app. Development teams should use this document to ensure the application meets all required functionality while following platform-specific best practices.

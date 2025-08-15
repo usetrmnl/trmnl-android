@@ -9,11 +9,11 @@ SourceCode: https://github.com/usetrmnl/trmnl-android
 IssueTracker: https://github.com/usetrmnl/trmnl-android/issues
 Changelog: https://github.com/usetrmnl/trmnl-android/releases
 
-AutoName: TRMNL Mirror
+AutoName: TRMNL
 
 RepoType: git
 Repo: https://github.com/usetrmnl/trmnl-android.git
-Binaries: https://github.com/usetrmnl/trmnl-android/releases/download/v%v/trmnl-mirror-v%v.apk
+Binaries: https://github.com/usetrmnl/trmnl-android/releases/download/v%v/trmnl-v%v.apk
 
 Builds:
   - versionName: 2.0.3

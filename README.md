@@ -1,11 +1,11 @@
 [![Android CI](https://github.com/usetrmnl/trmnl-android/actions/workflows/android.yml/badge.svg)](https://github.com/usetrmnl/trmnl-android/actions/workflows/android.yml) [![Android Release Build](https://github.com/usetrmnl/trmnl-android/actions/workflows/android-release.yml/badge.svg)](https://github.com/usetrmnl/trmnl-android/actions/workflows/android-release.yml) [![latest-build](https://badgen.net/github/release/usetrmnl/trmnl-android?label=Latest%20Build)](https://github.com/usetrmnl/trmnl-android/releases/latest)
 
-# Android - TRMNL Display Mirror 🪞
-A simple app to mirror existing TRMNL's content to your Android devices like Phone, Tablet, e-Ink Display.
+# Android - TRMNL
+A simple app to show TRMNL's content to your Android devices like Phone, Tablet, e-Ink Display.
 
 ## Application Overview
 
-The TRMNL Display Mirror app serves as a digital display mirror for TRMNL e-ink devices. The app connects to the TRMNL API, fetches display data, and shows it on Android devices.
+The TRMNL app serves as a digital display for TRMNL e-ink devices and BYOS installations. The app connects to the TRMNL or BYOS API server, fetches display data, and shows it on Android devices. It can function both as a mirror for existing TRMNL devices or as a standalone TRMNL device connected directly to BYOS or TRMNL (with BYOD add-on) servers.
 
 ### Key Features
 
@@ -39,7 +39,7 @@ Check installable APK from Assets in [latest release](https://github.com/usetrmn
 ### 📱 F-Droid
 The app will *soon* be available on F-Droid, providing a free and open source Android app repository.
 1. Add the F-Droid repository to your F-Droid client
-2. Search for "TRMNL Display Mirror"
+2. Search for "TRMNL"
 3. Install the app
 -->
 

@@ -121,15 +121,13 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
- * Screen for configuring the TRMNL mirror app settings.
+ * Screen for configuring the TRMNL app settings.
  *
- * This screen allows users to set up and validate their TRMNL access token,
- * which is required to connect to the TRMNL API service. It displays validation
- * results, image previews when successful, and provides options to save the
- * configuration which in turn schedules refresh job using [TrmnlWorkScheduler].
- *
- * The screen can be configured to either return to the mirror display after
- * saving or to pop back to the previous screen.
+ * This screen allows users to:
+ * - Configure API authentication (access token or device ID)
+ * - Set custom server URLs for BYOS installations
+ * - Configure refresh intervals and behavior
+ * - Manage display preferences
  */
 @Parcelize
 data class AppSettingsScreen(
@@ -338,7 +336,7 @@ class AppSettingsPresenter
                                         apiAccessToken = accessToken,
                                         deviceMacId = deviceMacId.ifBlank { null },
                                     )
-                                // For TRMNL mirror device type, use getCurrentDisplayData
+                                // For TRMNL device type, use getCurrentDisplayData
                                 // For all other device types, use getNextDisplayData
                                 // See https://discord.com/channels/1281055965508141100/1331360842809348106/1382865608236077086
                                 val response =
@@ -593,7 +591,7 @@ fun AppSettingsContent(
             )
 
             Text(
-                text = "Display Mirror Configuration",
+                text = "Display Configuration",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,

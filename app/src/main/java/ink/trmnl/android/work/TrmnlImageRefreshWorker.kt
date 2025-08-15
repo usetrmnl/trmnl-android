@@ -23,7 +23,7 @@ import timber.log.Timber
 import javax.inject.Inject
 
 /**
- * Worker to refresh the image displayed on the TRMNL mirror display.
+ * Worker to refresh the image displayed on the TRMNL display.
  *
  * The worker result is observed in [MainActivity] and then updated via the [TrmnlImageUpdateManager].
  * Whenever the image is updated, the [TrmnlImageUpdateManager] will notify the observers.
