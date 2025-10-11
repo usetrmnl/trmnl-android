@@ -77,12 +77,7 @@ class TrmnlImageRefreshWorker(
         // Fetch TRMNL display image - current or next from playlist based on request type
         // Also, if device type is BYOD or BYOS, we will always load the next playlist image
         // See https://discord.com/channels/1281055965508141100/1331360842809348106/1382865608236077086
-        val trmnlDisplayInfo: TrmnlDisplayInfo =
-            if (loadNextPluginImage || deviceConfig.type != TrmnlDeviceType.TRMNL) {
-                displayRepository.getNextDisplayData(deviceConfig)
-            } else {
-                displayRepository.getCurrentDisplayData(deviceConfig)
-            }
+        val trmnlDisplayInfo: TrmnlDisplayInfo = displayRepository.getNextDisplayData(deviceConfig)
 
         // Check for errors
         if (trmnlDisplayInfo.status.isHttpError()) {
