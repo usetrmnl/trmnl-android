@@ -14,6 +14,11 @@ internal const val HTTP_500 = 500
 internal const val HTTP_200 = 200
 
 /**
+ * 429 Too Many Requests - The user has sent too many requests in a given amount of time ("rate limiting").
+ */
+internal const val HTTP_429 = 429
+
+/**
  * TRMNL server currently returns `0` for success for some APIs.
  */
 internal const val HTTP_OK = 0
@@ -34,6 +39,12 @@ internal fun Int?.isHttpOk(): Boolean = this == HTTP_OK || this == HTTP_200 || t
  * Extension function to check if the HTTP status code is an error.
  */
 internal fun Int?.isHttpError(): Boolean = this == HTTP_500 || this == null
+
+/**
+ * Extension function to check if the HTTP status code indicates rate limiting (429).
+ * These errors should trigger a retry with exponential backoff.
+ */
+internal fun Int?.isRateLimitError(): Boolean = this == HTTP_429
 
 /**
  * Special error code provided in the [TrmnlDisplayInfo.imageFileName] as hack to indicate that the device requires setup.
