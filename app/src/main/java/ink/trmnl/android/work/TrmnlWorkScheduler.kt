@@ -113,6 +113,10 @@ class TrmnlWorkScheduler
                     ).setInputData(
                         workDataOf(
                             PARAM_REFRESH_WORK_TYPE to RefreshWorkType.PERIODIC.name,
+                            // Set to true so periodic refreshes advance the playlist (use /api/display endpoint)
+                            // instead of just reloading the current display (use /api/current_screen endpoint).
+                            // This enables automatic playlist cycling for TRMNL devices.
+                            PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to true,
                         ),
                     ).addTag(IMAGE_REFRESH_PERIODIC_WORK_TAG)
                     .build()
