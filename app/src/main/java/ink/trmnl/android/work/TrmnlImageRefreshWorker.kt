@@ -15,6 +15,7 @@ import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
 import ink.trmnl.android.util.isHttpError
 import ink.trmnl.android.util.isHttpOk
+import ink.trmnl.android.util.isRateLimitError
 import ink.trmnl.android.work.RefreshWorkResult.FAILURE
 import ink.trmnl.android.work.RefreshWorkResult.SUCCESS
 import ink.trmnl.android.work.TrmnlWorkScheduler.Companion.IMAGE_REFRESH_PERIODIC_WORK_TAG
@@ -84,7 +85,18 @@ class TrmnlImageRefreshWorker(
                 displayRepository.getCurrentDisplayData(deviceConfig)
             }
 
-        // Check for errors
+        // Check for rate limit errors (HTTP 429) - should retry with exponential backoff
+        if (trmnlDisplayInfo.status.isRateLimitError()) {
+            Timber.tag(TAG).w("Rate limit exceeded (HTTP 429), will retry with exponential backoff")
+            refreshLogManager.addFailureLog(
+                error = "Rate limit exceeded (HTTP 429) - Too many requests. Will retry automatically.",
+                httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
+            )
+            // Return retry() to let WorkManager handle exponential backoff
+            return Result.retry()
+        }
+
+        // Check for other errors
         if (trmnlDisplayInfo.status.isHttpError()) {
             Timber.tag(TAG).w("Failed to fetch display data: ${trmnlDisplayInfo.error}")
             refreshLogManager.addFailureLog(
