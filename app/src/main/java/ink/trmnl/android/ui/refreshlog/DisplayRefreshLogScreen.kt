@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -33,6 +34,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -230,6 +232,31 @@ fun DisplayRefreshLogContent(
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    var showClearLogsDialog by remember { mutableStateOf(false) }
+
+    // Confirmation dialog for clearing logs
+    if (showClearLogsDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearLogsDialog = false },
+            title = { Text("Clear all logs?") },
+            text = { Text("This action cannot be undone. All display refresh logs will be permanently deleted.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        state.eventSink(DisplayRefreshLogScreen.Event.ClearLogs)
+                        showClearLogsDialog = false
+                    },
+                ) {
+                    Text("Clear")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearLogsDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
 
     Scaffold(
         modifier = modifier,
@@ -260,9 +287,21 @@ fun DisplayRefreshLogContent(
                         )
                     }
 
-                    // Keep the existing clear button
-                    IconButton(onClick = { state.eventSink(DisplayRefreshLogScreen.Event.ClearLogs) }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Clear logs")
+                    // Keep the existing clear button - now shows confirmation dialog
+                    IconButton(
+                        onClick = { showClearLogsDialog = true },
+                        enabled = state.logs.isNotEmpty(),
+                    ) {
+                        Icon(
+                            Icons.Default.Clear,
+                            contentDescription = "Clear logs",
+                            tint =
+                                if (state.logs.isEmpty()) {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                        )
                     }
                 },
                 // Material 3 TopAppBar handles top insets automatically
