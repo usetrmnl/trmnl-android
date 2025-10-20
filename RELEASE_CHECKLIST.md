@@ -42,7 +42,7 @@ To update version, run the GitHub Actions workflow 'Version Management' with:
 
 ### 2. Run the Version Management workflow
 
-- Go to GitHub Actions → Version Management workflow
+- Go to GitHub Actions → [Bump App Version](https://github.com/usetrmnl/trmnl-android/actions/workflows/version-management.yml) workflow
 - Click "Run workflow"
 - Enter the required information:
   - **Version name**: Semantic version (e.g., 1.9.5)
