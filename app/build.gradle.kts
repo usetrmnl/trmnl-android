@@ -43,7 +43,7 @@ android {
         // 👇🏽 Use the following workflow to update versions everywhere automatically ♻️
         // https://github.com/usetrmnl/trmnl-android/actions/workflows/version-management.yml
         versionCode = 23
-        versionName = "2.0.5"
+        versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

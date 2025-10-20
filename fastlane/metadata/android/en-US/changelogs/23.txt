@@ -1,4 +1,4 @@
-- Updated to the latest version (2.0.5)
+- Updated to the latest version (2.1.0)
 - Fixed API base URL to use usetrmnl.com domain
 - Fixed HTTP 429 rate limit handling with retry logic
 - Fixed playlist auto-advance for periodic refreshes
