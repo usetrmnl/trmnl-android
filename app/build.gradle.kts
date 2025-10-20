@@ -26,7 +26,7 @@ if (secretPropsFile.exists()) {
 
 android {
     namespace = "ink.trmnl.android"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         // The application ID is the unique identifier for the app on the Play Store and other app stores.
@@ -37,7 +37,7 @@ android {
         minSdk = 28
 
         // See https://apilevels.com/
-        targetSdk = 35 // Android 15.0 (Vanilla Ice Cream)
+        targetSdk = 36 // Android 16.0 (Baklava)
         
         // ⚠️ App versioning update is required in multiple places.
         // 👇🏽 Use the following workflow to update versions everywhere automatically ♻️
