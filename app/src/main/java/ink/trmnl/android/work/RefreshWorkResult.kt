@@ -9,4 +9,5 @@ import androidx.annotation.Keep
 enum class RefreshWorkResult {
     SUCCESS,
     FAILURE,
+    RATE_LIMITED,
 }
