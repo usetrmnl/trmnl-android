@@ -21,10 +21,10 @@ object AppConfig {
     const val DEFAULT_REFRESH_INTERVAL_SEC: Long = 7_200L // 2 hours
 
     /**
-     * New base URL for the TRMNL API server.
-     * Ref: https://discord.com/channels/1281055965508141100/1284986536357662740/1364623667337760910
+     * Base URL for the TRMNL API server.
+     * Ref: https://github.com/usetrmnl/trmnl-android/issues/171
      */
-    const val TRMNL_API_SERVER_BASE_URL = "https://trmnl.app/"
+    const val TRMNL_API_SERVER_BASE_URL = "https://usetrmnl.com/"
 
     /**
      * URL for the TRMNL Android app on GitHub.
