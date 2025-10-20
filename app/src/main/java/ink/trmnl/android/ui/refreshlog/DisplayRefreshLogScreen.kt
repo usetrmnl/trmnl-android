@@ -592,7 +592,7 @@ private fun LogItemView(
                 if (log.httpResponseMetadata != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(bottom = 8.dp),
+                        modifier = Modifier.padding(bottom = 4.dp),
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.info_24dp),
@@ -613,7 +613,7 @@ private fun LogItemView(
                         fontFamily = FontFamily.Monospace,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(bottom = 8.dp),
+                        modifier = Modifier.padding(bottom = 4.dp),
                     )
                 }
 
