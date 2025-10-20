@@ -501,7 +501,7 @@ class TrmnlDisplayRepositoryTest {
             val result = repository.getNextDisplayData(testDeviceConfig)
 
             // Assert
-            assertThat(result.status).isEqualTo(500)
+            assertThat(result.status).isEqualTo(429)
             assertThat(result.error).contains("HTTP failure: 429")
             assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.TRMNL)
             // Verify HTTP metadata is extracted

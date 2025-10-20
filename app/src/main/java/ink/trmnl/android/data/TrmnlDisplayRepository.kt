@@ -218,7 +218,7 @@ class TrmnlDisplayRepository
             failure: ApiResult.Failure<Unit>,
         ): TrmnlDisplayInfo =
             TrmnlDisplayInfo(
-                status = HTTP_500,
+                status = (failure as? ApiResult.Failure.HttpFailure)?.code ?: HTTP_500,
                 trmnlDeviceType = trmnlDeviceConfig.type,
                 imageUrl = "",
                 imageFileName = "",

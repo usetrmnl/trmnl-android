@@ -87,6 +87,8 @@ class TrmnlImageRefreshWorker(
 
         // Check for rate limit errors (HTTP 429) - should retry with exponential backoff
         if (trmnlDisplayInfo.status.isRateLimitError()) {
+            // NOTE: This usually happens for current display API. See details below:
+            // - https://discord.com/channels/1281055965508141100/1336424981495676978/1429827943902744618
             Timber.tag(TAG).w("Rate limit exceeded (HTTP 429), will retry with exponential backoff")
             refreshLogManager.addFailureLog(
                 error = "Rate limit exceeded (HTTP 429) - Too many requests. Will retry automatically.",
