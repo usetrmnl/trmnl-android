@@ -48,34 +48,33 @@ internal fun extractHttpResponseMetadata(apiResult: ApiResult.Success<*>): HttpR
 
 /**
  * Extracts HTTP response metadata from an ApiResult.Failure instance.
- * For HttpFailure cases, constructs metadata from available information.
- * For other failure types, returns null.
+ * The metadata is retrieved from the okhttp3.Response object stored in the ApiResult's tags.
  *
- * @param apiResult The failed API result
- * @param requestUrl The URL that was requested
+ * @param apiResult The failed API result containing response metadata
  * @return HttpResponseMetadata object containing useful response information, or null if not available
  */
-internal fun extractHttpResponseMetadataFromFailure(
-    apiResult: ApiResult.Failure<*>,
-    requestUrl: String,
-): HttpResponseMetadata? =
-    when (apiResult) {
-        is ApiResult.Failure.HttpFailure -> {
-            // HttpFailure contains the HTTP status code and error
-            // Construct basic metadata from available information
-            HttpResponseMetadata(
-                url = requestUrl,
-                protocol = "http/1.1", // Default, as we don't have access to actual protocol
-                statusCode = apiResult.code,
-                message = apiResult.error?.toString() ?: "",
-                contentType = null,
-                contentLength = -1,
-                serverName = null,
-                requestDuration = -1,
-                etag = null,
-                requestId = null,
-                timestamp = System.currentTimeMillis(),
-            )
-        }
-        else -> null // NetworkFailure, ApiFailure, and UnknownFailure don't have HTTP response data
-    }
+@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+@OptIn(InternalEitherNetApi::class)
+internal fun extractHttpResponseMetadataFromFailure(apiResult: ApiResult.Failure<*>): HttpResponseMetadata? {
+    // HttpFailure has tags property that contains the Response
+    if (apiResult !is ApiResult.Failure.HttpFailure) return null
+
+    val httpResponse = apiResult.tags[okhttp3.Response::class] as? okhttp3.Response ?: return null
+
+    // Calculate the request duration using the timestamps from the response
+    val requestDuration = httpResponse.receivedResponseAtMillis - httpResponse.sentRequestAtMillis
+
+    return HttpResponseMetadata(
+        url = httpResponse.request.url.toString(),
+        protocol = httpResponse.protocol.toString(),
+        statusCode = httpResponse.code,
+        message = httpResponse.message,
+        contentType = httpResponse.header("Content-Type"),
+        contentLength = httpResponse.header("Content-Length")?.toLongOrNull() ?: -1,
+        serverName = httpResponse.header("Server"),
+        requestDuration = requestDuration,
+        etag = httpResponse.header("etag"),
+        requestId = httpResponse.header("x-request-id"),
+        timestamp = System.currentTimeMillis(),
+    )
+}

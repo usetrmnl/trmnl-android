@@ -53,11 +53,10 @@ class TrmnlDisplayRepository
                 return generateFakeTrmnlDisplayInfo(imageMetadataStore = imageMetadataStore, apiUsed = "next-image")
             }
 
-            val apiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, NEXT_PLAYLIST_SCREEN_API_PATH)
             val result =
                 apiService
                     .getNextDisplayData(
-                        fullApiUrl = apiUrl,
+                        fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, NEXT_PLAYLIST_SCREEN_API_PATH),
                         accessToken = trmnlDeviceConfig.apiAccessToken,
                         // Send device MAC ID if available (used for BYOS service)
                         deviceMacId = trmnlDeviceConfig.deviceMacId,
@@ -68,7 +67,7 @@ class TrmnlDisplayRepository
 
             when (result) {
                 is ApiResult.Failure -> {
-                    return failedTrmnlDisplayInfo(trmnlDeviceConfig, result, apiUrl)
+                    return failedTrmnlDisplayInfo(trmnlDeviceConfig, result)
                 }
                 is ApiResult.Success -> {
                     // Map the response to the display info
@@ -124,17 +123,16 @@ class TrmnlDisplayRepository
                 return generateFakeTrmnlDisplayInfo(imageMetadataStore = imageMetadataStore, apiUsed = "current-image")
             }
 
-            val apiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, CURRENT_PLAYLIST_SCREEN_API_PATH)
             val result =
                 apiService
                     .getCurrentDisplayData(
-                        fullApiUrl = apiUrl,
+                        fullApiUrl = constructApiUrl(trmnlDeviceConfig.apiBaseUrl, CURRENT_PLAYLIST_SCREEN_API_PATH),
                         accessToken = trmnlDeviceConfig.apiAccessToken,
                     )
 
             when (result) {
                 is ApiResult.Failure -> {
-                    return failedTrmnlDisplayInfo(trmnlDeviceConfig, result, apiUrl)
+                    return failedTrmnlDisplayInfo(trmnlDeviceConfig, result)
                 }
                 is ApiResult.Success -> {
                     // Map the response to the display info
@@ -218,7 +216,6 @@ class TrmnlDisplayRepository
         private fun failedTrmnlDisplayInfo(
             trmnlDeviceConfig: TrmnlDeviceConfig,
             failure: ApiResult.Failure<Unit>,
-            requestUrl: String,
         ): TrmnlDisplayInfo =
             TrmnlDisplayInfo(
                 status = HTTP_500,
@@ -233,7 +230,7 @@ class TrmnlDisplayRepository
                         is ApiResult.Failure.UnknownFailure -> "Unknown failure: ${failure.error.localizedMessage}"
                     },
                 refreshIntervalSeconds = 0L,
-                httpResponseMetadata = extractHttpResponseMetadataFromFailure(failure, requestUrl),
+                httpResponseMetadata = extractHttpResponseMetadataFromFailure(failure),
             )
 
         /**
