@@ -588,35 +588,6 @@ private fun LogItemView(
                     )
                 }
 
-                // Show request URL if available from httpResponseMetadata
-                if (log.httpResponseMetadata != null) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(bottom = 4.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.info_24dp),
-                            contentDescription = null,
-                            modifier = Modifier.padding(end = 4.dp),
-                            tint = MaterialTheme.colorScheme.secondary,
-                        )
-
-                        Text(
-                            text = "Request URL:",
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                    Text(
-                        text = log.httpResponseMetadata.url,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(bottom = 4.dp),
-                    )
-                }
-
                 Text(
                     text = "Error:",
                     fontWeight = FontWeight.Bold,
@@ -628,16 +599,6 @@ private fun LogItemView(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
-
-                // Show tap hint if HTTP metadata is available
-                if (log.httpResponseMetadata != null) {
-                    Text(
-                        text = "Tap for HTTP response details",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                }
             }
         }
     }
