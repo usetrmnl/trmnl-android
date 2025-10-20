@@ -588,6 +588,35 @@ private fun LogItemView(
                     )
                 }
 
+                // Show request URL if available from httpResponseMetadata
+                if (log.httpResponseMetadata != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.info_24dp),
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 4.dp),
+                            tint = MaterialTheme.colorScheme.secondary,
+                        )
+
+                        Text(
+                            text = "Request URL:",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    Text(
+                        text = log.httpResponseMetadata.url,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
+
                 Text(
                     text = "Error:",
                     fontWeight = FontWeight.Bold,
@@ -599,6 +628,16 @@ private fun LogItemView(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
+
+                // Show tap hint if HTTP metadata is available
+                if (log.httpResponseMetadata != null) {
+                    Text(
+                        text = "Tap for HTTP response details",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
             }
         }
     }
@@ -753,6 +792,20 @@ private fun PreviewLogItemViewFailure() {
             refreshIntervalSeconds = DEFAULT_REFRESH_INTERVAL_SEC,
             imageRefreshWorkType = RefreshWorkType.ONE_TIME.name,
             error = "Network timeout while fetching image.",
+            httpResponseMetadata =
+                HttpResponseMetadata(
+                    url = "https://trmnl.app/api/display",
+                    protocol = "h2",
+                    statusCode = 500,
+                    message = "Internal Server Error",
+                    contentType = "application/json",
+                    contentLength = 0,
+                    serverName = null,
+                    requestDuration = 120,
+                    etag = null,
+                    requestId = "abc123",
+                    timestamp = System.currentTimeMillis(),
+                ),
         )
     TrmnlDisplayAppTheme {
         LogItemView(log = log, snackbarHostState = remember { SnackbarHostState() })
