@@ -45,3 +45,37 @@ internal fun extractHttpResponseMetadata(apiResult: ApiResult.Success<*>): HttpR
         timestamp = System.currentTimeMillis(),
     )
 }
+
+/**
+ * Extracts HTTP response metadata from an ApiResult.Failure instance.
+ * For HttpFailure cases, constructs metadata from available information.
+ * For other failure types, returns null.
+ *
+ * @param apiResult The failed API result
+ * @param requestUrl The URL that was requested
+ * @return HttpResponseMetadata object containing useful response information, or null if not available
+ */
+internal fun extractHttpResponseMetadataFromFailure(
+    apiResult: ApiResult.Failure<*>,
+    requestUrl: String,
+): HttpResponseMetadata? =
+    when (apiResult) {
+        is ApiResult.Failure.HttpFailure -> {
+            // HttpFailure contains the HTTP status code and error
+            // Construct basic metadata from available information
+            HttpResponseMetadata(
+                url = requestUrl,
+                protocol = "http/1.1", // Default, as we don't have access to actual protocol
+                statusCode = apiResult.code,
+                message = apiResult.error?.toString() ?: "",
+                contentType = null,
+                contentLength = -1,
+                serverName = null,
+                requestDuration = -1,
+                etag = null,
+                requestId = null,
+                timestamp = System.currentTimeMillis(),
+            )
+        }
+        else -> null // NetworkFailure, ApiFailure, and UnknownFailure don't have HTTP response data
+    }

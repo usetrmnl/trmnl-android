@@ -453,4 +453,67 @@ class TrmnlDisplayRepositoryTest {
                 )
             }
         }
+
+    @Test
+    fun `getNextDisplayData should extract HTTP metadata from failure response`() =
+        runTest {
+            // Arrange
+            val expectedNextApiUrl = "https://server.example.com/api/display"
+            val httpFailure: ApiResult<TrmnlDisplayResponse, Unit> =
+                ApiResult.httpFailure(
+                    code = 429,
+                    error = Unit,
+                )
+
+            coEvery {
+                apiService.getNextDisplayData(
+                    fullApiUrl = expectedNextApiUrl,
+                    accessToken = testDeviceConfig.apiAccessToken,
+                    useBase64 = any(),
+                )
+            } returns httpFailure
+
+            // Act
+            val result = repository.getNextDisplayData(testDeviceConfig)
+
+            // Assert
+            assertThat(result.status).isEqualTo(500)
+            assertThat(result.error).contains("HTTP failure: 429")
+            assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.TRMNL)
+            // Verify HTTP metadata is extracted
+            assertThat(result.httpResponseMetadata).isNotNull()
+            assertThat(result.httpResponseMetadata?.url).isEqualTo(expectedNextApiUrl)
+            assertThat(result.httpResponseMetadata?.statusCode).isEqualTo(429)
+        }
+
+    @Test
+    fun `getCurrentDisplayData should extract HTTP metadata from failure response`() =
+        runTest {
+            // Arrange
+            val expectedCurrentApiUrl = "https://server.example.com/api/current_screen"
+            val httpFailure: ApiResult<TrmnlCurrentImageResponse, Unit> =
+                ApiResult.httpFailure(
+                    code = 500,
+                    error = Unit,
+                )
+
+            coEvery {
+                apiService.getCurrentDisplayData(
+                    fullApiUrl = expectedCurrentApiUrl,
+                    accessToken = testDeviceConfig.apiAccessToken,
+                )
+            } returns httpFailure
+
+            // Act
+            val result = repository.getCurrentDisplayData(testDeviceConfig)
+
+            // Assert
+            assertThat(result.status).isEqualTo(500)
+            assertThat(result.error).contains("HTTP failure: 500")
+            assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.TRMNL)
+            // Verify HTTP metadata is extracted
+            assertThat(result.httpResponseMetadata).isNotNull()
+            assertThat(result.httpResponseMetadata?.url).isEqualTo(expectedCurrentApiUrl)
+            assertThat(result.httpResponseMetadata?.statusCode).isEqualTo(500)
+        }
 }
