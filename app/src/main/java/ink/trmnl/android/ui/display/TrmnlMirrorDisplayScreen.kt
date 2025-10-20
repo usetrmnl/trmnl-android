@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,6 +59,7 @@ import ink.trmnl.android.ui.FullScreenMode
 import ink.trmnl.android.ui.refreshlog.DisplayRefreshLogScreen
 import ink.trmnl.android.ui.settings.AppSettingsScreen
 import ink.trmnl.android.util.CoilRequestUtils
+import ink.trmnl.android.util.ImageSaver
 import ink.trmnl.android.util.nextRunTime
 import ink.trmnl.android.work.TrmnlImageUpdateManager
 import ink.trmnl.android.work.TrmnlWorkScheduler
@@ -77,8 +81,17 @@ data object TrmnlMirrorDisplayScreen : Screen {
         val nextImageRefreshIn: String,
         val isLoading: Boolean = false,
         val errorMessage: String? = null,
+        val saveImageResult: SaveImageResult? = null,
         val eventSink: (Event) -> Unit,
     ) : CircuitUiState
+
+    sealed class SaveImageResult {
+        data object Success : SaveImageResult()
+
+        data class Error(
+            val message: String,
+        ) : SaveImageResult()
+    }
 
     sealed class Event : CircuitUiEvent {
         data object RefreshCurrentPlaylistItemRequested : Event()
@@ -92,6 +105,8 @@ data object TrmnlMirrorDisplayScreen : Screen {
         data object BackPressed : Event()
 
         data object ToggleOverlayControls : Event()
+
+        data object SaveImageRequested : Event()
 
         data class ImageLoadingError(
             val message: String,
@@ -115,7 +130,9 @@ class TrmnlMirrorDisplayPresenter
             var isLoading by remember { mutableStateOf(true) }
             var nextRefreshTime by remember { mutableStateOf("No scheduled work found. Please set API token.") }
             var error by remember { mutableStateOf<String?>(null) }
+            var saveImageResult by remember { mutableStateOf<TrmnlMirrorDisplayScreen.SaveImageResult?>(null) }
             val scope = rememberCoroutineScope()
+            val context = LocalContext.current
 
             // Collect updates from the image update manager to get the latest image URL
             // Latest image URL is received from WorkManager work requests.
@@ -185,6 +202,7 @@ class TrmnlMirrorDisplayPresenter
                 nextImageRefreshIn = nextRefreshTime,
                 isLoading = isLoading,
                 errorMessage = error,
+                saveImageResult = saveImageResult,
                 eventSink = { event ->
                     when (event) {
                         TrmnlMirrorDisplayScreen.Event.RefreshCurrentPlaylistItemRequested -> {
@@ -240,6 +258,21 @@ class TrmnlMirrorDisplayPresenter
                             error = event.message
                             isLoading = false
                         }
+
+                        TrmnlMirrorDisplayScreen.Event.SaveImageRequested -> {
+                            scope.launch {
+                                saveImageResult = null
+                                val savedUri = ImageSaver.saveImageToDownloads(context, imageUrl)
+                                saveImageResult =
+                                    if (savedUri != null) {
+                                        Timber.d("Image saved successfully to: $savedUri")
+                                        TrmnlMirrorDisplayScreen.SaveImageResult.Success
+                                    } else {
+                                        Timber.w("Failed to save image")
+                                        TrmnlMirrorDisplayScreen.SaveImageResult.Error("Failed to save image")
+                                    }
+                            }
+                        }
                     }
                 },
             )
@@ -259,10 +292,30 @@ fun TrmnlMirrorDisplayContent(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Use for UI preview in Android Studio
     // https://developer.android.com/develop/ui/compose/tooling/previews#localinspectionmode
     val isPreviewMode = LocalInspectionMode.current
+
+    // Show snackbar when save result changes
+    LaunchedEffect(state.saveImageResult) {
+        state.saveImageResult?.let { result ->
+            when (result) {
+                is TrmnlMirrorDisplayScreen.SaveImageResult.Success ->
+                    snackbarHostState.showSnackbar(
+                        message = "Image saved to Pictures/TRMNL",
+                        duration = SnackbarDuration.Short,
+                    )
+                is TrmnlMirrorDisplayScreen.SaveImageResult.Error ->
+                    snackbarHostState.showSnackbar(
+                        message = result.message,
+                        duration = SnackbarDuration.Short,
+                    )
+            }
+        }
+    }
 
     // Apply fullscreen mode and keep screen on
     FullScreenMode(enabled = true, keepScreenOn = true)
@@ -353,6 +406,12 @@ fun TrmnlMirrorDisplayContent(
             ) {
                 OverlaySettingsView(state)
             }
+
+            // Snackbar host for showing save results
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
         }
     }
 }
@@ -370,6 +429,7 @@ fun PreviewTrmnlMirrorDisplayImageContent() {
                     nextImageRefreshIn = "5 minutes",
                     isLoading = false,
                     errorMessage = null,
+                    saveImageResult = null,
                     eventSink = {},
                 ),
         )
@@ -389,6 +449,7 @@ fun PreviewTrmnlMirrorDisplayWithControls() {
                     nextImageRefreshIn = "5 minutes",
                     isLoading = false,
                     errorMessage = null,
+                    saveImageResult = null,
                     eventSink = {},
                 ),
         )
@@ -407,6 +468,7 @@ fun PreviewTrmnlMirrorDisplayErrorContent() {
                     nextImageRefreshIn = "5 minutes",
                     isLoading = false,
                     errorMessage = "Sample Error Message",
+                    saveImageResult = null,
                     eventSink = {},
                 ),
         )
