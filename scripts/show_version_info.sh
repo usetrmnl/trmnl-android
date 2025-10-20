@@ -1,5 +1,9 @@
 #!/bin/bash
 # Script to display current version information across the project
+# https://semver.org/spec/v2.0.0.html
+# 
+# 📚 Read following for additional context:
+# - https://github.com/usetrmnl/trmnl-android/blob/main/RELEASE_CHECKLIST.md
 
 set -e
 
@@ -48,10 +52,16 @@ else
 fi
 
 # Suggest next version
+# Increment version code by 1
 NEXT_VERSION_CODE=$((VERSION_CODE + 1))
-# Simple semantic version increment (assumes X.Y.Z format)
+
+# Increment minor version and reset patch version to 0 (assumes X.Y.Z format)
+# Example: 2.1.0 -> 2.2.0, or 2.1.3 -> 2.2.0
 IFS='.' read -ra VER_PARTS <<< "$VERSION_NAME"
-NEXT_VERSION_NAME="${VER_PARTS[0]}.${VER_PARTS[1]}.$((${VER_PARTS[2]} + 1))"
+MAJOR="${VER_PARTS[0]}"
+MINOR="${VER_PARTS[1]}"
+NEXT_MINOR=$((MINOR + 1))
+NEXT_VERSION_NAME="${MAJOR}.${NEXT_MINOR}.0"
 
 echo "🚀 Suggested next version:"
 echo "  - Version Code: $NEXT_VERSION_CODE"
