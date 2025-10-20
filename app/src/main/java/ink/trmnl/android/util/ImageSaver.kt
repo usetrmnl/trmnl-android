@@ -14,12 +14,12 @@ import coil3.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
-import java.io.FileOutputStream
 
 /**
  * Utility class for saving images to the device storage.
- * Uses the MediaStore API for Android 10+ and legacy storage for older versions.
+ * Uses the MediaStore API which works without permissions on Android 10+ (API 29+).
+ * For Android 9 (API 28), the legacy storage path requires WRITE_EXTERNAL_STORAGE permission,
+ * but we handle it gracefully by showing an error if permission is not granted.
  */
 object ImageSaver {
     private const val IMAGE_SAVER_TAG = "ImageSaver"
@@ -61,11 +61,7 @@ object ImageSaver {
                 val timestamp = System.currentTimeMillis()
                 val filename = "TRMNL_$timestamp.png"
 
-                return@withContext if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    saveImageMediaStore(context, bitmap, filename)
-                } else {
-                    saveImageLegacy(bitmap, filename)
-                }
+                return@withContext saveImageMediaStore(context, bitmap, filename)
             } catch (e: Exception) {
                 Timber.tag(IMAGE_SAVER_TAG).e(e, "Error saving image")
                 return@withContext null
@@ -73,7 +69,10 @@ object ImageSaver {
         }
 
     /**
-     * Save image using MediaStore API (Android 10+)
+     * Save image using MediaStore API.
+     * This works without permissions on Android 10+ (API 29+).
+     * For Android 9 (API 28), this may fail if WRITE_EXTERNAL_STORAGE permission is not granted,
+     * but we handle it gracefully.
      */
     private fun saveImageMediaStore(
         context: Context,
@@ -84,7 +83,9 @@ object ImageSaver {
             ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
                 put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
-                put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/TRMNL")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/TRMNL")
+                }
             }
 
         val resolver = context.contentResolver
@@ -102,36 +103,6 @@ object ImageSaver {
                 resolver.delete(uri, null, null)
                 null
             }
-        }
-    }
-
-    /**
-     * Save image using legacy storage (Android 9 and below)
-     */
-    @Suppress("DEPRECATION")
-    private fun saveImageLegacy(
-        bitmap: Bitmap,
-        filename: String,
-    ): Uri? {
-        val picturesDir =
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-        val trmnlDir = File(picturesDir, "TRMNL")
-
-        if (!trmnlDir.exists()) {
-            trmnlDir.mkdirs()
-        }
-
-        val imageFile = File(trmnlDir, filename)
-
-        return try {
-            FileOutputStream(imageFile).use { outputStream ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-            }
-            Timber.tag(IMAGE_SAVER_TAG).d("Image saved successfully to: ${imageFile.absolutePath}")
-            Uri.fromFile(imageFile)
-        } catch (e: Exception) {
-            Timber.tag(IMAGE_SAVER_TAG).e(e, "Error writing image using legacy storage")
-            null
         }
     }
 }
