@@ -16,8 +16,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -125,7 +125,7 @@ internal fun OverlaySettingsView(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ExtendedFloatingActionButton(
@@ -146,18 +146,18 @@ internal fun OverlaySettingsView(
                             fontWeight = FontWeight.Bold,
                         )
                     },
-                    modifier = Modifier.weight(1f),
                 )
 
-                IconButton(
+                FloatingActionButton(
                     onClick = {
                         state.eventSink(TrmnlMirrorDisplayScreen.Event.SaveImageRequested)
                     },
+                    modifier = Modifier.padding(start = 8.dp),
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.image_24dp),
+                        painter = painterResource(R.drawable.download_photo),
                         contentDescription = "Save Image",
-                        modifier = if (isExpandedWidth) Modifier.size(32.dp) else Modifier.size(24.dp),
+                        modifier = Modifier.size(32.dp),
                     )
                 }
             }
