@@ -37,6 +37,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.network.HttpException
 import com.slack.circuit.codegen.annotations.CircuitInject
 import com.slack.circuit.runtime.CircuitUiEvent
 import com.slack.circuit.runtime.CircuitUiState
@@ -322,12 +323,22 @@ fun TrmnlMirrorDisplayContent(
                         placeholder = painterResource(R.drawable.trmnl_logo_semi_transparent),
                         error = painterResource(R.drawable.trmnl_logo_semi_transparent),
                         onError = { error ->
-                            Timber.e("Image loading failed: ${error.result.throwable}")
-                            state.eventSink(
-                                TrmnlMirrorDisplayScreen.Event.ImageLoadingError(
-                                    "Failed to load image: ${error.result.throwable.message ?: "Unknown error"}",
-                                ),
-                            )
+                            val throwable = error.result.throwable
+                            Timber.e("Image loading failed: $throwable")
+
+                            // Check if this is an HTTP 403 error (expired URL)
+                            if (throwable is HttpException && throwable.response.code == 403) {
+                                Timber.w("Image URL expired (HTTP 403), triggering refresh to get fresh URL")
+                                // Trigger refresh to get a fresh image URL from the server
+                                state.eventSink(TrmnlMirrorDisplayScreen.Event.RefreshCurrentPlaylistItemRequested)
+                            } else {
+                                // For other errors, show the error message
+                                state.eventSink(
+                                    TrmnlMirrorDisplayScreen.Event.ImageLoadingError(
+                                        "Failed to load image: ${throwable.message ?: "Unknown error"}",
+                                    ),
+                                )
+                            }
                         },
                         modifier = Modifier.fillMaxSize(),
                     )
