@@ -15,6 +15,7 @@ import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_PLAYLIST_SCREEN_
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
 import ink.trmnl.android.network.util.constructApiUrl
 import ink.trmnl.android.network.util.extractHttpResponseMetadata
+import ink.trmnl.android.network.util.extractHttpResponseMetadataFromFailure
 import ink.trmnl.android.util.HTTP_500
 import ink.trmnl.android.util.isHttpOk
 import timber.log.Timber
@@ -229,6 +230,7 @@ class TrmnlDisplayRepository
                         is ApiResult.Failure.UnknownFailure -> "Unknown failure: ${failure.error.localizedMessage}"
                     },
                 refreshIntervalSeconds = 0L,
+                httpResponseMetadata = extractHttpResponseMetadataFromFailure(failure),
             )
 
         /**

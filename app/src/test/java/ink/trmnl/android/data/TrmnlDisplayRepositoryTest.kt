@@ -14,6 +14,9 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
+import okhttp3.Protocol
+import okhttp3.Request
+import okhttp3.Response
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -21,6 +24,7 @@ import org.junit.Test
 /**
  * Unit tests for [TrmnlDisplayRepository].
  */
+@OptIn(com.slack.eithernet.InternalEitherNetApi::class)
 class TrmnlDisplayRepositoryTest {
     private lateinit var repository: TrmnlDisplayRepository
     private lateinit var apiService: TrmnlApiService
@@ -452,5 +456,111 @@ class TrmnlDisplayRepositoryTest {
                     accessToken = byosDeviceConfig.apiAccessToken,
                 )
             }
+        }
+
+    @Test
+    fun `getNextDisplayData should extract HTTP metadata from failure response`() =
+        runTest {
+            // Arrange
+            val expectedNextApiUrl = "https://server.example.com/api/display"
+
+            // Create mock Response with proper data
+            val mockRequest = Request.Builder().url(expectedNextApiUrl).build()
+            val mockResponse =
+                mockk<Response> {
+                    every { request } returns mockRequest
+                    every { protocol } returns Protocol.HTTP_2
+                    every { code } returns 429
+                    every { message } returns "Too Many Requests"
+                    every { header("Content-Type") } returns "text/html"
+                    every { header("Content-Length") } returns null
+                    every { header("Server") } returns "cloudflare"
+                    every { header("etag") } returns null
+                    every { header("x-request-id") } returns "e9f73be5-bf47-4c30-9c87-60990c86447a"
+                    every { sentRequestAtMillis } returns 1000L
+                    every { receivedResponseAtMillis } returns 1050L
+                }
+
+            // Create HttpFailure with tags containing the Response
+            val httpFailure: ApiResult<TrmnlDisplayResponse, Unit> =
+                ApiResult.Failure.HttpFailure(
+                    code = 429,
+                    error = Unit,
+                    tags = mapOf(Response::class to mockResponse),
+                )
+
+            coEvery {
+                apiService.getNextDisplayData(
+                    fullApiUrl = expectedNextApiUrl,
+                    accessToken = testDeviceConfig.apiAccessToken,
+                    useBase64 = any(),
+                )
+            } returns httpFailure
+
+            // Act
+            val result = repository.getNextDisplayData(testDeviceConfig)
+
+            // Assert
+            assertThat(result.status).isEqualTo(500)
+            assertThat(result.error).contains("HTTP failure: 429")
+            assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.TRMNL)
+            // Verify HTTP metadata is extracted
+            assertThat(result.httpResponseMetadata).isNotNull()
+            assertThat(result.httpResponseMetadata?.url).isEqualTo(expectedNextApiUrl)
+            assertThat(result.httpResponseMetadata?.statusCode).isEqualTo(429)
+            assertThat(result.httpResponseMetadata?.protocol).isEqualTo("h2")
+            assertThat(result.httpResponseMetadata?.requestDuration).isEqualTo(50L)
+        }
+
+    @Test
+    fun `getCurrentDisplayData should extract HTTP metadata from failure response`() =
+        runTest {
+            // Arrange
+            val expectedCurrentApiUrl = "https://server.example.com/api/current_screen"
+
+            // Create mock Response with proper data
+            val mockRequest = Request.Builder().url(expectedCurrentApiUrl).build()
+            val mockResponse =
+                mockk<Response> {
+                    every { request } returns mockRequest
+                    every { protocol } returns Protocol.HTTP_2
+                    every { code } returns 500
+                    every { message } returns "Internal Server Error"
+                    every { header("Content-Type") } returns "application/json"
+                    every { header("Content-Length") } returns "123"
+                    every { header("Server") } returns null
+                    every { header("etag") } returns null
+                    every { header("x-request-id") } returns "abc-123"
+                    every { sentRequestAtMillis } returns 2000L
+                    every { receivedResponseAtMillis } returns 2100L
+                }
+
+            // Create HttpFailure with tags containing the Response
+            val httpFailure: ApiResult<TrmnlCurrentImageResponse, Unit> =
+                ApiResult.Failure.HttpFailure(
+                    code = 500,
+                    error = Unit,
+                    tags = mapOf(Response::class to mockResponse),
+                )
+
+            coEvery {
+                apiService.getCurrentDisplayData(
+                    fullApiUrl = expectedCurrentApiUrl,
+                    accessToken = testDeviceConfig.apiAccessToken,
+                )
+            } returns httpFailure
+
+            // Act
+            val result = repository.getCurrentDisplayData(testDeviceConfig)
+
+            // Assert
+            assertThat(result.status).isEqualTo(500)
+            assertThat(result.error).contains("HTTP failure: 500")
+            assertThat(result.trmnlDeviceType).isEqualTo(TrmnlDeviceType.TRMNL)
+            // Verify HTTP metadata is extracted
+            assertThat(result.httpResponseMetadata).isNotNull()
+            assertThat(result.httpResponseMetadata?.url).isEqualTo(expectedCurrentApiUrl)
+            assertThat(result.httpResponseMetadata?.statusCode).isEqualTo(500)
+            assertThat(result.httpResponseMetadata?.contentLength).isEqualTo(123L)
         }
 }

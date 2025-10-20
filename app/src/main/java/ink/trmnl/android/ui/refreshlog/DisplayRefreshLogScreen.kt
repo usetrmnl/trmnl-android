@@ -753,6 +753,20 @@ private fun PreviewLogItemViewFailure() {
             refreshIntervalSeconds = DEFAULT_REFRESH_INTERVAL_SEC,
             imageRefreshWorkType = RefreshWorkType.ONE_TIME.name,
             error = "Network timeout while fetching image.",
+            httpResponseMetadata =
+                HttpResponseMetadata(
+                    url = "https://trmnl.app/api/display",
+                    protocol = "h2",
+                    statusCode = 500,
+                    message = "Internal Server Error",
+                    contentType = "application/json",
+                    contentLength = 0,
+                    serverName = null,
+                    requestDuration = 120,
+                    etag = null,
+                    requestId = "abc123",
+                    timestamp = System.currentTimeMillis(),
+                ),
         )
     TrmnlDisplayAppTheme {
         LogItemView(log = log, snackbarHostState = remember { SnackbarHostState() })
