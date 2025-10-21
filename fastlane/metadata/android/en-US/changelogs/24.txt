@@ -1,0 +1,8 @@
+- Updated to the latest version (2.2.0)
+- Added image download feature to save displayed images to device
+- Fixed automatic playlist advancement during periodic refreshes
+- Fixed expired image URL handling with automatic refresh
+- Added HTTP 429 rate limit handling with automatic retry
+- Added confirmation dialog when clearing logs
+- Updated to Android 16 with improved error reporting
+- Various UI improvements and bug fixes
