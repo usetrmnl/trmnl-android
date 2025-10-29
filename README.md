@@ -63,3 +63,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on how to get started an
 * https://usetrmnl.com/
 * https://usetrmnl.com/integrations
 * https://github.com/usetrmnl/
+
+
+### Related App - TRMNL Buddy
+<img width="96" height="96" alt="App Icon" src="https://github.com/user-attachments/assets/f5871ce0-786d-4f2f-aa51-1c6b72413bf7" align="right" />
+
+Your companion app to monitor and manage your TRMNL e-ink displays on the go.
+
+**TRMNL Android Buddy** is the essential companion app for managing your [TRMNL](https://usetrmnl.com) e-ink display devices. Monitor device health, track battery life over time, and stay on top of your displays' status—all from your Android phone.
+
+<a href="https://play.google.com/store/apps/details?id=ink.trmnl.android.buddy&pcampaignid=web_share" target="_blank"><img src="https://liquidlabs.ca/img/google-play.svg" height="45"></a>
