@@ -91,6 +91,9 @@ class MainActivity
          * 2. Listens for one-time image refresh work results
          * 3. Updates the application with new images when available
          * 4. Logs work status and errors
+         *
+         * 📚 See following sequence diagram for flow:
+         * - https://github.com/usetrmnl/trmnl-android/blob/main/CONTRIBUTING.md#trmnl-app-image-loading-flow
          */
         private fun listenForWorkUpdates() {
             val workManager = WorkManager.getInstance(context)

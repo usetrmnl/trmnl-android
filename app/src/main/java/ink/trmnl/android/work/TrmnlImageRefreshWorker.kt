@@ -30,6 +30,9 @@ import javax.inject.Inject
  * Whenever the image is updated, the [TrmnlImageUpdateManager] will notify the observers.
  * In this case the [TrmnlMirrorDisplayScreen] will recompose and update the image.
  *
+ * 📚 See following sequence diagram for flow:
+ * - https://github.com/usetrmnl/trmnl-android/blob/main/CONTRIBUTING.md#trmnl-app-image-loading-flow
+ *
  * @see TrmnlImageUpdateManager
  * @see TrmnlMirrorDisplayScreen
  */
