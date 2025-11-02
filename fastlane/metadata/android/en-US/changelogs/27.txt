@@ -1,0 +1,2 @@
+- Updated to the latest version (2.4.1)
+- Google Play release preparation

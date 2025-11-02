@@ -16,9 +16,9 @@ Repo: https://github.com/usetrmnl/trmnl-android.git
 Binaries: https://github.com/usetrmnl/trmnl-android/releases/download/v%v/trmnl-v%v.apk
 
 Builds:
-  - versionName: 2.4.0
-    versionCode: 26
-    commit: v2.4.0
+  - versionName: 2.4.1
+    versionCode: 27
+    commit: v2.4.1
     subdir: app
     gradle:
       - yes
@@ -27,5 +27,5 @@ AllowedAPKSigningKeys: 209b92f5bb0144237251a10fc3ebb53a1117e3dfeb406997bfd6b07f6
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 2.4.0
-CurrentVersionCode: 26
+CurrentVersion: 2.4.1
+CurrentVersionCode: 27
