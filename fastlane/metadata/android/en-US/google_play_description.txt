@@ -86,8 +86,25 @@ ADS
 No ads
 
 
-WHAT'S NEW (Release Notes for v2.1.0)
+WHAT'S NEW (Release Notes)
 --------------------------------------------------------------------------------
+🎉 First Google Play Release!
+
+TRMNL is now officially available! Transform your Android device into a smart display for TRMNL e-ink devices and BYOS installations.
+
+✨ What's New:
+• Connect to TRMNL/BYOS servers with API tokens
+• Automatic periodic image refresh
+• Manual refresh and playlist navigation
+• Custom server URL support for BYOS
+• Refresh history tracking
+
+📱 Requirements:
+• TRMNL device with developer edition, BYOD subscription, or BYOS installation
+
+Learn more at https://usetrmnl.com
+
+
 🎉 Version 2.1.0 - Reliability & Performance Update
 
 🐛 Bug Fixes:
