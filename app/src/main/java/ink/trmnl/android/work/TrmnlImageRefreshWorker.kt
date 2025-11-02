@@ -103,7 +103,7 @@ class TrmnlImageRefreshWorker(
                 httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
             )
 
-            // Strategy 1: Show cached image during retry to improve UX
+            // Show cached image during retry to improve UX
             // Instead of showing a loading spinner for 30+ seconds, display the last successful image
             // See https://github.com/usetrmnl/trmnl-android/issues/195
             val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
