@@ -1,0 +1,208 @@
+================================================================================
+GOOGLE PLAY STORE LISTING - TRMNL
+================================================================================
+
+APPLICATION TITLE (Max 50 characters)
+--------------------------------------------------------------------------------
+TRMNL
+
+
+SHORT DESCRIPTION (Max 80 characters)
+--------------------------------------------------------------------------------
+Mirror TRMNL e-ink displays on Android devices
+
+
+FULL DESCRIPTION (Max 4000 characters)
+--------------------------------------------------------------------------------
+TRMNL serves as a digital display for TRMNL e-ink devices and BYOS installations. The app connects to the TRMNL or BYOS API, fetches display data, and shows it on Android devices. It can function both as a mirror for existing TRMNL devices or as a standalone TRMNL display connected directly to BYOS servers.
+
+Key Features:
+• Token-based authentication with TRMNL/BYOS API
+• Automatic periodic image refresh from the server
+• Adaptive refresh rate based on server response config
+• Manual refresh capabilities and option to load next playlist image
+• Support for custom server URLs for BYOS installations
+• Refresh history logging for tracking & validation
+• Support for standard TRMNL, BYOD (Bring Your Own Device), and BYOS (Bring Your Own Server) configurations
+
+The app requires a valid access token or device MAC address to connect to TRMNL services. You can obtain this through:
+• Owning a TRMNL device with the developer edition add-on
+• Purchasing the BYOD product
+• Having a self-serve installation of TRMNL service using BYOS
+
+The app works without Google Play Services and is suitable for e-ink tablets and other Android devices running Android 9.0 (API 28) or higher.
+
+Perfect for:
+✓ TRMNL device owners who want a mobile companion display
+✓ Developers testing TRMNL integrations
+✓ BYOD (Bring Your Own Device) users
+✓ BYOS (Bring Your Own Server) installations
+✓ Anyone with e-ink tablets looking for a smart display solution
+
+Visit https://usetrmnl.com for more information about TRMNL devices and services.
+
+
+CATEGORY
+--------------------------------------------------------------------------------
+Primary: Productivity
+Secondary: Tools
+
+
+TAGS/KEYWORDS (Max 5 tags, separated by commas)
+--------------------------------------------------------------------------------
+e-ink display, smart display, TRMNL, productivity dashboard, information display
+
+
+CONTENT RATING
+--------------------------------------------------------------------------------
+Everyone
+
+
+CONTACT DETAILS
+--------------------------------------------------------------------------------
+Website: https://usetrmnl.com
+Email: support@usetrmnl.com
+Privacy Policy URL: [Add your privacy policy URL]
+
+
+APPLICATION TYPE
+--------------------------------------------------------------------------------
+App
+
+
+PRICING
+--------------------------------------------------------------------------------
+Free
+
+
+IN-APP PURCHASES
+--------------------------------------------------------------------------------
+None
+
+
+ADS
+--------------------------------------------------------------------------------
+No ads
+
+
+WHAT'S NEW (Release Notes for v2.1.0)
+--------------------------------------------------------------------------------
+🎉 Version 2.1.0 - Reliability & Performance Update
+
+🐛 Bug Fixes:
+• Fixed API connectivity with updated usetrmnl.com domain
+• Fixed HTTP 429 rate limit handling with smart retry logic
+• Fixed playlist auto-advance for proper content cycling
+• Added confirmation dialog to prevent accidental log deletion
+
+✨ Enhancements:
+• Improved error logging with detailed API information
+• Better debugging capabilities for troubleshooting
+• Enhanced user experience with visual feedback
+
+This release significantly improves app stability and core functionality. Recommended update for all users!
+
+
+PROMOTIONAL TEXT (Max 170 characters - Optional)
+--------------------------------------------------------------------------------
+Transform your Android device into a smart TRMNL display. Perfect for e-ink tablets, phones, and productivity enthusiasts.
+
+
+APP ACCESS
+--------------------------------------------------------------------------------
+Special access: None required
+
+The app requires:
+• Internet access to fetch display content from TRMNL/BYOS servers
+• Wake lock permission to keep screen on (optional, user-controlled)
+• Background work for periodic refresh scheduling
+
+
+TARGET AUDIENCE
+--------------------------------------------------------------------------------
+Age: 13+
+Target Audience: Tech enthusiasts, productivity users, TRMNL device owners, developers
+
+
+SIMILAR APPS (For research/comparison)
+--------------------------------------------------------------------------------
+• DAKboard
+• Magic Mirror
+• Digital Dashboard
+
+
+SCREENSHOTS REQUIREMENTS
+--------------------------------------------------------------------------------
+Phone Screenshots: 
+- Minimum 2 screenshots required
+- Recommended size: 1080 x 1920 pixels (9:16 ratio)
+- Formats: JPEG or 24-bit PNG (no alpha)
+
+Tablet Screenshots (7-inch):
+- Optional but recommended
+- Size: 1200 x 1920 pixels
+
+Tablet Screenshots (10-inch):
+- Optional but recommended  
+- Size: 1920 x 1200 pixels or 2560 x 1600 pixels
+
+
+FEATURE GRAPHIC
+--------------------------------------------------------------------------------
+Recommended size: 1024 x 500 pixels
+Format: JPEG or 24-bit PNG (no alpha)
+
+
+APP ICON
+--------------------------------------------------------------------------------
+Size: 512 x 512 pixels
+Format: 32-bit PNG (with alpha)
+
+
+STORE LISTING CHECKLIST
+--------------------------------------------------------------------------------
+✓ Application title (under 50 characters)
+✓ Short description (under 80 characters)
+✓ Full description (under 4000 characters)
+✓ App screenshots (minimum 2 for phone)
+✓ High-res icon (512 x 512 PNG)
+✓ Feature graphic (1024 x 500 - recommended)
+✓ Application category
+✓ Content rating questionnaire
+✓ Privacy policy URL
+✓ Contact email
+
+Optional but recommended:
+○ Promotional text
+○ Tablet screenshots
+○ Promotional video/YouTube link
+○ Promo graphic (180 x 120)
+
+
+TESTING NOTES
+--------------------------------------------------------------------------------
+To test the app, you'll need:
+1. A valid TRMNL access token or device MAC address
+2. Internet connection
+3. Android device running Android 9.0 (API 28) or higher
+
+The app can be tested without a physical TRMNL device if you have:
+- BYOD (Bring Your Own Device) subscription from TRMNL
+- BYOS (Bring Your Own Server) installation
+- TRMNL device with developer edition add-on
+
+
+IMPORTANT NOTES FOR GOOGLE PLAY SUBMISSION
+--------------------------------------------------------------------------------
+1. Make sure you have a valid privacy policy URL before submission
+2. Complete the content rating questionnaire accurately
+3. Provide clear screenshots showing the main features
+4. Test the app thoroughly on different Android versions
+5. Ensure all contact information is accurate and monitored
+6. Review Google Play's Developer Program Policies
+7. Set up your developer account payment profile (one-time $25 fee)
+
+
+================================================================================
+END OF GOOGLE PLAY STORE LISTING
+================================================================================
