@@ -5,6 +5,7 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.google.common.truth.Truth.assertThat
+import ink.trmnl.android.data.ImageMetadataStore
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.data.TrmnlDisplayInfo
 import ink.trmnl.android.data.TrmnlDisplayRepository
@@ -42,6 +43,7 @@ class TrmnlImageRefreshWorkerTest {
     private lateinit var refreshLogManager: TrmnlRefreshLogManager
     private lateinit var trmnlWorkScheduler: TrmnlWorkScheduler
     private lateinit var trmnlImageUpdateManager: TrmnlImageUpdateManager
+    private lateinit var imageMetadataStore: ImageMetadataStore
 
     private lateinit var worker: TrmnlImageRefreshWorker
 
@@ -80,6 +82,7 @@ class TrmnlImageRefreshWorkerTest {
         refreshLogManager = mockk(relaxed = true)
         trmnlWorkScheduler = mockk(relaxed = true)
         trmnlImageUpdateManager = mockk(relaxed = true)
+        imageMetadataStore = mockk(relaxed = true)
 
         // Create the worker with mocked dependencies
         worker =
@@ -91,6 +94,7 @@ class TrmnlImageRefreshWorkerTest {
                 refreshLogManager = refreshLogManager,
                 trmnlWorkScheduler = trmnlWorkScheduler,
                 trmnlImageUpdateManager = trmnlImageUpdateManager,
+                imageMetadataStore = imageMetadataStore,
             )
 
         // Set up default input data for the worker

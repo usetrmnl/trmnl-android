@@ -5,6 +5,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import ink.trmnl.android.MainActivity
+import ink.trmnl.android.data.ImageMetadataStore
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.data.TrmnlDisplayInfo
 import ink.trmnl.android.data.TrmnlDisplayRepository
@@ -43,6 +44,7 @@ class TrmnlImageRefreshWorker(
     private val refreshLogManager: TrmnlRefreshLogManager,
     private val trmnlWorkScheduler: TrmnlWorkScheduler,
     private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
+    private val imageMetadataStore: ImageMetadataStore,
 ) : CoroutineWorker(appContext, params) {
     companion object {
         private const val TAG = "TrmnlWorker"
@@ -100,6 +102,22 @@ class TrmnlImageRefreshWorker(
                 error = "Rate limit exceeded (HTTP 429) - Too many requests. Will retry automatically.",
                 httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
             )
+
+            // Strategy 1: Show cached image during retry to improve UX
+            // Instead of showing a loading spinner for 30+ seconds, display the last successful image
+            // See https://github.com/usetrmnl/trmnl-android/issues/195
+            val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
+            if (cachedMetadata != null && cachedMetadata.url.isNotBlank()) {
+                Timber.tag(TAG).i("Showing cached image during rate limit retry: ${cachedMetadata.url}")
+                trmnlImageUpdateManager.updateImage(
+                    imageUrl = cachedMetadata.url,
+                    refreshIntervalSecs = cachedMetadata.refreshIntervalSecs,
+                    errorMessage = null, // Don't show error for cached image
+                )
+            } else {
+                Timber.tag(TAG).w("No cached image available to show during rate limit retry")
+            }
+
             // Return retry() to let WorkManager handle exponential backoff
             return Result.retry()
         }
@@ -143,6 +161,10 @@ class TrmnlImageRefreshWorker(
             imageRefreshWorkType = workTypeValue,
             httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
         )
+
+        // NOTE: Image metadata caching is handled automatically by `TrmnlDisplayRepository`
+        // when the API call succeeds, so we don't need to save it again here.
+        // See https://github.com/usetrmnl/trmnl-android/issues/195
 
         // Check if we should adapt refresh rate
         val refreshRate = trmnlDisplayInfo.refreshIntervalSeconds
@@ -199,6 +221,7 @@ class TrmnlImageRefreshWorker(
             private val refreshLogManager: TrmnlRefreshLogManager,
             private val trmnlWorkScheduler: TrmnlWorkScheduler,
             private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
+            private val imageMetadataStore: ImageMetadataStore,
         ) {
             fun create(
                 appContext: Context,
@@ -212,6 +235,7 @@ class TrmnlImageRefreshWorker(
                     refreshLogManager = refreshLogManager,
                     trmnlWorkScheduler = trmnlWorkScheduler,
                     trmnlImageUpdateManager = trmnlImageUpdateManager,
+                    imageMetadataStore = imageMetadataStore,
                 )
         }
 }
