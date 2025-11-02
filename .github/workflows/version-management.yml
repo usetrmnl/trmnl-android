@@ -160,7 +160,7 @@ jobs:
             Since this PR was created by a bot, CI workflows won't trigger automatically. To trigger them:
             
             ```sh
-            git checkout ${{ env.BRANCH_NAME }}
+            git fetch && git checkout ${{ env.BRANCH_NAME }}
             git commit --allow-empty -m "chore: empty commit for triggering workflows" && git push
             ```
             
