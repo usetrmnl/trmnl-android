@@ -25,10 +25,13 @@ enum class TrmnlDeviceType {
      * - Full access to TRMNL web app
      * - Plugin API access for DIY devices
      *
-     * **API Usage:**
-     * - Automatic refreshes use `/api/current_screen` endpoint (mirrors official TRMNL device)
-     * - Does not advance playlist automatically (assumes user already has alternative device that does the playlist advancement)
-     * - Behaves like TRMNL device for mirroring purposes
+     * **API Usage (Configurable):**
+     * - **Master mode (default)**: Auto-advances playlist using `/api/display` endpoint
+     * - **Slave mode (optional)**: Mirrors another device using `/api/current_screen` endpoint
+     * - Mode is controlled by the `isMasterDevice` setting in device configuration
+     *
+     * @see ink.trmnl.android.model.TrmnlDeviceConfig.isMasterDevice
+     * @see <a href="https://github.com/usetrmnl/trmnl-android/issues/190">Issue #190</a>
      */
     BYOD,
 

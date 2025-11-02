@@ -34,6 +34,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -138,6 +139,7 @@ data class AppSettingsScreen(
         val serverBaseUrl: String,
         val accessToken: String,
         val deviceMacId: String,
+        val isByodMasterDevice: Boolean,
         val usesFakeApiData: Boolean,
         val isLoading: Boolean = false,
         val validationResult: ValidationResult? = null,
@@ -217,6 +219,13 @@ data class AppSettingsScreen(
         ) : Event()
 
         /**
+         * Event triggered when BYOD master device setting is changed.
+         */
+        data class ByodMasterDeviceChanged(
+            val isMaster: Boolean,
+        ) : Event()
+
+        /**
          * Event triggered when the info icon is clicked.
          */
         data object AppInfoPressed : Event()
@@ -248,6 +257,7 @@ class AppSettingsPresenter
             var serverBaseUrl by remember { mutableStateOf("") }
             var accessToken by remember { mutableStateOf("") }
             var deviceMacId by remember { mutableStateOf("") }
+            var isByodMasterDevice by remember { mutableStateOf(true) }
             var isLoading by remember { mutableStateOf(false) }
             var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
             var isDeviceSetupLoading by remember { mutableStateOf(false) }
@@ -275,6 +285,11 @@ class AppSettingsPresenter
                             deviceMacId = savedDeviceId
                         }
                     }
+
+                    // Load isMasterDevice setting for BYOD (default to true if not set)
+                    if (it.type == TrmnlDeviceType.BYOD) {
+                        isByodMasterDevice = it.isMasterDevice ?: true
+                    }
                 }
             }
 
@@ -283,6 +298,7 @@ class AppSettingsPresenter
                 serverBaseUrl = serverBaseUrl,
                 accessToken = accessToken,
                 deviceMacId = deviceMacId,
+                isByodMasterDevice = isByodMasterDevice,
                 usesFakeApiData = usesFakeApiData,
                 isLoading = isLoading,
                 validationResult = validationResult,
@@ -383,6 +399,14 @@ class AppSettingsPresenter
                             val result = validationResult
                             if (result is Success) {
                                 scope.launch {
+                                    // Determine isMasterDevice based on device type
+                                    val isMaster =
+                                        when (deviceType) {
+                                            TrmnlDeviceType.BYOD -> isByodMasterDevice
+                                            TrmnlDeviceType.BYOS -> true
+                                            TrmnlDeviceType.TRMNL -> false
+                                        }
+
                                     deviceConfigStore.saveDeviceConfig(
                                         TrmnlDeviceConfig(
                                             type = deviceType,
@@ -391,6 +415,7 @@ class AppSettingsPresenter
                                             refreshRateSecs = result.refreshRateSecs,
                                             // Normalize the MAC address to standard format if provided in different format
                                             deviceMacId = normalizeMacAddress(deviceMacId)?.ifBlank { null },
+                                            isMasterDevice = isMaster,
                                         ),
                                     )
                                     trmnlWorkScheduler.updateRefreshInterval(result.refreshRateSecs)
@@ -433,6 +458,10 @@ class AppSettingsPresenter
                             // Clear previous validation when device ID changes
                             validationResult = null
                             deviceSetupMessage = null
+                        }
+
+                        is AppSettingsScreen.Event.ByodMasterDeviceChanged -> {
+                            isByodMasterDevice = event.isMaster
                         }
 
                         AppSettingsScreen.Event.AppInfoPressed -> {
@@ -604,9 +633,11 @@ fun AppSettingsContent(
                 selectedType = state.deviceType,
                 serverUrl = state.serverBaseUrl,
                 deviceId = state.deviceMacId,
+                isByodMasterDevice = state.isByodMasterDevice,
                 onTypeSelected = { state.eventSink(AppSettingsScreen.Event.DeviceTypeChanged(it)) },
                 onServerUrlChanged = { state.eventSink(AppSettingsScreen.Event.ServerUrlChanged(it)) },
                 onDeviceIdChanged = { state.eventSink(AppSettingsScreen.Event.DeviceMacIdChanged(it)) },
+                onByodMasterDeviceChanged = { state.eventSink(AppSettingsScreen.Event.ByodMasterDeviceChanged(it)) },
                 isServerUrlError = state.validationResult is InvalidServerUrl,
                 serverUrlError = (state.validationResult as? InvalidServerUrl)?.message,
                 isDeviceMacIdError = state.validationResult is ValidationResult.InvalidDeviceMacId,
@@ -818,9 +849,11 @@ private fun DeviceTypeSelectorConfig(
     selectedType: TrmnlDeviceType,
     serverUrl: String = "",
     deviceId: String = "",
+    isByodMasterDevice: Boolean = true,
     onTypeSelected: (TrmnlDeviceType) -> Unit,
     onServerUrlChanged: (String) -> Unit,
     onDeviceIdChanged: (String) -> Unit,
+    onByodMasterDeviceChanged: (Boolean) -> Unit = {},
     isServerUrlError: Boolean = false,
     serverUrlError: String? = null,
     isDeviceMacIdError: Boolean = false,
@@ -926,6 +959,38 @@ private fun DeviceTypeSelectorConfig(
                         }
                     },
                 )
+            }
+        }
+
+        // BYOD Master/Slave Configuration
+        AnimatedVisibility(
+            visible = selectedType == TrmnlDeviceType.BYOD,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Checkbox(
+                    checked = isByodMasterDevice,
+                    onCheckedChange = { onByodMasterDeviceChanged(it) },
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Act as master device (auto-advance playlist image)",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "Uncheck if this device should mirror another BYOD device that automatically auto-advances playlist image",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
@@ -1102,6 +1167,7 @@ private fun PreviewAppSettingsContentInitial() {
                     serverBaseUrl = "https://example.com",
                     accessToken = "",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
+                    isByodMasterDevice = true,
                     usesFakeApiData = true,
                     isLoading = false,
                     validationResult = null,
@@ -1123,6 +1189,7 @@ private fun PreviewAppSettingsContentLoading() {
                     serverBaseUrl = "https://example.com",
                     accessToken = "some-token",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
+                    isByodMasterDevice = true,
                     usesFakeApiData = false,
                     isLoading = true,
                     validationResult = null,
@@ -1144,6 +1211,7 @@ private fun PreviewAppSettingsContentSuccess() {
                     serverBaseUrl = "https://example.com",
                     accessToken = "valid-token-123",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
+                    isByodMasterDevice = true,
                     usesFakeApiData = false,
                     isLoading = false,
                     validationResult =
@@ -1169,6 +1237,7 @@ private fun PreviewAppSettingsContentFailure() {
                     serverBaseUrl = "https://example.com",
                     accessToken = "invalid-token",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
+                    isByodMasterDevice = true,
                     usesFakeApiData = false,
                     isLoading = false,
                     validationResult =
@@ -1197,6 +1266,7 @@ private fun PreviewAppSettingsContentWithWork() {
                     serverBaseUrl = "https://example.com",
                     accessToken = "valid-token-123",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
+                    isByodMasterDevice = true,
                     usesFakeApiData = false,
                     isLoading = false,
                     validationResult = null, // Can also be Success state
@@ -1228,6 +1298,7 @@ private fun PreviewWorkScheduleStatusCardScheduled() {
                     serverBaseUrl = "https://example.com",
                     accessToken = "some-token",
                     deviceMacId = "AA:BB:CC:DD:EE:FF",
+                    isByodMasterDevice = true,
                     usesFakeApiData = false,
                     nextRefreshJobInfo =
                         NextImageRefreshDisplayInfo(
@@ -1253,6 +1324,7 @@ private fun PreviewWorkScheduleStatusCardNoWork() {
                     serverBaseUrl = "https://example.com",
                     accessToken = "some-token",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
+                    isByodMasterDevice = true,
                     usesFakeApiData = false,
                     nextRefreshJobInfo = null,
                     eventSink = {},
