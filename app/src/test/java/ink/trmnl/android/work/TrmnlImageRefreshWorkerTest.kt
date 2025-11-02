@@ -5,6 +5,8 @@ import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.google.common.truth.Truth.assertThat
+import ink.trmnl.android.data.ImageMetadata
+import ink.trmnl.android.data.ImageMetadataStore
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.data.TrmnlDisplayInfo
 import ink.trmnl.android.data.TrmnlDisplayRepository
@@ -12,6 +14,7 @@ import ink.trmnl.android.data.log.TrmnlRefreshLogManager
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.util.HTTP_200
+import ink.trmnl.android.util.HTTP_429
 import ink.trmnl.android.util.HTTP_500
 import ink.trmnl.android.work.RefreshWorkResult.FAILURE
 import ink.trmnl.android.work.RefreshWorkResult.SUCCESS
@@ -42,6 +45,7 @@ class TrmnlImageRefreshWorkerTest {
     private lateinit var refreshLogManager: TrmnlRefreshLogManager
     private lateinit var trmnlWorkScheduler: TrmnlWorkScheduler
     private lateinit var trmnlImageUpdateManager: TrmnlImageUpdateManager
+    private lateinit var imageMetadataStore: ImageMetadataStore
 
     private lateinit var worker: TrmnlImageRefreshWorker
 
@@ -80,6 +84,7 @@ class TrmnlImageRefreshWorkerTest {
         refreshLogManager = mockk(relaxed = true)
         trmnlWorkScheduler = mockk(relaxed = true)
         trmnlImageUpdateManager = mockk(relaxed = true)
+        imageMetadataStore = mockk(relaxed = true)
 
         // Create the worker with mocked dependencies
         worker =
@@ -91,6 +96,7 @@ class TrmnlImageRefreshWorkerTest {
                 refreshLogManager = refreshLogManager,
                 trmnlWorkScheduler = trmnlWorkScheduler,
                 trmnlImageUpdateManager = trmnlImageUpdateManager,
+                imageMetadataStore = imageMetadataStore,
             )
 
         // Set up default input data for the worker
@@ -552,5 +558,156 @@ class TrmnlImageRefreshWorkerTest {
             // Verify defaults to master mode behavior (uses getNextDisplayData)
             coVerify { displayRepository.getNextDisplayData(any()) }
             coVerify(exactly = 0) { displayRepository.getCurrentDisplayData(any()) }
+        }
+
+    @Test
+    fun `doWork returns retry and shows cached image when HTTP 429 rate limit error occurs`() =
+        runTest {
+            // Arrange - Set up cached image metadata
+            val cachedImageUrl = "https://test.com/cached-image.png"
+            val cachedRefreshRate = 600L
+            val cachedMetadata =
+                ImageMetadata(
+                    url = cachedImageUrl,
+                    refreshIntervalSecs = cachedRefreshRate,
+                    errorMessage = null,
+                    httpStatusCode = null,
+                )
+
+            every { imageMetadataStore.imageMetadataFlow } returns flow { emit(cachedMetadata) }
+            coEvery { imageMetadataStore.saveImageMetadata(any(), any(), any()) } returns Unit
+
+            // Set up rate limit error response
+            val rateLimitResponse =
+                TrmnlDisplayInfo(
+                    status = HTTP_429,
+                    trmnlDeviceType = TrmnlDeviceType.TRMNL,
+                    imageUrl = "",
+                    imageFileName = "",
+                    refreshIntervalSeconds = null,
+                    error = "Rate limit exceeded",
+                )
+
+            coEvery { displayRepository.getCurrentDisplayData(any()) } returns rateLimitResponse
+
+            // Act
+            val result = worker.doWork()
+
+            // Assert - Should return retry result
+            assertThat(result).isInstanceOf(ListenableWorker.Result.Retry::class.java)
+
+            // Verify cached image metadata was saved with 429 status code
+            coVerify {
+                imageMetadataStore.saveImageMetadata(
+                    imageUrl = cachedImageUrl,
+                    refreshIntervalSec = cachedRefreshRate,
+                    httpStatusCode = 429,
+                )
+            }
+
+            // Verify cached image was sent to update manager
+            verify {
+                trmnlImageUpdateManager.updateImage(
+                    imageUrl = cachedImageUrl,
+                    refreshIntervalSecs = cachedRefreshRate,
+                    errorMessage = null,
+                )
+            }
+
+            // Verify failure was logged
+            coVerify {
+                refreshLogManager.addFailureLog(
+                    error = "Rate limit exceeded (HTTP 429) - Too many requests. Will retry automatically.",
+                    httpResponseMetadata = any(),
+                )
+            }
+        }
+
+    @Test
+    fun `doWork returns retry without updating image when HTTP 429 occurs and no cached image exists`() =
+        runTest {
+            // Arrange - No cached image
+            every { imageMetadataStore.imageMetadataFlow } returns flow { emit(null) }
+
+            // Set up rate limit error response
+            val rateLimitResponse =
+                TrmnlDisplayInfo(
+                    status = HTTP_429,
+                    trmnlDeviceType = TrmnlDeviceType.TRMNL,
+                    imageUrl = "",
+                    imageFileName = "",
+                    refreshIntervalSeconds = null,
+                    error = "Rate limit exceeded",
+                )
+
+            coEvery { displayRepository.getCurrentDisplayData(any()) } returns rateLimitResponse
+
+            // Act
+            val result = worker.doWork()
+
+            // Assert - Should return retry result
+            assertThat(result).isInstanceOf(ListenableWorker.Result.Retry::class.java)
+
+            // Verify no attempt to update image (no cached image available)
+            verify(exactly = 0) {
+                trmnlImageUpdateManager.updateImage(any(), any(), any())
+            }
+
+            // Verify no attempt to save metadata (no cached image to save)
+            coVerify(exactly = 0) {
+                imageMetadataStore.saveImageMetadata(any(), any(), any())
+            }
+
+            // Verify failure was still logged
+            coVerify {
+                refreshLogManager.addFailureLog(
+                    error = "Rate limit exceeded (HTTP 429) - Too many requests. Will retry automatically.",
+                    httpResponseMetadata = any(),
+                )
+            }
+        }
+
+    @Test
+    fun `doWork returns retry when HTTP 429 occurs with blank cached image URL`() =
+        runTest {
+            // Arrange - Cached metadata exists but URL is blank
+            val cachedMetadata =
+                ImageMetadata(
+                    url = "",
+                    refreshIntervalSecs = 600L,
+                    errorMessage = null,
+                    httpStatusCode = null,
+                )
+
+            every { imageMetadataStore.imageMetadataFlow } returns flow { emit(cachedMetadata) }
+
+            // Set up rate limit error response
+            val rateLimitResponse =
+                TrmnlDisplayInfo(
+                    status = HTTP_429,
+                    trmnlDeviceType = TrmnlDeviceType.TRMNL,
+                    imageUrl = "",
+                    imageFileName = "",
+                    refreshIntervalSeconds = null,
+                    error = "Rate limit exceeded",
+                )
+
+            coEvery { displayRepository.getCurrentDisplayData(any()) } returns rateLimitResponse
+
+            // Act
+            val result = worker.doWork()
+
+            // Assert - Should return retry result
+            assertThat(result).isInstanceOf(ListenableWorker.Result.Retry::class.java)
+
+            // Verify no attempt to update image (blank URL)
+            verify(exactly = 0) {
+                trmnlImageUpdateManager.updateImage(any(), any(), any())
+            }
+
+            // Verify no attempt to save metadata (blank URL)
+            coVerify(exactly = 0) {
+                imageMetadataStore.saveImageMetadata(any(), any(), any())
+            }
         }
 }

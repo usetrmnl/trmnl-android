@@ -61,9 +61,60 @@ class ImageMetadataStoreTest {
             assertThat(metadata?.url).isEqualTo(testUrl)
             assertThat(metadata?.refreshIntervalSecs).isEqualTo(testRefreshRate)
             assertThat(metadata?.errorMessage).isNull()
+            assertThat(metadata?.httpStatusCode).isNull()
             // We can't test exact timestamp since it's set at save time, but we can verify it's recent
             assertThat(metadata?.timestamp).isAtMost(Instant.now().toEpochMilli())
             assertThat(metadata?.timestamp).isAtLeast(Instant.now().minusSeconds(10).toEpochMilli())
+        }
+
+    @Test
+    fun `imageMetadataFlow - given metadata saved with HTTP status code - returns metadata with status code`() =
+        runTest {
+            // Arrange
+            val testUrl = "https://test.com/image.png"
+            val testRefreshRate = 300L
+            val testStatusCode = 429
+            imageMetadataStore.saveImageMetadata(testUrl, testRefreshRate, testStatusCode)
+
+            // Act
+            val metadata = imageMetadataStore.imageMetadataFlow.first()
+
+            // Assert
+            assertThat(metadata).isNotNull()
+            assertThat(metadata?.url).isEqualTo(testUrl)
+            assertThat(metadata?.refreshIntervalSecs).isEqualTo(testRefreshRate)
+            assertThat(metadata?.httpStatusCode).isEqualTo(429)
+            assertThat(metadata?.errorMessage).isNull()
+        }
+
+    @Test
+    fun `saveImageMetadata - given null HTTP status code - clears previous status code`() =
+        runTest {
+            // Arrange - First save with status code 429
+            imageMetadataStore.saveImageMetadata("https://test.com/image.png", 300L, 429)
+            assertThat(imageMetadataStore.imageMetadataFlow.first()?.httpStatusCode).isEqualTo(429)
+
+            // Act - Save again without status code (null)
+            imageMetadataStore.saveImageMetadata("https://test.com/image2.png", 300L, null)
+
+            // Assert - Status code should be cleared
+            val metadata = imageMetadataStore.imageMetadataFlow.first()
+            assertThat(metadata?.httpStatusCode).isNull()
+            assertThat(metadata?.url).isEqualTo("https://test.com/image2.png")
+        }
+
+    @Test
+    fun `clearImageMetadata - given metadata with HTTP status code - clears status code too`() =
+        runTest {
+            // Arrange - Save metadata with status code
+            imageMetadataStore.saveImageMetadata("https://test.com/image.png", 300L, 429)
+            assertThat(imageMetadataStore.imageMetadataFlow.first()?.httpStatusCode).isEqualTo(429)
+
+            // Act
+            imageMetadataStore.clearImageMetadata()
+
+            // Assert
+            assertThat(imageMetadataStore.imageMetadataFlow.first()).isNull()
         }
 
     @Test

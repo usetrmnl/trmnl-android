@@ -15,5 +15,9 @@ data class ImageMetadata constructor(
      * (OPTIONAL) Error message if the image retrieval failed
      */
     val errorMessage: String? = null,
+    /**
+     * (OPTIONAL) HTTP status code for context (e.g., 429 for rate limit)
+     */
+    val httpStatusCode: Int? = null,
     val timestamp: Long = Instant.now().toEpochMilli(),
 )

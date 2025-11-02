@@ -59,6 +59,7 @@ import ink.trmnl.android.ui.FullScreenMode
 import ink.trmnl.android.ui.refreshlog.DisplayRefreshLogScreen
 import ink.trmnl.android.ui.settings.AppSettingsScreen
 import ink.trmnl.android.util.CoilRequestUtils
+import ink.trmnl.android.util.HTTP_429
 import ink.trmnl.android.util.ImageSaver
 import ink.trmnl.android.util.nextRunTime
 import ink.trmnl.android.work.TrmnlImageUpdateManager
@@ -82,6 +83,7 @@ data object TrmnlMirrorDisplayScreen : Screen {
         val isLoading: Boolean = false,
         val errorMessage: String? = null,
         val saveImageResult: SaveImageResult? = null,
+        val rateLimitMessage: String? = null,
         val eventSink: (Event) -> Unit,
     ) : CircuitUiState
 
@@ -131,8 +133,21 @@ class TrmnlMirrorDisplayPresenter
             var nextRefreshTime by remember { mutableStateOf("No scheduled work found. Please set API token.") }
             var error by remember { mutableStateOf<String?>(null) }
             var saveImageResult by remember { mutableStateOf<TrmnlMirrorDisplayScreen.SaveImageResult?>(null) }
+            var rateLimitMessage by remember { mutableStateOf<String?>(null) }
             val scope = rememberCoroutineScope()
             val context = LocalContext.current
+
+            // Monitor image metadata for rate limit status (HTTP 429)
+            LaunchedEffect(Unit) {
+                imageMetadataStore.imageMetadataFlow.collect { metadata ->
+                    if (metadata?.httpStatusCode == HTTP_429) {
+                        rateLimitMessage = "Showing cached image - rate limited by API server. Retrying in background..."
+                        Timber.d("Rate limit detected (HTTP 429), showing cached image with notification")
+                    } else {
+                        rateLimitMessage = null
+                    }
+                }
+            }
 
             // Collect updates from the image update manager to get the latest image URL
             // Latest image URL is received from WorkManager work requests.
@@ -203,6 +218,7 @@ class TrmnlMirrorDisplayPresenter
                 isLoading = isLoading,
                 errorMessage = error,
                 saveImageResult = saveImageResult,
+                rateLimitMessage = rateLimitMessage,
                 eventSink = { event ->
                     when (event) {
                         TrmnlMirrorDisplayScreen.Event.RefreshCurrentPlaylistItemRequested -> {
@@ -314,6 +330,16 @@ fun TrmnlMirrorDisplayContent(
                         duration = SnackbarDuration.Short,
                     )
             }
+        }
+    }
+
+    // Show snackbar when rate limit message is present
+    LaunchedEffect(state.rateLimitMessage) {
+        state.rateLimitMessage?.let { message ->
+            snackbarHostState.showSnackbar(
+                message = message,
+                duration = SnackbarDuration.Long,
+            )
         }
     }
 

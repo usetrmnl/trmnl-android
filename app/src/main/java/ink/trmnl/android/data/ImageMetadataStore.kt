@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -35,6 +36,7 @@ class ImageMetadataStore
             private val IMAGE_URL_KEY = stringPreferencesKey("last_image_url")
             private val TIMESTAMP_KEY = longPreferencesKey("last_image_timestamp")
             private val REFRESH_RATE_KEY = longPreferencesKey("last_refresh_rate")
+            private val HTTP_STATUS_CODE_KEY = intPreferencesKey("last_http_status_code")
         }
 
         /**
@@ -45,11 +47,13 @@ class ImageMetadataStore
                 val imageUrl = preferences[IMAGE_URL_KEY] ?: return@map null
                 val timestamp = preferences[TIMESTAMP_KEY] ?: Instant.now().toEpochMilli()
                 val refreshRate = preferences[REFRESH_RATE_KEY]
+                val httpStatusCode = preferences[HTTP_STATUS_CODE_KEY]
 
                 ImageMetadata(
                     url = imageUrl,
                     refreshIntervalSecs = refreshRate,
                     errorMessage = null,
+                    httpStatusCode = httpStatusCode,
                     timestamp = timestamp,
                 )
             }
@@ -60,12 +64,20 @@ class ImageMetadataStore
         suspend fun saveImageMetadata(
             imageUrl: String,
             refreshIntervalSec: Long? = null,
+            httpStatusCode: Int? = null,
         ) {
-            Timber.d("Saving image metadata: url=$imageUrl, refreshIntervalSec=$refreshIntervalSec")
+            Timber.d("Saving image metadata: url=$imageUrl, refreshIntervalSec=$refreshIntervalSec, httpStatusCode=$httpStatusCode")
             context.imageDataStore.edit { preferences ->
                 preferences[IMAGE_URL_KEY] = imageUrl
                 preferences[TIMESTAMP_KEY] = Instant.now().toEpochMilli()
                 refreshIntervalSec?.let { preferences[REFRESH_RATE_KEY] = it }
+
+                // Save or clear HTTP status code
+                if (httpStatusCode != null) {
+                    preferences[HTTP_STATUS_CODE_KEY] = httpStatusCode
+                } else {
+                    preferences.remove(HTTP_STATUS_CODE_KEY)
+                }
             }
         }
 
@@ -121,6 +133,7 @@ class ImageMetadataStore
                 preferences.remove(IMAGE_URL_KEY)
                 preferences.remove(TIMESTAMP_KEY)
                 preferences.remove(REFRESH_RATE_KEY)
+                preferences.remove(HTTP_STATUS_CODE_KEY)
             }
         }
     }

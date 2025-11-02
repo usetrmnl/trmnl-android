@@ -77,6 +77,7 @@ android {
         release {
             // Always force `USE_FAKE_API` to `false` for release builds
             // See https://github.com/usetrmnl/trmnl-android/issues/16
+            // ℹ️ To override during local development, change the value in `RepositoryConfigProvider`
             buildConfigField("Boolean", "USE_FAKE_API", "false")
 
             // Enables code shrinking, obfuscation, and optimization
@@ -98,6 +99,7 @@ android {
         debug {
             // Allow developers to configure this value for debug builds
             // Use fake API response for local development and testing purposes.
+            // ℹ️ To override during local development, change the value in `RepositoryConfigProvider`
             buildConfigField("Boolean", "USE_FAKE_API", "true")
 
             signingConfig = signingConfigs.getByName("debug")
