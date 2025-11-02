@@ -60,8 +60,8 @@ Everyone
 
 CONTACT DETAILS
 --------------------------------------------------------------------------------
-Website: https://usetrmnl.com
-Email: support@usetrmnl.com
+Website: https://liquidlabs.ca/android/trmnl-display/
+Email: liquidlabs.ca@gmail.com
 Privacy Policy URL: https://liquidlabs.ca/android/trmnl-display/privacy.html
 Terms of Service URL: https://liquidlabs.ca/android/trmnl-display/terms-of-service.html
 
