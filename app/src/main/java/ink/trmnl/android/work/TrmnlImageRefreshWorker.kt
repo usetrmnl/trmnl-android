@@ -109,10 +109,18 @@ class TrmnlImageRefreshWorker(
             val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
             if (cachedMetadata != null && cachedMetadata.url.isNotBlank()) {
                 Timber.tag(TAG).i("Showing cached image during rate limit retry: ${cachedMetadata.url}")
+
+                // Update cache with 429 status to signal rate limit to UI
+                imageMetadataStore.saveImageMetadata(
+                    imageUrl = cachedMetadata.url,
+                    refreshIntervalSec = cachedMetadata.refreshIntervalSecs,
+                    httpStatusCode = 429,
+                )
+
                 trmnlImageUpdateManager.updateImage(
                     imageUrl = cachedMetadata.url,
                     refreshIntervalSecs = cachedMetadata.refreshIntervalSecs,
-                    errorMessage = null, // Don't show error for cached image
+                    errorMessage = null,
                 )
             } else {
                 Timber.tag(TAG).w("No cached image available to show during rate limit retry")
