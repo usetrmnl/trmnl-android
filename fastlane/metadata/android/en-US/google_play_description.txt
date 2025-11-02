@@ -9,7 +9,7 @@ TRMNL
 
 SHORT DESCRIPTION (Max 80 characters)
 --------------------------------------------------------------------------------
-Turn Android devices into TRMNL display
+Utility app to display TRMNL screens on any Android device
 
 
 FULL DESCRIPTION (Max 4000 characters)
@@ -19,7 +19,7 @@ TRMNL serves as a digital display for TRMNL e-ink devices and BYOS installations
 > ⚠️ Note: TRMNL app currently requires device API key for non-BYOS based devices. TRMNL device must have a developer edition or BYOD license to enable device API key.
 
 Key Features:
-• Token-based authentication with TRMNL/BYOS API
+• API Token-based authentication with TRMNL/BYOS API
 • Automatic periodic image refresh from the server
 • Adaptive refresh rate based on server response config
 • Manual refresh capabilities and option to load next playlist image
@@ -32,14 +32,12 @@ The app requires a valid access token or device MAC address to connect to TRMNL 
 • Purchasing the BYOD product
 • Having a self-serve installation of TRMNL service using BYOS
 
-The app works without Google Play Services and is suitable for e-ink tablets and other Android devices running Android 9.0 (API 28) or higher.
-
 Perfect for:
 ✓ TRMNL device owners who want a mobile companion display
 ✓ Developers testing TRMNL integrations
 ✓ BYOD (Bring Your Own Device) users
 ✓ BYOS (Bring Your Own Server) installations
-✓ Anyone with e-ink tablets looking for a smart display solution
+✓ Anyone with e-ink tablets looking for a smart display solution using TRMNL services
 
 Visit https://usetrmnl.com for more information about TRMNL devices and services.
 
