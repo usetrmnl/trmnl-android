@@ -409,7 +409,7 @@ class AppSettingsPresenter
                         }
 
                         AppSettingsScreen.Event.CancelScheduledWork -> {
-                            trmnlWorkScheduler.cancelImageRefreshWork()
+                            trmnlWorkScheduler.cancelPeriodicImageRefreshWork()
                         }
 
                         is AppSettingsScreen.Event.DeviceTypeChanged -> {

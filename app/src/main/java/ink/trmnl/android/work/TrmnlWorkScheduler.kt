@@ -60,7 +60,18 @@ class TrmnlWorkScheduler
         }
 
         /**
-         * Schedule periodic image refresh work
+         * Schedule periodic image refresh work that automatically advances the playlist.
+         *
+         * This method:
+         * - Adds 60 seconds buffer time to the interval before scheduling
+         * - Converts the interval to minutes with a minimum of 15 minutes (WorkManager requirement)
+         * - Requires a valid token to be set, otherwise scheduling is skipped
+         * - Updates existing scheduled work if already present
+         * - Always loads the next playlist item (automatic playlist cycling)
+         * - Requires network connectivity
+         * - Uses exponential backoff for retries
+         *
+         * @param intervalSeconds The desired refresh interval in seconds (will be adjusted)
          */
         fun scheduleImageRefreshWork(intervalSeconds: Long) {
             // Check if we already have work scheduled
@@ -129,7 +140,18 @@ class TrmnlWorkScheduler
         }
 
         /**
-         * Start a one-time image refresh work immediately with option to load next playlist item image.
+         * Start a one-time image refresh work immediately.
+         *
+         * This method:
+         * - Executes immediately (subject to network constraints)
+         * - Requires a valid token to be set, otherwise work is skipped
+         * - Replaces any existing one-time work request
+         * - Requires network connectivity
+         * - Uses exponential backoff for retries
+         *
+         * @param loadNextPlaylistImage If true, advances to next playlist item using /api/display endpoint.
+         *                              If false, reloads current screen using /api/current_screen endpoint.
+         *                              Defaults to false.
          */
         fun startOneTimeImageRefreshWork(loadNextPlaylistImage: Boolean = false) {
             Timber.d("Starting one-time image refresh work with loadNextPlaylistImage: $loadNextPlaylistImage")
@@ -170,9 +192,11 @@ class TrmnlWorkScheduler
         }
 
         /**
-         * Cancel scheduled image refresh work
+         * Cancel the scheduled periodic image refresh work.
+         *
+         * Note: This only cancels periodic work, not one-time work requests.
          */
-        fun cancelImageRefreshWork() {
+        fun cancelPeriodicImageRefreshWork() {
             WorkManager.getInstance(context).cancelUniqueWork(IMAGE_REFRESH_PERIODIC_WORK_NAME)
         }
 
@@ -213,7 +237,9 @@ class TrmnlWorkScheduler
         }
 
         /**
-         * Get the scheduled work info as a Flow to get updates on upcoming refresh job.
+         * Get the scheduled periodic work info as a Flow to get updates on upcoming refresh job.
+         *
+         * @return Flow that emits the current WorkInfo for the periodic work, or null if not scheduled
          */
         fun getScheduledWorkInfo(): Flow<WorkInfo?> =
             WorkManager
@@ -223,7 +249,13 @@ class TrmnlWorkScheduler
                 .map { it.firstOrNull() }
 
         /**
-         * Update the refresh interval based on server response
+         * Update the refresh interval for periodic work.
+         *
+         * This method:
+         * - Saves the new interval to the device config data store
+         * - Reschedules the periodic work with the new interval
+         *
+         * @param newIntervalSeconds The new refresh interval in seconds
          */
         suspend fun updateRefreshInterval(newIntervalSeconds: Long) {
             Timber.d("Updating refresh interval to $newIntervalSeconds seconds")
