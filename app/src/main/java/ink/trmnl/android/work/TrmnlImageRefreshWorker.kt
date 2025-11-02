@@ -112,7 +112,7 @@ class TrmnlImageRefreshWorker(
                 trmnlImageUpdateManager.updateImage(
                     imageUrl = cachedMetadata.url,
                     refreshIntervalSecs = cachedMetadata.refreshIntervalSecs,
-                    errorMessage = null, // Don't show error for cached image
+                    errorMessage = "Showing cached image - rate limited", // Inform user of rate limit
                 )
             } else {
                 Timber.tag(TAG).w("No cached image available to show during rate limit retry")
