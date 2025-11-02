@@ -16,6 +16,9 @@ import timber.log.Timber
  * This manager handles communication between the background image refresh workers
  * and the UI components that display the TRMNL images. It maintains a flow of
  * image metadata that UI components can observe to update their content.
+ *
+ * 📚 See following sequence diagram for flow:
+ * - https://github.com/usetrmnl/trmnl-android/blob/main/CONTRIBUTING.md#trmnl-app-image-loading-flow
  */
 @SingleIn(AppScope::class)
 class TrmnlImageUpdateManager
