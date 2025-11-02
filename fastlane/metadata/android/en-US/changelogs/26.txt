@@ -1,2 +1,3 @@
 - Updated to the latest version (2.4.0)
 - Improved rate limited error handling with UI feedback
+- Enabled release build minification and resource shrinking
