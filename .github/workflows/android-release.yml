@@ -53,8 +53,8 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/trmnl-app-release.keystore
       
-      - name: Build Release APK
-        run: ./gradlew assembleRelease
+      - name: Build Release APK and AAB
+        run: ./gradlew assembleRelease bundleRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -66,27 +66,35 @@ jobs:
           echo "VERSION=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "App version name extracted: $VERSION_NAME"
 
-      - name: Rename APK
+      - name: Rename APK and AAB
         run: |
           mkdir -p artifact
           cp app/build/outputs/apk/release/app-release.apk artifact/trmnl-v${{ steps.version.outputs.VERSION }}.apk
+          cp app/build/outputs/bundle/release/app-release.aab artifact/trmnl-v${{ steps.version.outputs.VERSION }}.aab
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: trmnl-app
+          name: trmnl-app-apk
           path: artifact/trmnl-v${{ steps.version.outputs.VERSION }}.apk
           # Use maximum allowed retention period
           # https://github.com/actions/upload-artifact?tab=readme-ov-file#retention-period
           retention-days: 30
 
-      # If this is running due to a GitHub release, attach the APK to the release
-      - name: Attach APK to GitHub Release
+      - name: Upload Release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: trmnl-app-aab
+          path: artifact/trmnl-v${{ steps.version.outputs.VERSION }}.aab
+          retention-days: 30
+
+      # If this is running due to a GitHub release, attach the APK and AAB to the release
+      - name: Attach APK and AAB to GitHub Release
         if: github.event_name == 'release'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Attaching APK to GitHub release..."
+          echo "Attaching APK and AAB to GitHub release..."
           
           # Get release information
           RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
@@ -106,7 +114,7 @@ jobs:
           
           echo "Uploading $APK_NAME to release..."
           
-          UPLOAD_RESPONSE=$(curl -s -w "%{http_code}" -o upload_response.json \
+          UPLOAD_RESPONSE=$(curl -s -w "%{http_code}" -o upload_apk_response.json \
             -X POST \
             -H "Authorization: token $GITHUB_TOKEN" \
             -H "Content-Type: application/octet-stream" \
@@ -117,10 +125,35 @@ jobs:
           
           if [ "$HTTP_CODE" = "201" ]; then
             echo "✅ Successfully attached APK to GitHub release"
-            DOWNLOAD_URL=$(jq -r .browser_download_url upload_response.json)
+            DOWNLOAD_URL=$(jq -r .browser_download_url upload_apk_response.json)
             echo "APK download URL: $DOWNLOAD_URL"
           else
             echo "❌ Failed to upload APK (HTTP $HTTP_CODE)"
-            cat upload_response.json
+            cat upload_apk_response.json
+            exit 1
+          fi
+          
+          # Upload AAB to the release
+          AAB_FILE="artifact/trmnl-v${{ steps.version.outputs.VERSION }}.aab"
+          AAB_NAME="trmnl-v${{ steps.version.outputs.VERSION }}.aab"
+          
+          echo "Uploading $AAB_NAME to release..."
+          
+          UPLOAD_RESPONSE=$(curl -s -w "%{http_code}" -o upload_aab_response.json \
+            -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"$AAB_FILE" \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$AAB_NAME")
+          
+          HTTP_CODE="${UPLOAD_RESPONSE: -3}"
+          
+          if [ "$HTTP_CODE" = "201" ]; then
+            echo "✅ Successfully attached AAB to GitHub release"
+            DOWNLOAD_URL=$(jq -r .browser_download_url upload_aab_response.json)
+            echo "AAB download URL: $DOWNLOAD_URL"
+          else
+            echo "❌ Failed to upload AAB (HTTP $HTTP_CODE)"
+            cat upload_aab_response.json
             exit 1
           fi
