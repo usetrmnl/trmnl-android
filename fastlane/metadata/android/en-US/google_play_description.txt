@@ -9,7 +9,7 @@ TRMNL
 
 SHORT DESCRIPTION (Max 80 characters)
 --------------------------------------------------------------------------------
-Turn Android devices into TRMNL displays - mirror or standalone mode
+Turn Android devices into TRMNL display
 
 
 FULL DESCRIPTION (Max 4000 characters)
