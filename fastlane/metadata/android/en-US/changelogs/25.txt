@@ -1,0 +1,8 @@
+- Updated to the latest version (2.3.0)
+- BYOD master/slave mode configuration
+- BYOS playlist API fix
+- Worker logic improvements
+- 9 new unit tests for BYOD functionality
+- Enhanced documentation and diagrams
+- TRMNL Buddy app info in README
+- Backward compatibility for legacy configs
