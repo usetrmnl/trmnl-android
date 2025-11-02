@@ -331,4 +331,134 @@ class TrmnlDeviceConfigDataStoreTest {
             assertThat(deviceConfigDataStore.serverUrlFlow.first()).isEqualTo("https://custom.server.com")
             assertThat(deviceConfigDataStore.refreshRateSecondsFlow.first()).isEqualTo(120L)
         }
+
+    @Test
+    fun `deviceConfigFlow includes isMasterDevice when saved for BYOD`() =
+        runTest {
+            // Arrange - BYOD with master device setting
+            val config =
+                TrmnlDeviceConfig(
+                    type = TrmnlDeviceType.BYOD,
+                    apiAccessToken = "test-token",
+                    apiBaseUrl = AppConfig.TRMNL_API_SERVER_BASE_URL,
+                    refreshRateSecs = 60,
+                    isMasterDevice = true,
+                )
+            deviceConfigDataStore.saveDeviceConfig(config)
+
+            // Act
+            val savedConfig = deviceConfigDataStore.deviceConfigFlow.first()
+
+            // Assert
+            assertThat(savedConfig).isEqualTo(config)
+            assertThat(savedConfig?.isMasterDevice).isTrue()
+        }
+
+    @Test
+    fun `deviceConfigFlow handles isMasterDevice false for BYOD slave mode`() =
+        runTest {
+            // Arrange - BYOD in slave mode
+            val config =
+                TrmnlDeviceConfig(
+                    type = TrmnlDeviceType.BYOD,
+                    apiAccessToken = "test-token",
+                    apiBaseUrl = AppConfig.TRMNL_API_SERVER_BASE_URL,
+                    refreshRateSecs = 60,
+                    isMasterDevice = false,
+                )
+            deviceConfigDataStore.saveDeviceConfig(config)
+
+            // Act
+            val savedConfig = deviceConfigDataStore.deviceConfigFlow.first()
+
+            // Assert
+            assertThat(savedConfig).isEqualTo(config)
+            assertThat(savedConfig?.isMasterDevice).isFalse()
+        }
+
+    @Test
+    fun `deviceConfigFlow handles null isMasterDevice for TRMNL device`() =
+        runTest {
+            // Arrange - TRMNL device (isMasterDevice not applicable)
+            val config =
+                TrmnlDeviceConfig(
+                    type = TrmnlDeviceType.TRMNL,
+                    apiAccessToken = "test-token",
+                    apiBaseUrl = AppConfig.TRMNL_API_SERVER_BASE_URL,
+                    refreshRateSecs = 60,
+                    isMasterDevice = null,
+                )
+            deviceConfigDataStore.saveDeviceConfig(config)
+
+            // Act
+            val savedConfig = deviceConfigDataStore.deviceConfigFlow.first()
+
+            // Assert
+            assertThat(savedConfig).isEqualTo(config)
+            assertThat(savedConfig?.isMasterDevice).isNull()
+        }
+
+    @Test
+    fun `deviceConfigFlow handles null isMasterDevice for BYOS device`() =
+        runTest {
+            // Arrange - BYOS device (isMasterDevice not applicable)
+            val config =
+                TrmnlDeviceConfig(
+                    type = TrmnlDeviceType.BYOS,
+                    apiAccessToken = "test-token",
+                    apiBaseUrl = "https://custom.server.com",
+                    refreshRateSecs = 120,
+                    isMasterDevice = null,
+                )
+            deviceConfigDataStore.saveDeviceConfig(config)
+
+            // Act
+            val savedConfig = deviceConfigDataStore.deviceConfigFlow.first()
+
+            // Assert
+            assertThat(savedConfig).isEqualTo(config)
+            assertThat(savedConfig?.isMasterDevice).isNull()
+        }
+
+    @Test
+    fun `backward compatibility - legacy config without isMasterDevice loads correctly`() =
+        runTest {
+            // Arrange - Save config the old way (without isMasterDevice)
+            deviceConfigDataStore.saveDeviceType(TrmnlDeviceType.BYOD)
+            deviceConfigDataStore.saveAccessToken("test-token")
+            deviceConfigDataStore.saveServerUrl(AppConfig.TRMNL_API_SERVER_BASE_URL)
+            deviceConfigDataStore.saveRefreshRateSeconds(60L)
+
+            // Act - Load config (should trigger legacy migration path)
+            val config = deviceConfigDataStore.deviceConfigFlow.first()
+
+            // Assert - Config should be loaded with isMasterDevice as null
+            assertThat(config).isNotNull()
+            assertThat(config?.type).isEqualTo(TrmnlDeviceType.BYOD)
+            assertThat(config?.apiAccessToken).isEqualTo("test-token")
+            assertThat(config?.isMasterDevice).isNull()
+        }
+
+    @Test
+    fun `updating BYOD config from master to slave mode persists correctly`() =
+        runTest {
+            // Arrange - Start with BYOD in master mode
+            val masterConfig =
+                TrmnlDeviceConfig(
+                    type = TrmnlDeviceType.BYOD,
+                    apiAccessToken = "test-token",
+                    apiBaseUrl = AppConfig.TRMNL_API_SERVER_BASE_URL,
+                    refreshRateSecs = 60,
+                    isMasterDevice = true,
+                )
+            deviceConfigDataStore.saveDeviceConfig(masterConfig)
+
+            // Act - Update to slave mode
+            val slaveConfig = masterConfig.copy(isMasterDevice = false)
+            deviceConfigDataStore.saveDeviceConfig(slaveConfig)
+
+            // Assert
+            val savedConfig = deviceConfigDataStore.deviceConfigFlow.first()
+            assertThat(savedConfig?.isMasterDevice).isFalse()
+        }
 }

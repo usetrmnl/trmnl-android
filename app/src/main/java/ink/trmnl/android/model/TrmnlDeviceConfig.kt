@@ -24,4 +24,13 @@ data class TrmnlDeviceConfig constructor(
      */
     val deviceMacId: String? = null,
     val refreshRateSecs: Long = DEFAULT_REFRESH_INTERVAL_SEC,
+    /**
+     * Determines if BYOD device acts as master (auto-advance playlist) or slave (mirror).
+     * - `true`: Device auto-advances playlist (uses /api/display endpoint)
+     * - `false`: Device mirrors another TRMNL device (uses /api/current_screen endpoint)
+     * - `null`: Not applicable (for TRMNL and BYOS devices) or backward compatibility (defaults to true for BYOD)
+     *
+     * See https://github.com/usetrmnl/trmnl-android/issues/190
+     */
+    val isMasterDevice: Boolean? = null,
 )

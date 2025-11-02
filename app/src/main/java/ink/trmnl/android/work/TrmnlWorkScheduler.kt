@@ -106,12 +106,22 @@ class TrmnlWorkScheduler
             }
 
             // Determine whether to advance playlist based on device type
-            // - BYOS devices should advance their own playlist
-            // - TRMNL devices should mirror the official TRMNL device (stay on current screen)
+            // - BYOS devices always advance their own playlist
+            // - BYOD devices can be configured as master (advance) or slave (mirror) via isMasterDevice setting
+            // - TRMNL devices always mirror the official TRMNL device (stay on current screen)
+            // See https://github.com/usetrmnl/trmnl-android/issues/190
             val deviceConfig = trmnlDeviceConfigDataStore.getDeviceConfigSync()
-            val shouldAdvancePlaylist = deviceConfig?.type == ink.trmnl.android.model.TrmnlDeviceType.BYOS
+            val shouldAdvancePlaylist =
+                when (deviceConfig?.type) {
+                    ink.trmnl.android.model.TrmnlDeviceType.BYOS -> true // Always auto-advance
+                    ink.trmnl.android.model.TrmnlDeviceType.BYOD -> deviceConfig.isMasterDevice ?: true // Default to master if not set
+                    ink.trmnl.android.model.TrmnlDeviceType.TRMNL -> false // Always mirror
+                    null -> false
+                }
 
-            Timber.d("Device type: ${deviceConfig?.type}, shouldAdvancePlaylist: $shouldAdvancePlaylist")
+            Timber.d(
+                "Device type: ${deviceConfig?.type}, isMasterDevice: ${deviceConfig?.isMasterDevice}, shouldAdvancePlaylist: $shouldAdvancePlaylist",
+            )
 
             val constraints =
                 Constraints

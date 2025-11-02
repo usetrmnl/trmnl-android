@@ -176,6 +176,13 @@ class TrmnlImageRefreshWorkerTest {
             // Arrange
             every { trmnlDeviceConfigDataStore.deviceConfigFlow } returns MutableStateFlow(byodDeviceConfig)
 
+            // BYOD defaults to master mode (advances playlist) unless explicitly set otherwise
+            every { workerParameters.inputData } returns
+                workDataOf(
+                    PARAM_REFRESH_WORK_TYPE to RefreshWorkType.ONE_TIME.name,
+                    PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to true,
+                )
+
             val successfulResponse =
                 TrmnlDisplayInfo(
                     status = HTTP_200,
@@ -204,6 +211,13 @@ class TrmnlImageRefreshWorkerTest {
         runTest {
             // Arrange
             every { trmnlDeviceConfigDataStore.deviceConfigFlow } returns MutableStateFlow(byosDeviceConfig)
+
+            // BYOS always advances playlist
+            every { workerParameters.inputData } returns
+                workDataOf(
+                    PARAM_REFRESH_WORK_TYPE to RefreshWorkType.ONE_TIME.name,
+                    PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to true,
+                )
 
             val successfulResponse =
                 TrmnlDisplayInfo(
@@ -405,5 +419,138 @@ class TrmnlImageRefreshWorkerTest {
 
             // Verify image was not updated via manager (it's still in the result)
             verify(exactly = 0) { trmnlImageUpdateManager.updateImage(any(), any()) }
+        }
+
+    @Test
+    fun `doWork uses getNextDisplayData for BYOD master device - Issue 190`() =
+        runTest {
+            // Arrange - BYOD configured as master device
+            val byodMasterConfig =
+                TrmnlDeviceConfig(
+                    type = TrmnlDeviceType.BYOD,
+                    apiBaseUrl = "https://api.trmnl.com",
+                    apiAccessToken = "valid-token",
+                    refreshRateSecs = validRefreshRate,
+                    isMasterDevice = true,
+                )
+            every { trmnlDeviceConfigDataStore.deviceConfigFlow } returns MutableStateFlow(byodMasterConfig)
+
+            // Master device should advance playlist
+            every { workerParameters.inputData } returns
+                workDataOf(
+                    PARAM_REFRESH_WORK_TYPE to RefreshWorkType.ONE_TIME.name,
+                    PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to true,
+                )
+
+            val successfulResponse =
+                TrmnlDisplayInfo(
+                    status = HTTP_200,
+                    trmnlDeviceType = TrmnlDeviceType.BYOD,
+                    imageUrl = validImageUrl,
+                    imageFileName = "test-image.png",
+                    refreshIntervalSeconds = validRefreshRate,
+                )
+
+            coEvery { displayRepository.getNextDisplayData(any()) } returns successfulResponse
+            coEvery { trmnlDeviceConfigDataStore.shouldUpdateRefreshRate(any()) } returns false
+
+            // Act
+            val result = worker.doWork()
+
+            // Assert
+            assertThat(result).isInstanceOf(ListenableWorker.Result.Success::class.java)
+
+            // Verify correct API was called (master mode uses getNextDisplayData)
+            coVerify { displayRepository.getNextDisplayData(any()) }
+            coVerify(exactly = 0) { displayRepository.getCurrentDisplayData(any()) }
+        }
+
+    @Test
+    fun `doWork uses getCurrentDisplayData for BYOD slave device - Issue 190`() =
+        runTest {
+            // Arrange - BYOD configured as slave device (mirror mode)
+            val byodSlaveConfig =
+                TrmnlDeviceConfig(
+                    type = TrmnlDeviceType.BYOD,
+                    apiBaseUrl = "https://api.trmnl.com",
+                    apiAccessToken = "valid-token",
+                    refreshRateSecs = validRefreshRate,
+                    isMasterDevice = false,
+                )
+            every { trmnlDeviceConfigDataStore.deviceConfigFlow } returns MutableStateFlow(byodSlaveConfig)
+
+            // Override the default input data to not advance playlist
+            every { workerParameters.inputData } returns
+                workDataOf(
+                    PARAM_REFRESH_WORK_TYPE to RefreshWorkType.ONE_TIME.name,
+                    PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to false,
+                )
+
+            val successfulResponse =
+                TrmnlDisplayInfo(
+                    status = HTTP_200,
+                    trmnlDeviceType = TrmnlDeviceType.BYOD,
+                    imageUrl = validImageUrl,
+                    imageFileName = "test-image.png",
+                    refreshIntervalSeconds = validRefreshRate,
+                )
+
+            coEvery { displayRepository.getCurrentDisplayData(any()) } returns successfulResponse
+            coEvery { trmnlDeviceConfigDataStore.shouldUpdateRefreshRate(any()) } returns false
+
+            // Act
+            val result = worker.doWork()
+
+            // Assert
+            assertThat(result).isInstanceOf(ListenableWorker.Result.Success::class.java)
+
+            // Verify correct API was called (slave mode uses getCurrentDisplayData)
+            coVerify { displayRepository.getCurrentDisplayData(any()) }
+            coVerify(exactly = 0) { displayRepository.getNextDisplayData(any()) }
+        }
+
+    @Test
+    fun `doWork defaults to getNextDisplayData for BYOD when isMasterDevice is null - backward compatibility - Issue 190`() =
+        runTest {
+            // Arrange - BYOD without isMasterDevice setting (legacy config)
+            val byodLegacyConfig =
+                TrmnlDeviceConfig(
+                    type = TrmnlDeviceType.BYOD,
+                    apiBaseUrl = "https://api.trmnl.com",
+                    apiAccessToken = "valid-token",
+                    refreshRateSecs = validRefreshRate,
+                    isMasterDevice = null, // Not set - should default to master mode
+                )
+            every { trmnlDeviceConfigDataStore.deviceConfigFlow } returns MutableStateFlow(byodLegacyConfig)
+
+            // Legacy config should default to master mode (advance playlist)
+            // The scheduler sets this based on isMasterDevice ?? true
+            every { workerParameters.inputData } returns
+                workDataOf(
+                    PARAM_REFRESH_WORK_TYPE to RefreshWorkType.ONE_TIME.name,
+                    PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to true,
+                )
+
+            val successfulResponse =
+                TrmnlDisplayInfo(
+                    status = HTTP_200,
+                    trmnlDeviceType = TrmnlDeviceType.BYOD,
+                    imageUrl = validImageUrl,
+                    imageFileName = "test-image.png",
+                    refreshIntervalSeconds = validRefreshRate,
+                )
+
+            coEvery { displayRepository.getNextDisplayData(any()) } returns successfulResponse
+            coEvery { trmnlDeviceConfigDataStore.shouldUpdateRefreshRate(any()) } returns false
+
+            // Act
+            val result = worker.doWork()
+
+            // Assert
+            assertThat(result).isInstanceOf(ListenableWorker.Result.Success::class.java)
+
+            // Verify defaults to master mode behavior (uses getNextDisplayData)
+            coVerify { displayRepository.getNextDisplayData(any()) }
+            coVerify(exactly = 0) { displayRepository.getCurrentDisplayData(any()) }
         }
 }
