@@ -132,13 +132,18 @@ sequenceDiagram
     
     alt Success
         TrmnlImageRefreshWorker-->>WorkManager: Return success with imageUrl in output data
+        
+        alt Periodic Work
+            Note over TrmnlImageRefreshWorker: Workaround for periodic work observer issue
+            TrmnlImageRefreshWorker->>TrmnlImageUpdateManager: updateImage(imageUrl, refreshInterval)
+        end
     else Failure
         TrmnlImageRefreshWorker-->>WorkManager: Return failure with error message
     end
     
     WorkManager-->>MainActivity: Notify work completed via WorkInfo observer
 
-    alt Success
+    alt Success (One-time work)
         MainActivity->>TrmnlImageUpdateManager: updateImage(imageUrl)
     else Failure
         MainActivity->>TrmnlImageUpdateManager: updateImage("", errorMessage)
@@ -153,7 +158,11 @@ sequenceDiagram
         
         alt Image Loads Successfully
             AsyncImage-->>TrmnlMirrorDisplayScreen: Image displayed
-        else Image Load Failure
+        else Image Load Failure (HTTP 403 - Expired URL)
+            AsyncImage-->>TrmnlMirrorDisplayScreen: onError callback triggered
+            TrmnlMirrorDisplayScreen->>TrmnlMirrorDisplayScreen: eventSink(RefreshCurrentPlaylistItemRequested)
+            Note over TrmnlMirrorDisplayScreen: Trigger refresh for fresh URL
+        else Image Load Failure (Other errors)
             AsyncImage-->>TrmnlMirrorDisplayScreen: onError callback triggered
             TrmnlMirrorDisplayScreen->>TrmnlMirrorDisplayScreen: eventSink(ImageLoadingError)
             Note over TrmnlMirrorDisplayScreen: Display error UI
@@ -171,12 +180,14 @@ sequenceDiagram
     - Fetches display data from TrmnlDisplayRepository
     - Adds success/failure log entry
     - Returns result with image URL or error message
+    - **For periodic work only**: Directly calls `TrmnlImageUpdateManager.updateImage()` as a workaround for potential WorkInfo observer issues with periodic work
 
 3. **MainActivity** observes the work completion:
     - Receives WorkInfo updates from WorkManager
-    - Processes the results
+    - Calls `TrmnlImageUpdateManager.updateImage()` with new image URL (for one-time work) or error message
 
 4. **TrmnlImageUpdateManager** gets notified of new image:
+    - Receives updates from either MainActivity (one-time work) or directly from TrmnlImageRefreshWorker (periodic work)
     - Updates the image metadata
     - Emits the update through imageUpdateFlow
 
@@ -187,6 +198,7 @@ sequenceDiagram
 6. **AsyncImage** loads the image:
     - On success: Displays the image
     - On failure: Triggers onError callback
-    - Error case results in showing error UI
+      - **HTTP 403 (expired URL)**: Automatically triggers a refresh to get a fresh URL
+      - **Other errors**: Shows error UI with error message
 
 This data flow uses a combination of WorkManager for background processing, StateFlow for reactive updates, and Compose for UI rendering.
