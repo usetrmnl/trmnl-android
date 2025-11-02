@@ -10,6 +10,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
 import dagger.Provides
+import ink.trmnl.android.BuildConfig
 import ink.trmnl.android.network.TrmnlApiService
 import okhttp3.Cache
 import okhttp3.OkHttpClient
@@ -30,11 +31,6 @@ object NetworkModule {
     fun provideOkHttpClient(
         @ApplicationContext context: Context,
     ): OkHttpClient {
-        val loggingInterceptor =
-            HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
-            }
-
         // Create cache directory
         val cacheDir = File(context.cacheDir, "http_cache")
         val cache = Cache(cacheDir, CACHE_SIZE)
@@ -59,8 +55,16 @@ object NetworkModule {
                         .header("User-Agent", userAgent)
                         .build()
                 chain.proceed(request)
-            }.addInterceptor(loggingInterceptor)
-            .cache(cache)
+            }.apply {
+                // Only add logging interceptor in debug builds
+                if (BuildConfig.DEBUG) {
+                    addInterceptor(
+                        HttpLoggingInterceptor().apply {
+                            level = HttpLoggingInterceptor.Level.BODY
+                        },
+                    )
+                }
+            }.cache(cache)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
