@@ -60,14 +60,15 @@ class TrmnlWorkScheduler
         }
 
         /**
-         * Schedule periodic image refresh work that automatically advances the playlist.
+         * Schedule periodic image refresh work with device-type-specific behavior.
          *
          * This method:
          * - Adds 60 seconds buffer time to the interval before scheduling
          * - Converts the interval to minutes with a minimum of 15 minutes (WorkManager requirement)
          * - Requires a valid token to be set, otherwise scheduling is skipped
          * - Updates existing scheduled work if already present
-         * - Always loads the next playlist item (automatic playlist cycling)
+         * - For BYOS devices: Advances through the playlist automatically (playlist cycling)
+         * - For TRMNL devices: Mirrors the current display from the official TRMNL device
          * - Requires network connectivity
          * - Uses exponential backoff for retries
          *
@@ -104,6 +105,14 @@ class TrmnlWorkScheduler
                 return
             }
 
+            // Determine whether to advance playlist based on device type
+            // - BYOS devices should advance their own playlist
+            // - TRMNL devices should mirror the official TRMNL device (stay on current screen)
+            val deviceConfig = trmnlDeviceConfigDataStore.getDeviceConfigSync()
+            val shouldAdvancePlaylist = deviceConfig?.type == ink.trmnl.android.model.TrmnlDeviceType.BYOS
+
+            Timber.d("Device type: ${deviceConfig?.type}, shouldAdvancePlaylist: $shouldAdvancePlaylist")
+
             val constraints =
                 Constraints
                     .Builder()
@@ -124,10 +133,11 @@ class TrmnlWorkScheduler
                     ).setInputData(
                         workDataOf(
                             PARAM_REFRESH_WORK_TYPE to RefreshWorkType.PERIODIC.name,
-                            // Set to true so periodic refreshes advance the playlist (use /api/display endpoint)
-                            // instead of just reloading the current display (use /api/current_screen endpoint).
-                            // This enables automatic playlist cycling for TRMNL devices.
-                            PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to true,
+                            // For BYOS devices: advance the playlist (use /api/display endpoint)
+                            // For TRMNL devices: mirror the current display (use /api/current_screen endpoint)
+                            // This enables automatic playlist cycling for BYOS while maintaining
+                            // mirror functionality for TRMNL devices.
+                            PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to shouldAdvancePlaylist,
                         ),
                     ).addTag(IMAGE_REFRESH_PERIODIC_WORK_TAG)
                     .build()
