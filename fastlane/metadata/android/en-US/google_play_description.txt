@@ -9,7 +9,7 @@ TRMNL
 
 SHORT DESCRIPTION (Max 80 characters)
 --------------------------------------------------------------------------------
-Mirror TRMNL e-ink displays on Android devices
+Turn Android devices into TRMNL displays - mirror or standalone mode
 
 
 FULL DESCRIPTION (Max 4000 characters)
