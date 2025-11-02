@@ -34,6 +34,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -974,18 +975,18 @@ private fun DeviceTypeSelectorConfig(
                         .padding(top = 16.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                androidx.compose.material3.Checkbox(
+                Checkbox(
                     checked = isByodMasterDevice,
                     onCheckedChange = { onByodMasterDeviceChanged(it) },
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Act as master device (auto-advance playlist)",
+                        text = "Act as master device (auto-advance playlist image)",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        text = "Uncheck if this device should mirror another TRMNL device",
+                        text = "Uncheck if this device should mirror another BYOD device that automatically auto-advances playlist image",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
