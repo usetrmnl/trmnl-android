@@ -53,6 +53,7 @@ class TrmnlDeviceConfigDataStore
             private val REFRESH_RATE_SEC_KEY = longPreferencesKey("refresh_rate_seconds")
             private val CONFIG_JSON_KEY = stringPreferencesKey("config_json")
             private val DEVICE_MAC_ID_KEY = stringPreferencesKey("device_mac_id")
+            private val IS_MASTER_DEVICE_KEY = stringPreferencesKey("is_master_device")
         }
 
         private val deviceTypeAdapter = moshi.adapter(TrmnlDeviceType::class.java)
@@ -133,6 +134,7 @@ class TrmnlDeviceConfigDataStore
                     val url = preferences[API_BASE_URL_KEY] ?: TRMNL_API_SERVER_BASE_URL
                     val refreshRate = preferences[REFRESH_RATE_SEC_KEY] ?: DEFAULT_REFRESH_INTERVAL_SEC
                     val deviceMacId = preferences[DEVICE_MAC_ID_KEY]
+                    val isMasterDevice = preferences[IS_MASTER_DEVICE_KEY]?.toBoolean()
 
                     if (token != null) {
                         TrmnlDeviceConfig(
@@ -141,6 +143,7 @@ class TrmnlDeviceConfigDataStore
                             apiAccessToken = token,
                             deviceMacId = deviceMacId,
                             refreshRateSecs = refreshRate,
+                            isMasterDevice = isMasterDevice,
                         )
                     } else {
                         null
@@ -168,6 +171,11 @@ class TrmnlDeviceConfigDataStore
                     config.deviceMacId?.let { deviceMacId ->
                         preferences[DEVICE_MAC_ID_KEY] = deviceMacId
                     }
+
+                    // Save isMasterDevice if available
+                    config.isMasterDevice?.let { isMaster ->
+                        preferences[IS_MASTER_DEVICE_KEY] = isMaster.toString()
+                    } ?: preferences.remove(IS_MASTER_DEVICE_KEY)
                 }
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Failed to save device config")
