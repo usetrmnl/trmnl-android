@@ -5,6 +5,8 @@ A simple app to show TRMNL's content to your Android devices like Phone, Tablet,
 
 ## Application Overview
 
+<img src="https://github.com/user-attachments/assets/6ec04cf5-b72c-429a-a435-406f0051d221" align="right" width="150">
+
 The TRMNL app serves as a digital display for TRMNL e-ink devices and BYOS installations. The app connects to the TRMNL or BYOS API server, fetches display data, and shows it on Android devices. It can function both as a mirror for existing TRMNL devices or as a standalone TRMNL device connected directly to BYOS or TRMNL (with BYOD add-on) servers.
 
 ### Key Features
@@ -26,22 +28,15 @@ Here are some of the known ways you can get access to the `access-token`.
 3. You have self-serve installation of TRMNL service using [BYOS](https://docs.usetrmnl.com/go/diy/byos)
 
 
-## How to try
-⬇️ Install the APK on your Android device.
-<img src="https://github.com/user-attachments/assets/6ec04cf5-b72c-429a-a435-406f0051d221" align="right" width="150">
+### 📱 Google Play Store
+Download the app from Google Play Store:
+
+<a href="https://play.google.com/store/apps/details?id=ink.trmnl.android" target="_blank"><img src="https://liquidlabs.ca/img/google-play.svg" height="45"></a>
+
+
+### Setup
 1. Configure the API `access-token` or `ID` _(MAC Address)_ in the app settings
 2. Save the token and keep the app always-on with the TRMNL's display image showing.
-
-### <img src="https://github.com/user-attachments/assets/64b4b132-a885-4783-98e3-c201bae6ccff" width="25"> Download Release
-Check installable APK from Assets in [latest release](https://github.com/usetrmnl/trmnl-android/releases).
-
-<!--
-### 📱 F-Droid
-The app will *soon* be available on F-Droid, providing a free and open source Android app repository.
-1. Add the F-Droid repository to your F-Droid client
-2. Search for "TRMNL"
-3. Install the app
--->
 
 <img alt="Demo Video" src="https://github.com/user-attachments/assets/2e3fcdef-2681-4c06-9372-2ad98131fb3c" width="500">  
 
