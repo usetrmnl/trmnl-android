@@ -5,7 +5,7 @@ A simple app to show TRMNL's content to your Android devices like Phone, Tablet,
 
 ## Application Overview
 
-<img src="https://github.com/user-attachments/assets/6ec04cf5-b72c-429a-a435-406f0051d221" align="right" width="150">
+<img src="https://github.com/user-attachments/assets/f708c88d-025b-4fe7-9641-edd1aa4aa789" align="right" width="150">
 
 The TRMNL app serves as a digital display for TRMNL e-ink devices and BYOS installations. The app connects to the TRMNL or BYOS API server, fetches display data, and shows it on Android devices. It can function both as a mirror for existing TRMNL devices or as a standalone TRMNL device connected directly to BYOS or TRMNL (with BYOD add-on) servers.
 
