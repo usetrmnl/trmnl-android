@@ -1,0 +1,2 @@
+- Updated to the latest version (2.4.2)
+- Fixed app icon using correct TRMNL brand color

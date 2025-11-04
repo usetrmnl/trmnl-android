@@ -14,7 +14,7 @@ Utility app to display TRMNL screens on any Android device
 
 FULL DESCRIPTION (Max 4000 characters)
 --------------------------------------------------------------------------------
-TRMNL serves as a digital display for TRMNL e-ink devices and BYOS installations. The app connects to the TRMNL or BYOS API, fetches display data, and shows it on Android devices. It can function both as a mirror for existing TRMNL devices or as a standalone TRMNL display connected directly to BYOS servers.
+TRMNL serves as a digital display for TRMNL e-ink devices and BYOS installations. The app connects to the TRMNL or BYOS API, fetches display data, and shows it on Android devices. It can function both as a mirror for existing TRMNL devices or as a standalone TRMNL display connected directly to a Bring-Your-Own-Server (BYOS).
 
 > ⚠️ Note: TRMNL app currently requires device API key for non-BYOS based devices. TRMNL device must have a developer edition or BYOD license to enable device API key.
 
@@ -25,7 +25,7 @@ Key Features:
 • Manual refresh capabilities and option to load next playlist image
 • Support for custom server URLs for BYOS installations
 • Refresh history logging for tracking & validation
-• Support for standard TRMNL, BYOD (Bring Your Own Device), and BYOS (Bring Your Own Server) configurations
+• Support for standard TRMNL, BYOD (Bring-Your-Own-Device), and BYOS (Bring-Your-Own-Server) configurations
 
 The app requires a valid access token or device MAC address to connect to TRMNL services. You can obtain this through:
 • Owning a TRMNL device with the developer edition add-on
@@ -93,7 +93,7 @@ WHAT'S NEW (Release Notes)
 TRMNL is now officially available! Transform your Android device into a smart display for TRMNL e-ink devices and BYOS installations.
 
 ✨ What's New:
-• Connect to TRMNL/BYOS servers with API tokens
+• Connect to TRMNL/BYOS server with API tokens
 • Automatic periodic image refresh
 • Manual refresh and playlist navigation
 • Custom server URL support for BYOS
