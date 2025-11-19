@@ -14,12 +14,14 @@ signing the app during development.
 
 ## Production Keystore
 
-The production keystore (`trmnl-app-release.keystore`) is used for all release builds (both standard and F-Droid flavors) and is stored as a base64-encoded secret in GitHub Actions. The keystore is decoded during CI/CD builds.
+The production keystore (`trmnl-app-release.keystore`) is used for all release builds and is stored as a base64-encoded secret in GitHub Actions. The keystore is decoded during CI/CD builds.
 
-### Build Flavors Using Production Keystore
+**Note:** This project uses only build types (debug/release), not product flavors. There is no separate F-Droid flavor. The release build is F-Droid compatible by default.
 
-- **Standard Release**: Signs APKs for general distribution
-- **F-Droid Release**: Signs APKs for F-Droid distribution (F-Droid will verify the signature during their reproducible build process)
+### Release Build Distribution
+
+- **General Distribution**: Release APK signed with production keystore
+- **F-Droid Distribution**: Same release APK (F-Droid verifies the signature during their reproducible build process)
 
 ### Important Notes About the Production Keystore
 
