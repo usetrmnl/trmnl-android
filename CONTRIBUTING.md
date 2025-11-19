@@ -71,12 +71,16 @@ To build a debug APK:
 ./gradlew assembleDebug
 ```
 
-### Build Variants
-The app supports multiple build variants:
-- **Standard**: The default variant with all features
-- **F-Droid**: A variant optimized for F-Droid distribution without Google dependencies
+### Build Types
+The app uses standard Android build types (debug and release). There are no product flavors.
 
-To build specific variants:
+**Build Types:**
+- **Debug**: Development builds with fake API support and debug keystore
+- **Release**: Production builds with code shrinking, ProGuard, and production keystore
+
+The release build is F-Droid compatible (no Google dependencies, `dependenciesInfo.includeInApk = false`).
+
+To build the release APK:
 ```bash
 # Build the release variant
 ./gradlew assembleRelease
