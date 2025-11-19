@@ -21,6 +21,21 @@ TRMNL Android is a native Android app that displays TRMNL e-ink device content o
 
 ## Essential Build Commands
 
+### Fresh Checkout (First Time Setup)
+**CRITICAL: On a fresh clone, you MUST build first to generate code:**
+
+```bash
+# 1. Build debug APK (generates Dagger/Circuit code via KSP/KAPT)
+./gradlew assembleDebug --parallel --daemon
+
+# 2. Now you can run tests
+./gradlew testDebugUnitTest --parallel --daemon
+```
+
+**Why?** Running tests before building will fail with Dagger errors about missing generated modules. The build step generates necessary code via KSP (Circuit) and KAPT (Dagger).
+
+### Regular Development (After Initial Build)
+
 **ALWAYS run these commands in this order before committing:**
 
 ```bash
@@ -38,9 +53,10 @@ TRMNL Android is a native Android app that displays TRMNL e-ink device content o
 ```
 
 **Notes:**
-- Use JDK 17 (OpenJDK 17 - Temurin distribution)
+- JDK: Minimum JDK 17, but JDK 21+ works (backward compatible)
 - ALWAYS use `./gradlew` wrapper, NEVER system gradle
-- First build takes 2-3 minutes (downloads deps + KSP/KAPT), subsequent ~1 minute
+- First build: ~2-3 minutes (downloads deps + KSP/KAPT generation)
+- Subsequent builds: ~8-18 seconds with Gradle cache
 - CI workflow: `.github/workflows/android.yml` runs commands 1-3
 - Tests use MockK with JVM arg `-XX:+EnableDynamicAgentLoading`
 
@@ -126,12 +142,15 @@ app/src/main/java/ink/trmnl/android/
 - `secret.properties` (optional) - Local keystore secrets (not in repo)
 - `keystore/debug.keystore` - Debug signing (included in repo)
 
-## Build Variants
+## Build Types (Not Flavors)
+
+**Note:** This project uses only build TYPES (debug/release), NOT product flavors. There's no separate F-Droid flavor despite what some older docs might suggest.
 
 **Debug:**
 - `buildConfigField("Boolean", "USE_FAKE_API", "true")`
-- Uses debug keystore with password "android"
+- Uses debug keystore with password "android" (included in repo)
 - Fake API can be overridden in `RepositoryConfigProvider`
+- HttpLoggingInterceptor enabled with BODY level
 
 **Release:**
 - `buildConfigField("Boolean", "USE_FAKE_API", "false")`
@@ -139,6 +158,7 @@ app/src/main/java/ink/trmnl/android/
 - Keystore env vars: `KEYSTORE_PASSWORD`, `KEY_ALIAS`
 - Code shrinking: `isMinifyEnabled = true`, `isShrinkResources = true`
 - ProGuard: `proguard-android-optimize.txt` + `proguard-rules.pro`
+- F-Droid compatible: `dependenciesInfo.includeInApk = false`
 
 ## Version Management
 
@@ -156,11 +176,13 @@ app/src/main/java/ink/trmnl/android/
 
 ## Common Issues
 
+- **Tests fail on fresh checkout**: Must run `./gradlew assembleDebug` first to generate Dagger/Circuit code
 - **"secret.properties not found"**: Informational only, debug builds work without it
-- **First build slow**: Expected, dependencies + annotation processors (KSP, KAPT)
-- **"Sharing is only supported for boot loader classes"**: Harmless Robolectric warning
-- **"INVISIBLE_REFERENCE" in NetworkingTools.kt:56**: Expected, uses internal Kotlin API
+- **First build slow**: Expected, dependencies + annotation processors (KSP, KAPT) ~2-3 minutes
+- **"Sharing is only supported for boot loader classes"**: Harmless Robolectric warning, tests still pass
+- **"INVISIBLE_REFERENCE" in NetworkingTools.kt:56**: Expected, uses internal Kotlin API (documented warning)
 - **WorkManager 15-min minimum**: Android OS limitation, not a bug
+- **Dagger KAPT errors about missing modules**: Run `assembleDebug` first to generate code
 
 ## Code Style
 
@@ -177,11 +199,11 @@ app/src/main/java/ink/trmnl/android/
 
 ## Important Notes
 
-- Token-based auth required: TRMNL access token or device ID (MAC address)
-- Supports custom server URLs for BYOS installations
-- Screen wake lock: `FLAG_KEEP_SCREEN_ON` doesn't work on e-Ink tablets (battery optimization)
-- F-Droid compatible: `dependenciesInfo.includeInApk = false`
-- Kotlin version capped at 2.1.10 due to Dagger compatibility
+- **Authentication**: Token-based auth required (TRMNL access token or device ID/MAC address)
+- **BYOS Support**: Supports custom server URLs for BYOS installations
+- **Screen Wake Lock**: `FLAG_KEEP_SCREEN_ON` doesn't work reliably on e-Ink tablets due to aggressive battery optimization
+- **Kotlin Version**: Capped at 2.1.10 due to Dagger 2.56.2 compatibility (see libs.versions.toml comment)
+- **No Product Flavors**: Only debug/release build types exist (no F-Droid flavor)
 
 ## Copilot Instructions Context
 
