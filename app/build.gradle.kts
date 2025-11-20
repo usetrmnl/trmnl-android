@@ -122,8 +122,8 @@ android {
         buildConfig = true
     }
 
-    // Disables encrypted signing block added by AGP (not supported by F-Droid)
-    // See https://gitlab.com/fdroid/fdroiddata/-/merge_requests/24134#note_2590441621
+    // Disables dependency metadata to improve privacy
+    // See https://developer.android.com/reference/tools/gradle-api/8.9/com/android/build/api/dsl/DependenciesInfo
     dependenciesInfo {
         // Disables dependency metadata when building APKs.
         includeInApk = false

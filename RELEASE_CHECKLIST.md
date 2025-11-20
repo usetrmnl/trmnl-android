@@ -7,7 +7,6 @@ This document outlines the process for creating new releases of the TRMNL Androi
 The project uses GitHub Actions to manage version synchronization across different files:
 
 - `app/build.gradle.kts`: Contains the app's version code and name
-- `metadata/ink.trmnl.android.yml`: Contains F-Droid metadata and versioning
 - `fastlane/metadata/android/en-US/changelogs/`: Contains version-specific changelog files
 
 ## Creating a new release
@@ -21,7 +20,6 @@ The project uses GitHub Actions to manage version synchronization across differe
 
 This will display:
 - Current version code and name
-- F-Droid metadata version information
 - Existing changelog files
 - Suggested next version
 
@@ -109,7 +107,6 @@ If you encounter issues with the version management workflow:
 
 1. **Manual versioning**:
    - Update `app/build.gradle.kts` with the new version code and name
-   - Update `metadata/ink.trmnl.android.yml` with the same version information
    - Create a new changelog file in `fastlane/metadata/android/en-US/changelogs/{VERSION_CODE}.txt`
    - Commit and tag manually
 
