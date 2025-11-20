@@ -125,7 +125,7 @@ All workflows are in `.github/workflows/`:
 
 4. **version-management.yml** (Version Bumping)
    - Manual workflow for updating app version
-   - Updates: `app/build.gradle.kts`, `metadata/ink.trmnl.android.yml`, changelogs
+   - Updates: `app/build.gradle.kts`, changelogs
    - Run `./scripts/show_version_info.sh` locally to get current version
 
 ## Common Issues & Workarounds
@@ -159,7 +159,6 @@ All workflows are in `.github/workflows/`:
 2. Use GitHub Actions workflow: `.github/workflows/version-management.yml`
 3. Workflow updates:
    - `app/build.gradle.kts` (versionCode, versionName)
-   - `metadata/ink.trmnl.android.yml` (F-Droid metadata)
    - `fastlane/metadata/android/en-US/changelogs/{versionCode}.txt`
 
 See `RELEASE_CHECKLIST.md` for complete release process.
@@ -224,7 +223,6 @@ gradle/                # Gradle wrapper JARs and version catalogs
 .githooks/             # Git hooks
 .idea/                 # Android Studio settings
 keystore/              # Debug and release keystores
-metadata/              # F-Droid metadata
 fastlane/              # Fastlane configuration for app store
 project-resources/     # Design assets, PRD documents
 scripts/               # Utility scripts (version info)

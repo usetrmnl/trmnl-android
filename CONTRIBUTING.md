@@ -78,8 +78,6 @@ The app uses standard Android build types (debug and release). There are no prod
 - **Debug**: Development builds with fake API support and debug keystore
 - **Release**: Production builds with code shrinking, ProGuard, and production keystore
 
-The release build is F-Droid compatible (no Google dependencies, `dependenciesInfo.includeInApk = false`).
-
 To build the release APK:
 ```bash
 # Build the release variant

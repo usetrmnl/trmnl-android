@@ -1,5 +1,5 @@
 # This GitHub Actions workflow handles version management for the trmnl-android project.
-# It automates the process of updating version numbers, F-Droid metadata, and creating release PRs.
+# It automates the process of updating version numbers and creating release PRs.
 # 
 # 🔍 TIP: Run `scripts/show_version_info.sh` locally to display current versions and get suggestions
 # for the next version number before running this workflow.
@@ -21,7 +21,7 @@ on:
         required: true
         type: string
       git_tag:
-        description: 'Git tag for this release (defaults to v + version_name, used for F-Droid metadata)'
+        description: 'Git tag for this release (defaults to v + version_name)'
         required: false
         type: string
       release_notes:
@@ -104,19 +104,6 @@ jobs:
           sed -i "s/versionCode = [0-9]\\+/versionCode = ${{ inputs.version_code }}/g" app/build.gradle.kts
           sed -i "s/versionName = \"[^\"]*\"/versionName = \"${{ inputs.version_name }}\"/g" app/build.gradle.kts
           echo "✓ Updated app/build.gradle.kts with version ${{ inputs.version_name }} (${{ inputs.version_code }})"
-      
-      - name: Update F-Droid metadata file
-        run: |
-          if [ -f "metadata/ink.trmnl.android.yml" ]; then
-            sed -i "s/CurrentVersion: .*/CurrentVersion: ${{ inputs.version_name }}/g" metadata/ink.trmnl.android.yml
-            sed -i "s/CurrentVersionCode: [0-9]\\+/CurrentVersionCode: ${{ inputs.version_code }}/g" metadata/ink.trmnl.android.yml
-            sed -i "s/versionName: .*/versionName: ${{ inputs.version_name }}/g" metadata/ink.trmnl.android.yml
-            sed -i "s/versionCode: [0-9]\\+/versionCode: ${{ inputs.version_code }}/g" metadata/ink.trmnl.android.yml
-            sed -i "s/commit: .*/commit: ${{ env.GIT_TAG }}/g" metadata/ink.trmnl.android.yml
-            echo "✓ Updated metadata/ink.trmnl.android.yml with version ${{ inputs.version_name }} (${{ inputs.version_code }})"
-          else
-            echo "Warning: metadata/ink.trmnl.android.yml not found"
-          fi
 
       - name: Create changelog file
         run: |
@@ -140,7 +127,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           add-paths: |
             app/build.gradle.kts
-            metadata/
             fastlane/
           commit-message: "chore: prepare release ${{ inputs.version_name }}"
           title: "Prepare release ${{ inputs.version_name }}"
@@ -152,7 +138,6 @@ jobs:
             
             ## 🔄 Changes Made:
             - Updated app/build.gradle.kts
-            - Updated F-Droid metadata
             - Created changelog file
             
             ## ⚡ Trigger CI Workflows (Do This First):

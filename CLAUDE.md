@@ -144,7 +144,7 @@ app/src/main/java/ink/trmnl/android/
 
 ## Build Types (Not Flavors)
 
-**Note:** This project uses only build TYPES (debug/release), NOT product flavors. There's no separate F-Droid flavor despite what some older docs might suggest.
+**Note:** This project uses only build TYPES (debug/release), NOT product flavors.
 
 **Debug:**
 - `buildConfigField("Boolean", "USE_FAKE_API", "true")`
@@ -158,14 +158,14 @@ app/src/main/java/ink/trmnl/android/
 - Keystore env vars: `KEYSTORE_PASSWORD`, `KEY_ALIAS`
 - Code shrinking: `isMinifyEnabled = true`, `isShrinkResources = true`
 - ProGuard: `proguard-android-optimize.txt` + `proguard-rules.pro`
-- F-Droid compatible: `dependenciesInfo.includeInApk = false`
+- Privacy: `dependenciesInfo.includeInApk = false` (disables dependency metadata)
 
 ## Version Management
 
 **DO NOT manually edit version numbers.** Use automated workflow:
 - Check version: `./scripts/show_version_info.sh`
 - Update workflow: `.github/workflows/version-management.yml`
-- Updates: `app/build.gradle.kts`, `metadata/ink.trmnl.android.yml`, changelogs
+- Updates: `app/build.gradle.kts`, changelogs
 
 ## CI/CD Workflows
 
@@ -203,7 +203,7 @@ app/src/main/java/ink/trmnl/android/
 - **BYOS Support**: Supports custom server URLs for BYOS installations
 - **Screen Wake Lock**: `FLAG_KEEP_SCREEN_ON` doesn't work reliably on e-Ink tablets due to aggressive battery optimization
 - **Kotlin Version**: Capped at 2.1.10 due to Dagger 2.56.2 compatibility (see libs.versions.toml comment)
-- **No Product Flavors**: Only debug/release build types exist (no F-Droid flavor)
+- **No Product Flavors**: Only debug/release build types exist
 
 ## Copilot Instructions Context
 
