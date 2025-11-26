@@ -165,7 +165,7 @@ The project uses optimized Gradle settings based on best practices from the [Now
 - Cached builds: ~2-8 seconds
 - Configuration cache significantly speeds up subsequent builds
 
-**Note:** These settings assume sufficient system RAM (4GB+ available for Gradle). On memory-constrained systems, the heap size may need adjustment.
+**Note:** These settings require at least **8GB+ of available RAM** (4GB for Gradle daemon + 4GB for Kotlin daemon). On memory-constrained systems, reduce the `-Xmx` values in `gradle.properties` (e.g., to 2GB each for systems with 4-6GB RAM).
 
 ## Build Types (Not Flavors)
 
