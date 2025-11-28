@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
 /**
- * Unit tests for DateTimeFormatter functions.
+ * Unit tests for the getTimeElapsedString function in DateTimeFormatter.kt.
  *
  * Note: These tests use relative timestamps based on System.currentTimeMillis() to avoid
  * static mocking issues. Each test creates a timestamp that is a fixed duration in the past.
