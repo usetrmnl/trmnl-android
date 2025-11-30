@@ -1,0 +1,53 @@
+{
+  "name": "TRMNL Android",
+  "image": "mcr.microsoft.com/devcontainers/java:1-17-bookworm",
+
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mathiasfrohlich.kotlin",
+        "fwcd.kotlin",
+        "vscjava.vscode-gradle",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "redhat.java",
+        "vscjava.vscode-java-pack",
+        "k--kato.intellij-idea-keybindings"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "java.configuration.updateBuildConfiguration": "automatic"
+      }
+    }
+  },
+
+  "remoteEnv": {
+    "ANDROID_HOME": "/usr/local/lib/android/sdk",
+    "ANDROID_SDK_ROOT": "/usr/local/lib/android/sdk"
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "forwardPorts": [],
+
+  "portsAttributes": {
+    "5037": {
+      "label": "ADB",
+      "onAutoForward": "ignore"
+    }
+  },
+
+  "mounts": [
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.android,target=/home/vscode/.android,type=bind,consistency=cached"
+  ],
+
+  // Privileged mode is required for ADB to access USB devices for on-device debugging
+  "runArgs": [
+    "--privileged"
+  ]
+}
