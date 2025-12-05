@@ -4,6 +4,7 @@ import com.slack.eithernet.ApiResult
 import ink.trmnl.android.data.TrmnlDisplayRepository
 import ink.trmnl.android.network.model.TrmnlCurrentImageResponse
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
+import ink.trmnl.android.network.model.TrmnlModelsResponse
 import ink.trmnl.android.network.model.TrmnlSetupResponse
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -50,6 +51,15 @@ interface TrmnlApiService {
          * @see setupNewDevice
          */
         internal const val SETUP_API_PATH = "api/setup/"
+
+        /**
+         * Path for the TRMNL API endpoint that provides the list of available device models.
+         *
+         * https://help.usetrmnl.com/en/articles/11547008-device-model-faq
+         *
+         * @see getDeviceModels
+         */
+        internal const val MODELS_API_PATH = "api/models"
     }
 
     /**
@@ -101,4 +111,20 @@ interface TrmnlApiService {
         @Url fullApiUrl: String,
         @Header("ID") deviceMacId: String,
     ): ApiResult<TrmnlSetupResponse, Unit>
+
+    /**
+     * Retrieve the list of available device models using [MODELS_API_PATH].
+     *
+     * This endpoint provides information about all supported device models including
+     * display specifications, supported palettes, and device characteristics.
+     *
+     * See https://help.usetrmnl.com/en/articles/11547008-device-model-faq
+     *
+     * @param fullApiUrl The complete API URL to call (e.g., "https://usetrmnl.com/api/models")
+     * @return An [ApiResult] containing [TrmnlModelsResponse] with the list of device models
+     */
+    @GET
+    suspend fun getDeviceModels(
+        @Url fullApiUrl: String,
+    ): ApiResult<TrmnlModelsResponse, Unit>
 }
