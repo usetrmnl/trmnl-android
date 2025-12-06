@@ -66,7 +66,7 @@ After the version management workflow has completed:
 
 1. **Review the PR** (if you ran the workflow with direct commits):
 
-<img width="936" height="752" alt="Screenshot 2025-08-15 at 1 02 30 PM" src="https://github.com/user-attachments/assets/dd138659-3546-4a24-a102-59fb79d5902e" />
+<img width="938" height="895" alt="Screenshot 2025-12-06 at 4 44 12 PM" src="https://github.com/user-attachments/assets/86c8af4e-b1df-4d4f-916d-1eaa33225d9a" />
 
 
 2. **Follow pre and post merge command guidelinse**: Merge the PR. See PR description with guides.
