@@ -288,15 +288,17 @@ class AppSettingsPresenter
                     Timber.d(
                         "Device specs - Name: ${result.selectedModel.name}, Display: ${result.selectedModel.width}x${result.selectedModel.height}px",
                     )
-                    // Save the selected device model for the current device type
+                    // Save the selected device model using the device type from the result
+                    // This ensures we save to the correct device type even if the user
+                    // switched device types while on the selector screen
                     scope.launch {
                         deviceConfigStore.saveDeviceModelForType(
-                            deviceType = deviceType,
+                            deviceType = result.deviceType,
                             modelName = result.selectedModel.name,
                             modelLabel = result.selectedModel.label,
                         )
                         Timber.d(
-                            "Saved device model preference: ${deviceType.name} -> ${result.selectedModel.name} (${result.selectedModel.label})",
+                            "Saved device model preference: ${result.deviceType.name} -> ${result.selectedModel.name} (${result.selectedModel.label})",
                         )
                     }
                 }
@@ -500,8 +502,9 @@ class AppSettingsPresenter
 
                         AppSettingsScreen.Event.OverrideDisplayModelPressed -> {
                             // Navigate to DeviceModelSelectorScreen using answering navigator
-                            Timber.d("Navigating to DeviceModelSelectorScreen...")
-                            deviceModelNavigator.goTo(DeviceModelSelectorScreen)
+                            // Pass the current device type so the screen knows which type this selection is for
+                            Timber.d("Navigating to DeviceModelSelectorScreen for device type: ${deviceType.name}")
+                            deviceModelNavigator.goTo(DeviceModelSelectorScreen(deviceType))
                         }
 
                         is AppSettingsScreen.Event.SetupDevice -> {
