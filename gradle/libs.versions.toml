@@ -1,17 +1,17 @@
 [versions]
-activityCompose = "1.10.1"
+activityCompose = "1.12.1"
 # https://developer.android.com/jetpack/androidx/releases/compose-material3-adaptive
-adaptive = "1.2.0-alpha06"
+adaptive = "1.2.0"
 agp = "8.9.2"
 anvil = "0.4.1"
-circuit = "0.27.1"
-composeBom = "2025.06.00"
-coreKtx = "1.16.0"
+circuit = "0.31.0"
+composeBom = "2025.12.00"
+coreKtx = "1.17.0"
 dagger = "2.56.2"
-espressoCore = "3.6.1"
-googleFonts = "1.8.2"
+espressoCore = "3.7.0"
+googleFonts = "1.10.0"
 junit = "4.13.2"
-junitVersion = "1.2.1"
+junitVersion = "1.3.0"
 kotlinxCoroutinesTest = "1.10.2"
 
 # Kotlin and KSP versions (must be in sync)
@@ -19,7 +19,7 @@ kotlinxCoroutinesTest = "1.10.2"
 kotlin = "2.1.10"
 ksp = "2.1.10-1.0.31"
 
-lifecycleRuntimeKtx = "2.9.1"
+lifecycleRuntimeKtx = "2.10.0"
 
 # Kotlin linter with built-in formatter
 # https://github.com/jeremymailen/kotlinter-gradle
@@ -43,22 +43,22 @@ moshi = "1.15.2"
 eithernet = "2.0.0"
 
 # https://developer.android.com/jetpack/androidx/releases/work
-workManager = "2.10.1"
+workManager = "2.11.0"
 
 # Coil
 # https://github.com/coil-kt/coil
-coil = "3.2.0"
+coil = "3.3.0"
 
-mockk = "1.14.2"
-truth = "1.4.4"
-robolectric = "4.14.1"
+mockk = "1.14.7"
+truth = "1.4.5"
+robolectric = "4.16"
 
-datastore = "1.1.7"
+datastore = "1.2.0"
 
 # https://developer.android.com/jetpack/androidx/releases/window
 # https://developer.android.com/develop/ui/compose/layouts/adaptive
-androidx-window = "1.4.0"
-coreKtxVersion = "1.6.1"
+androidx-window = "1.5.1"
+coreKtxVersion = "1.7.0"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
