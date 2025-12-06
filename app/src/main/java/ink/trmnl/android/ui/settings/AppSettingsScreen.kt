@@ -293,8 +293,11 @@ class AppSettingsPresenter
                         deviceConfigStore.saveDeviceModelForType(
                             deviceType = deviceType,
                             modelName = result.selectedModel.name,
+                            modelLabel = result.selectedModel.label,
                         )
-                        Timber.d("Saved device model preference: ${deviceType.name} -> ${result.selectedModel.name}")
+                        Timber.d(
+                            "Saved device model preference: ${deviceType.name} -> ${result.selectedModel.name} (${result.selectedModel.label})",
+                        )
                     }
                 }
 
