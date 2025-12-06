@@ -7,11 +7,14 @@ import ink.trmnl.android.BuildConfig.USE_FAKE_API
 import ink.trmnl.android.data.fake.generateFakeDeviceSetupInfo
 import ink.trmnl.android.data.fake.generateFakeTrmnlDisplayInfo
 import ink.trmnl.android.di.AppScope
+import ink.trmnl.android.model.SupportedDeviceModel
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.network.TrmnlApiService
 import ink.trmnl.android.network.TrmnlApiService.Companion.CURRENT_PLAYLIST_SCREEN_API_PATH
+import ink.trmnl.android.network.TrmnlApiService.Companion.MODELS_API_PATH
 import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_PLAYLIST_SCREEN_API_PATH
+import ink.trmnl.android.network.model.TrmnlDeviceModel
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
 import ink.trmnl.android.network.util.constructApiUrl
 import ink.trmnl.android.network.util.extractHttpResponseMetadata
@@ -255,4 +258,58 @@ class TrmnlDisplayRepository
                 // -- "filename": "setup.png"
                 // -- "image_url": "https://my-trmnl-hub.com/assets/screens/ABCDEF123/setup.png",
                 (response.imageUrl?.contains("screens", ignoreCase = true) == false)
+
+        /**
+         * Fetches the list of available device models from the TRMNL API.
+         *
+         * This provides information about all supported device models including
+         * display specifications, supported palettes, and device characteristics.
+         *
+         * The API response is converted to simplified [SupportedDeviceModel] DTOs containing
+         * only the essential information needed for device selection.
+         *
+         * @param serverBaseUrl The base URL of the server to fetch models from (defaults to TRMNL API).
+         * @return A list of [SupportedDeviceModel] objects, or an empty list on failure.
+         */
+        suspend fun getDeviceModels(serverBaseUrl: String): List<SupportedDeviceModel> {
+            Timber.i("Fetching device models from server: $serverBaseUrl")
+
+            val result =
+                apiService.getDeviceModels(
+                    fullApiUrl = constructApiUrl(serverBaseUrl, MODELS_API_PATH),
+                )
+
+            return when (result) {
+                is ApiResult.Failure -> {
+                    Timber.e("Failed to fetch device models: ${result.exceptionOrNull()}")
+                    emptyList()
+                }
+                is ApiResult.Success -> {
+                    Timber.i("Successfully fetched ${result.value.data.size} device models")
+                    // Convert API models to simplified SupportedDeviceModel DTOs
+                    result.value.data.map { it.toSupportedDeviceModel() }
+                }
+            }
+        }
+
+        /**
+         * Converts a [TrmnlDeviceModel] API response to a simplified [SupportedDeviceModel] DTO.
+         *
+         * This extension function extracts only the essential device information needed
+         * for UI purposes, making it Parcelable for navigation results.
+         */
+        private fun TrmnlDeviceModel.toSupportedDeviceModel() =
+            SupportedDeviceModel(
+                name = name,
+                label = label,
+                description = description,
+                width = width,
+                height = height,
+                colors = colors,
+                bitDepth = bitDepth,
+                scaleFactor = scaleFactor,
+                rotation = rotation,
+                mimeType = mimeType,
+                kind = kind,
+            )
     }
