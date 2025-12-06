@@ -14,9 +14,11 @@ import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
 import ink.trmnl.android.data.AppConfig.TRMNL_API_SERVER_BASE_URL
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.di.ApplicationContext
+import ink.trmnl.android.model.DeviceModelSelection
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
@@ -54,10 +56,21 @@ class TrmnlDeviceConfigDataStore
             private val CONFIG_JSON_KEY = stringPreferencesKey("config_json")
             private val DEVICE_MAC_ID_KEY = stringPreferencesKey("device_mac_id")
             private val IS_MASTER_DEVICE_KEY = stringPreferencesKey("is_master_device")
+            private val DEVICE_MODEL_PREFERENCES_KEY = stringPreferencesKey("device_model_preferences")
         }
 
         private val deviceTypeAdapter = moshi.adapter(TrmnlDeviceType::class.java)
         private val deviceConfigAdapter = moshi.adapter(TrmnlDeviceConfig::class.java)
+
+        // Moshi adapter for device model preferences map
+        private val deviceModelPreferencesType =
+            com.squareup.moshi.Types.newParameterizedType(
+                Map::class.java,
+                String::class.java,
+                DeviceModelSelection::class.java,
+            )
+        private val deviceModelPreferencesAdapter =
+            moshi.adapter<Map<String, DeviceModelSelection>>(deviceModelPreferencesType)
 
         /**
          * Gets the device type as a Flow
@@ -105,6 +118,26 @@ class TrmnlDeviceConfigDataStore
             context.deviceConfigStore.data.map { preferences ->
                 preferences[DEVICE_MAC_ID_KEY]
             }
+
+        /**
+         * Gets the device model preferences (map of device type to model selection) as a Flow.
+         * Returns a map where keys are device type names (e.g., "BYOD") and values are DeviceModelSelection objects.
+         */
+        val deviceModelPreferencesFlow: Flow<Map<String, DeviceModelSelection>> =
+            context.deviceConfigStore.data
+                .map { preferences ->
+                    val json = preferences[DEVICE_MODEL_PREFERENCES_KEY]
+                    if (json != null) {
+                        try {
+                            deviceModelPreferencesAdapter.fromJson(json) ?: emptyMap()
+                        } catch (e: Exception) {
+                            Timber.tag(TAG).e(e, "Failed to parse device model preferences")
+                            emptyMap()
+                        }
+                    } else {
+                        emptyMap()
+                    }
+                }.distinctUntilChanged()
 
         /**
          * Gets the complete device config as a Flow
@@ -230,6 +263,56 @@ class TrmnlDeviceConfigDataStore
                 }
             }
         }
+
+        /**
+         * Saves the selected device model for a specific device type.
+         *
+         * @param deviceType The device type (e.g., BYOD, BYOS)
+         * @param modelName The model name (e.g., "amazon_kindle_2024")
+         * @param modelLabel The model label (e.g., "Amazon Kindle 2024")
+         */
+        suspend fun saveDeviceModelForType(
+            deviceType: TrmnlDeviceType,
+            modelName: String,
+            modelLabel: String,
+        ) {
+            try {
+                context.deviceConfigStore.edit { preferences ->
+                    // Get current map
+                    val currentJson = preferences[DEVICE_MODEL_PREFERENCES_KEY]
+                    val currentMap =
+                        if (currentJson != null) {
+                            try {
+                                deviceModelPreferencesAdapter.fromJson(currentJson)?.toMutableMap() ?: mutableMapOf()
+                            } catch (e: Exception) {
+                                Timber.tag(TAG).e(e, "Failed to parse existing device model preferences")
+                                mutableMapOf()
+                            }
+                        } else {
+                            mutableMapOf()
+                        }
+
+                    // Update the map with new value
+                    currentMap[deviceType.name] = DeviceModelSelection(modelName, modelLabel)
+
+                    // Save back to preferences
+                    preferences[DEVICE_MODEL_PREFERENCES_KEY] = deviceModelPreferencesAdapter.toJson(currentMap)
+
+                    Timber.tag(TAG).d("Saved device model preference: ${deviceType.name} -> $modelName ($modelLabel)")
+                }
+            } catch (e: Exception) {
+                Timber.tag(TAG).e(e, "Failed to save device model preference")
+            }
+        }
+
+        /**
+         * Gets the selected device model selection for a specific device type.
+         *
+         * @param deviceType The device type to query
+         * @return The DeviceModelSelection if set, null otherwise
+         */
+        suspend fun getDeviceModelForType(deviceType: TrmnlDeviceType): DeviceModelSelection? =
+            deviceModelPreferencesFlow.first()[deviceType.name]
 
         /**
          * Checks if a token is already set

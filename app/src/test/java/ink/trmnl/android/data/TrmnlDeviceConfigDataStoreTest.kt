@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
 import kotlinx.coroutines.flow.first
@@ -25,7 +26,7 @@ class TrmnlDeviceConfigDataStoreTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        moshi = Moshi.Builder().build()
+        moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
         deviceConfigDataStore = TrmnlDeviceConfigDataStore(context, moshi)
     }
 
@@ -460,5 +461,169 @@ class TrmnlDeviceConfigDataStoreTest {
             // Assert
             val savedConfig = deviceConfigDataStore.deviceConfigFlow.first()
             assertThat(savedConfig?.isMasterDevice).isFalse()
+        }
+
+    @Test
+    fun `deviceModelPreferencesFlow returns empty map when not saved`() =
+        runTest {
+            // Act
+            val preferences = deviceConfigDataStore.deviceModelPreferencesFlow.first()
+
+            // Assert
+            assertThat(preferences).isEmpty()
+        }
+
+    @Test
+    fun `saveDeviceModelForType stores model name for device type`() =
+        runTest {
+            // Arrange
+            val deviceType = TrmnlDeviceType.BYOD
+            val modelName = "amazon_kindle_2024"
+            val modelLabel = "Amazon Kindle 2024"
+
+            // Act
+            deviceConfigDataStore.saveDeviceModelForType(deviceType, modelName, modelLabel)
+
+            // Assert
+            val preferences = deviceConfigDataStore.deviceModelPreferencesFlow.first()
+            assertThat(preferences).containsKey("BYOD")
+            assertThat(preferences["BYOD"]?.name).isEqualTo("amazon_kindle_2024")
+            assertThat(preferences["BYOD"]?.label).isEqualTo("Amazon Kindle 2024")
+        }
+
+    @Test
+    fun `saveDeviceModelForType updates existing model for device type`() =
+        runTest {
+            // Arrange - Save initial model
+            deviceConfigDataStore.saveDeviceModelForType(
+                TrmnlDeviceType.BYOD,
+                "amazon_kindle_2024",
+                "Amazon Kindle 2024",
+            )
+
+            // Act - Update to different model
+            deviceConfigDataStore.saveDeviceModelForType(
+                TrmnlDeviceType.BYOD,
+                "boox_tab_ultra_c_pro",
+                "Boox Tab Ultra C Pro",
+            )
+
+            // Assert
+            val preferences = deviceConfigDataStore.deviceModelPreferencesFlow.first()
+            assertThat(preferences["BYOD"]?.name).isEqualTo("boox_tab_ultra_c_pro")
+            assertThat(preferences["BYOD"]?.label).isEqualTo("Boox Tab Ultra C Pro")
+            assertThat(preferences).hasSize(1)
+        }
+
+    @Test
+    fun `saveDeviceModelForType stores multiple device types independently`() =
+        runTest {
+            // Act - Save models for different device types
+            deviceConfigDataStore.saveDeviceModelForType(
+                TrmnlDeviceType.BYOD,
+                "amazon_kindle_2024",
+                "Amazon Kindle 2024",
+            )
+            deviceConfigDataStore.saveDeviceModelForType(
+                TrmnlDeviceType.BYOS,
+                "boox_tab_ultra_c_pro",
+                "Boox Tab Ultra C Pro",
+            )
+
+            // Assert
+            val preferences = deviceConfigDataStore.deviceModelPreferencesFlow.first()
+            assertThat(preferences["BYOD"]?.name).isEqualTo("amazon_kindle_2024")
+            assertThat(preferences["BYOD"]?.label).isEqualTo("Amazon Kindle 2024")
+            assertThat(preferences["BYOS"]?.name).isEqualTo("boox_tab_ultra_c_pro")
+            assertThat(preferences["BYOS"]?.label).isEqualTo("Boox Tab Ultra C Pro")
+            assertThat(preferences).hasSize(2)
+        }
+
+    @Test
+    fun `getDeviceModelForType returns null when no model saved`() =
+        runTest {
+            // Act
+            val modelSelection = deviceConfigDataStore.getDeviceModelForType(TrmnlDeviceType.BYOD)
+
+            // Assert
+            assertThat(modelSelection).isNull()
+        }
+
+    @Test
+    fun `getDeviceModelForType returns correct model selection when saved`() =
+        runTest {
+            // Arrange
+            val deviceType = TrmnlDeviceType.BYOD
+            val expectedModelName = "amazon_kindle_2024"
+            val expectedModelLabel = "Amazon Kindle 2024"
+            deviceConfigDataStore.saveDeviceModelForType(deviceType, expectedModelName, expectedModelLabel)
+
+            // Act
+            val modelSelection = deviceConfigDataStore.getDeviceModelForType(deviceType)
+
+            // Assert
+            assertThat(modelSelection).isNotNull()
+            assertThat(modelSelection?.name).isEqualTo(expectedModelName)
+            assertThat(modelSelection?.label).isEqualTo(expectedModelLabel)
+        }
+
+    @Test
+    fun `getDeviceModelForType returns null for device type without saved model`() =
+        runTest {
+            // Arrange - Save model for BYOD only
+            deviceConfigDataStore.saveDeviceModelForType(
+                TrmnlDeviceType.BYOD,
+                "amazon_kindle_2024",
+                "Amazon Kindle 2024",
+            )
+
+            // Act - Query for BYOS which has no saved model
+            val modelSelection = deviceConfigDataStore.getDeviceModelForType(TrmnlDeviceType.BYOS)
+
+            // Assert
+            assertThat(modelSelection).isNull()
+        }
+
+    @Test
+    fun `deviceModelPreferencesFlow emits updated map when model saved`() =
+        runTest {
+            // Arrange - Start with empty preferences
+            val initialPreferences = deviceConfigDataStore.deviceModelPreferencesFlow.first()
+            assertThat(initialPreferences).isEmpty()
+
+            // Act - Save a model
+            deviceConfigDataStore.saveDeviceModelForType(
+                TrmnlDeviceType.BYOD,
+                "amazon_kindle_2024",
+                "Amazon Kindle 2024",
+            )
+
+            // Assert - Flow emits updated map
+            val updatedPreferences = deviceConfigDataStore.deviceModelPreferencesFlow.first()
+            assertThat(updatedPreferences["BYOD"]?.name).isEqualTo("amazon_kindle_2024")
+            assertThat(updatedPreferences["BYOD"]?.label).isEqualTo("Amazon Kindle 2024")
+        }
+
+    @Test
+    fun `clearAll removes device model preferences`() =
+        runTest {
+            // Arrange - Save some device model preferences
+            deviceConfigDataStore.saveDeviceModelForType(
+                TrmnlDeviceType.BYOD,
+                "amazon_kindle_2024",
+                "Amazon Kindle 2024",
+            )
+            deviceConfigDataStore.saveDeviceModelForType(
+                TrmnlDeviceType.BYOS,
+                "boox_tab_ultra_c_pro",
+                "Boox Tab Ultra C Pro",
+            )
+
+            // Act
+            deviceConfigDataStore.clearAll()
+
+            // Assert
+            val preferences = deviceConfigDataStore.deviceModelPreferencesFlow.first()
+            assertThat(preferences).isEmpty()
         }
 }
