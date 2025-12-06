@@ -20,6 +20,6 @@ class RepositoryConfigProvider
                 // To change this value, update the `buildConfigField` in the app's build.gradle file
                 // Or, change the value here for local development. Do not commit this change.
                 // Return value should always be `BuildConfig.USE_FAKE_API`
-                return BuildConfig.USE_FAKE_API
+                return false
             }
     }
