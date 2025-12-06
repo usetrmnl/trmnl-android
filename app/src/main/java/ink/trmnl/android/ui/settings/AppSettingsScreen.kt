@@ -94,6 +94,7 @@ import ink.trmnl.android.data.RepositoryConfigProvider
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.data.TrmnlDisplayRepository
 import ink.trmnl.android.di.AppScope
+import ink.trmnl.android.model.DeviceModelSelection
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.ui.aboutapp.AppInfoScreen
@@ -150,6 +151,7 @@ data class AppSettingsScreen(
         val isDeviceSetupLoading: Boolean = false,
         val deviceSetupMessage: String? = null,
         val nextRefreshJobInfo: NextImageRefreshDisplayInfo? = null,
+        val savedDeviceModel: DeviceModelSelection? = null,
         val eventSink: (Event) -> Unit,
     ) : CircuitUiState
 
@@ -281,13 +283,22 @@ class AppSettingsPresenter
                 }
             }
 
+            // Load saved device model preference based on current device type
+            // Flow automatically updates when preferences change in DataStore
+            // Use a single collector that filters by current deviceType value instead of restarting on deviceType change
+            val savedDeviceModel by produceState<DeviceModelSelection?>(initialValue = null) {
+                deviceConfigStore.deviceModelPreferencesFlow.collect { preferences ->
+                    // Update value based on current deviceType (captured from closure)
+                    val newValue = preferences[deviceType.name]
+                    if (value != newValue) {
+                        value = newValue
+                    }
+                }
+            }
+
             // Create answering navigator for DeviceModelSelectorScreen
             val deviceModelNavigator =
                 rememberAnsweringNavigator<DeviceModelSelectorScreen.Result>(navigator) { result ->
-                    Timber.d("User selected device model: ${result.selectedModel}")
-                    Timber.d(
-                        "Device specs - Name: ${result.selectedModel.name}, Display: ${result.selectedModel.width}x${result.selectedModel.height}px",
-                    )
                     // Save the selected device model using the device type from the result
                     // This ensures we save to the correct device type even if the user
                     // switched device types while on the selector screen
@@ -298,7 +309,7 @@ class AppSettingsPresenter
                             modelLabel = result.selectedModel.label,
                         )
                         Timber.d(
-                            "Saved device model preference: ${result.deviceType.name} -> ${result.selectedModel.name} (${result.selectedModel.label})",
+                            "Saved device model preference: ${result.deviceType.name} -> ${result.selectedModel.name}",
                         )
                     }
                 }
@@ -336,6 +347,7 @@ class AppSettingsPresenter
                 isDeviceSetupLoading = isDeviceSetupLoading,
                 deviceSetupMessage = deviceSetupMessage,
                 nextRefreshJobInfo = nextRefreshInfo,
+                savedDeviceModel = savedDeviceModel,
                 eventSink = { event ->
                     when (event) {
                         is AppSettingsScreen.Event.AccessTokenChanged -> {
@@ -672,6 +684,7 @@ fun AppSettingsContent(
                 serverUrl = state.serverBaseUrl,
                 deviceId = state.deviceMacId,
                 isByodMasterDevice = state.isByodMasterDevice,
+                savedDeviceModel = state.savedDeviceModel,
                 onTypeSelected = { state.eventSink(AppSettingsScreen.Event.DeviceTypeChanged(it)) },
                 onServerUrlChanged = { state.eventSink(AppSettingsScreen.Event.ServerUrlChanged(it)) },
                 onDeviceIdChanged = { state.eventSink(AppSettingsScreen.Event.DeviceMacIdChanged(it)) },
@@ -889,6 +902,7 @@ private fun DeviceTypeSelectorConfig(
     serverUrl: String = "",
     deviceId: String = "",
     isByodMasterDevice: Boolean = true,
+    savedDeviceModel: DeviceModelSelection? = null,
     onTypeSelected: (TrmnlDeviceType) -> Unit,
     onServerUrlChanged: (String) -> Unit,
     onDeviceIdChanged: (String) -> Unit,
@@ -1033,6 +1047,36 @@ private fun DeviceTypeSelectorConfig(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                }
+
+                // Show saved device model if available
+                if (savedDeviceModel != null) {
+                    Card(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp, bottom = 8.dp),
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            ),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                        ) {
+                            Text(
+                                text = "Current Display Model",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                            Text(
+                                text = savedDeviceModel.label,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                        }
                     }
                 }
 

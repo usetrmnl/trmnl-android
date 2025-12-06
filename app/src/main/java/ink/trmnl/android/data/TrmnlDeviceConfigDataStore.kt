@@ -18,6 +18,7 @@ import ink.trmnl.android.model.DeviceModelSelection
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
@@ -113,26 +114,27 @@ class TrmnlDeviceConfigDataStore
          * Returns a map where keys are device type names (e.g., "BYOD") and values are DeviceModelSelection objects.
          */
         val deviceModelPreferencesFlow: Flow<Map<String, DeviceModelSelection>> =
-            context.deviceConfigStore.data.map { preferences ->
-                val json = preferences[DEVICE_MODEL_PREFERENCES_KEY]
-                if (json != null) {
-                    try {
-                        val type =
-                            com.squareup.moshi.Types.newParameterizedType(
-                                Map::class.java,
-                                String::class.java,
-                                DeviceModelSelection::class.java,
-                            )
-                        val adapter = moshi.adapter<Map<String, DeviceModelSelection>>(type)
-                        adapter.fromJson(json) ?: emptyMap()
-                    } catch (e: Exception) {
-                        Timber.tag(TAG).e(e, "Failed to parse device model preferences")
+            context.deviceConfigStore.data
+                .map { preferences ->
+                    val json = preferences[DEVICE_MODEL_PREFERENCES_KEY]
+                    if (json != null) {
+                        try {
+                            val type =
+                                com.squareup.moshi.Types.newParameterizedType(
+                                    Map::class.java,
+                                    String::class.java,
+                                    DeviceModelSelection::class.java,
+                                )
+                            val adapter = moshi.adapter<Map<String, DeviceModelSelection>>(type)
+                            adapter.fromJson(json) ?: emptyMap()
+                        } catch (e: Exception) {
+                            Timber.tag(TAG).e(e, "Failed to parse device model preferences")
+                            emptyMap()
+                        }
+                    } else {
                         emptyMap()
                     }
-                } else {
-                    emptyMap()
-                }
-            }
+                }.distinctUntilChanged()
 
         /**
          * Gets the complete device config as a Flow
