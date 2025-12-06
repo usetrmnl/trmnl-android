@@ -282,26 +282,30 @@ class AppSettingsPresenter
             }
 
             // Create answering navigator for DeviceModelSelectorScreen
+            // Use navigator as key to prevent recreating the callback on every recomposition
             val deviceModelNavigator =
-                rememberAnsweringNavigator<DeviceModelSelectorScreen.Result>(navigator) { result ->
-                    Timber.d("User selected device model: ${result.selectedModel}")
-                    Timber.d(
-                        "Device specs - Name: ${result.selectedModel.name}, Display: ${result.selectedModel.width}x${result.selectedModel.height}px",
-                    )
-                    // Save the selected device model using the device type from the result
-                    // This ensures we save to the correct device type even if the user
-                    // switched device types while on the selector screen
-                    scope.launch {
-                        deviceConfigStore.saveDeviceModelForType(
-                            deviceType = result.deviceType,
-                            modelName = result.selectedModel.name,
-                            modelLabel = result.selectedModel.label,
-                        )
+                rememberAnsweringNavigator<DeviceModelSelectorScreen.Result>(
+                    navigator = navigator,
+                    onResult = { result ->
+                        Timber.d("User selected device model: ${result.selectedModel}")
                         Timber.d(
-                            "Saved device model preference: ${result.deviceType.name} -> ${result.selectedModel.name} (${result.selectedModel.label})",
+                            "Device specs - Name: ${result.selectedModel.name}, Display: ${result.selectedModel.width}x${result.selectedModel.height}px",
                         )
-                    }
-                }
+                        // Save the selected device model using the device type from the result
+                        // This ensures we save to the correct device type even if the user
+                        // switched device types while on the selector screen
+                        scope.launch {
+                            deviceConfigStore.saveDeviceModelForType(
+                                deviceType = result.deviceType,
+                                modelName = result.selectedModel.name,
+                                modelLabel = result.selectedModel.label,
+                            )
+                            Timber.d(
+                                "Saved device model preference: ${result.deviceType.name} -> ${result.selectedModel.name} (${result.selectedModel.label})",
+                            )
+                        }
+                    },
+                )
 
             // Load saved token if available
             LaunchedEffect(Unit) {
