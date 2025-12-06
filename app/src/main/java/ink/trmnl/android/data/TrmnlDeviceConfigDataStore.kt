@@ -54,6 +54,7 @@ class TrmnlDeviceConfigDataStore
             private val CONFIG_JSON_KEY = stringPreferencesKey("config_json")
             private val DEVICE_MAC_ID_KEY = stringPreferencesKey("device_mac_id")
             private val IS_MASTER_DEVICE_KEY = stringPreferencesKey("is_master_device")
+            private val DEVICE_MODEL_PREFERENCES_KEY = stringPreferencesKey("device_model_preferences")
         }
 
         private val deviceTypeAdapter = moshi.adapter(TrmnlDeviceType::class.java)
@@ -104,6 +105,32 @@ class TrmnlDeviceConfigDataStore
         val deviceMacIdFlow: Flow<String?> =
             context.deviceConfigStore.data.map { preferences ->
                 preferences[DEVICE_MAC_ID_KEY]
+            }
+
+        /**
+         * Gets the device model preferences (map of device type to model name) as a Flow.
+         * Returns a map where keys are device type names (e.g., "BYOD") and values are model names (e.g., "amazon_kindle_2024").
+         */
+        val deviceModelPreferencesFlow: Flow<Map<String, String>> =
+            context.deviceConfigStore.data.map { preferences ->
+                val json = preferences[DEVICE_MODEL_PREFERENCES_KEY]
+                if (json != null) {
+                    try {
+                        val type =
+                            com.squareup.moshi.Types.newParameterizedType(
+                                Map::class.java,
+                                String::class.java,
+                                String::class.java,
+                            )
+                        val adapter = moshi.adapter<Map<String, String>>(type)
+                        adapter.fromJson(json) ?: emptyMap()
+                    } catch (e: Exception) {
+                        Timber.tag(TAG).e(e, "Failed to parse device model preferences")
+                        emptyMap()
+                    }
+                } else {
+                    emptyMap()
+                }
             }
 
         /**
@@ -230,6 +257,67 @@ class TrmnlDeviceConfigDataStore
                 }
             }
         }
+
+        /**
+         * Saves the selected device model for a specific device type.
+         *
+         * @param deviceType The device type (e.g., BYOD, BYOS)
+         * @param modelName The model name (e.g., "amazon_kindle_2024")
+         */
+        suspend fun saveDeviceModelForType(
+            deviceType: TrmnlDeviceType,
+            modelName: String,
+        ) {
+            try {
+                context.deviceConfigStore.edit { preferences ->
+                    // Get current map
+                    val currentJson = preferences[DEVICE_MODEL_PREFERENCES_KEY]
+                    val currentMap =
+                        if (currentJson != null) {
+                            try {
+                                val type =
+                                    com.squareup.moshi.Types.newParameterizedType(
+                                        Map::class.java,
+                                        String::class.java,
+                                        String::class.java,
+                                    )
+                                val adapter = moshi.adapter<Map<String, String>>(type)
+                                adapter.fromJson(currentJson)?.toMutableMap() ?: mutableMapOf()
+                            } catch (e: Exception) {
+                                Timber.tag(TAG).e(e, "Failed to parse existing device model preferences")
+                                mutableMapOf()
+                            }
+                        } else {
+                            mutableMapOf()
+                        }
+
+                    // Update the map with new value
+                    currentMap[deviceType.name] = modelName
+
+                    // Save back to preferences
+                    val type =
+                        com.squareup.moshi.Types.newParameterizedType(
+                            Map::class.java,
+                            String::class.java,
+                            String::class.java,
+                        )
+                    val adapter = moshi.adapter<Map<String, String>>(type)
+                    preferences[DEVICE_MODEL_PREFERENCES_KEY] = adapter.toJson(currentMap)
+
+                    Timber.tag(TAG).d("Saved device model preference: ${deviceType.name} -> $modelName")
+                }
+            } catch (e: Exception) {
+                Timber.tag(TAG).e(e, "Failed to save device model preference")
+            }
+        }
+
+        /**
+         * Gets the selected device model name for a specific device type.
+         *
+         * @param deviceType The device type to query
+         * @return The model name if set, null otherwise
+         */
+        suspend fun getDeviceModelForType(deviceType: TrmnlDeviceType): String? = deviceModelPreferencesFlow.first()[deviceType.name]
 
         /**
          * Checks if a token is already set

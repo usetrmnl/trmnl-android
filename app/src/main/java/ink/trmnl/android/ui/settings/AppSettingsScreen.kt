@@ -288,6 +288,14 @@ class AppSettingsPresenter
                     Timber.d(
                         "Device specs - Name: ${result.selectedModel.name}, Display: ${result.selectedModel.width}x${result.selectedModel.height}px",
                     )
+                    // Save the selected device model for the current device type
+                    scope.launch {
+                        deviceConfigStore.saveDeviceModelForType(
+                            deviceType = deviceType,
+                            modelName = result.selectedModel.name,
+                        )
+                        Timber.d("Saved device model preference: ${deviceType.name} -> ${result.selectedModel.name}")
+                    }
                 }
 
             // Load saved token if available
