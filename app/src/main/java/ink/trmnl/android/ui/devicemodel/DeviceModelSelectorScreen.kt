@@ -63,13 +63,9 @@ import kotlinx.parcelize.Parcelize
  * - View all available device models with their specifications
  * - Select a device model
  * - Return the selected model to the previous screen via PopResult
- *
- * @property serverBaseUrl The base URL of the server to fetch models from.
  */
 @Parcelize
-data class DeviceModelSelectorScreen(
-    val serverBaseUrl: String = TRMNL_API_SERVER_BASE_URL,
-) : Screen {
+data object DeviceModelSelectorScreen : Screen {
     /**
      * Represents the UI state for the [DeviceModelSelectorScreen].
      *
@@ -203,7 +199,7 @@ class DeviceModelSelectorPresenter
             onModelsLoaded: (List<SupportedDeviceModel>) -> Unit,
             onError: (String) -> Unit,
         ) {
-            val loadedModels = repository.getDeviceModels(screen.serverBaseUrl)
+            val loadedModels = repository.getDeviceModels(TRMNL_API_SERVER_BASE_URL)
             if (loadedModels.isEmpty()) {
                 onError("Failed to load device models. Please try again.")
             } else {
