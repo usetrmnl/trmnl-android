@@ -1431,3 +1431,49 @@ private fun PreviewFakeApiInfoBanner() {
         FakeApiInfoBanner()
     }
 }
+
+@Preview(name = "App Settings Content - BYOD Selected")
+@Composable
+private fun PreviewAppSettingsContentByod() {
+    TrmnlDisplayAppTheme {
+        AppSettingsContent(
+            state =
+                AppSettingsScreen.State(
+                    deviceType = TrmnlDeviceType.BYOD,
+                    serverBaseUrl = "https://usetrmnl.com",
+                    accessToken = "byod-access-token-here",
+                    deviceMacId = "",
+                    isByodMasterDevice = false,
+                    usesFakeApiData = false,
+                    isLoading = false,
+                    validationResult = null,
+                    nextRefreshJobInfo = null,
+                    savedDeviceModel = null,
+                    eventSink = {},
+                ),
+        )
+    }
+}
+
+@Preview(name = "App Settings Content - BYOS Selected")
+@Composable
+private fun PreviewAppSettingsContentByos() {
+    TrmnlDisplayAppTheme {
+        AppSettingsContent(
+            state =
+                AppSettingsScreen.State(
+                    deviceType = TrmnlDeviceType.BYOS,
+                    serverBaseUrl = "https://my-custom-server.com",
+                    accessToken = "byos-access-token-here",
+                    deviceMacId = "AA:BB:CC:DD:EE:FF",
+                    isByodMasterDevice = true,
+                    usesFakeApiData = false,
+                    isLoading = false,
+                    validationResult = null,
+                    nextRefreshJobInfo = null,
+                    savedDeviceModel = null,
+                    eventSink = {},
+                ),
+        )
+    }
+}
