@@ -41,6 +41,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -95,6 +96,7 @@ import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.ui.aboutapp.AppInfoScreen
+import ink.trmnl.android.ui.devicemodel.DeviceModelSelectorScreen
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.Failure
@@ -117,6 +119,7 @@ import ink.trmnl.android.work.TrmnlWorkScheduler
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
+import timber.log.Timber
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -233,6 +236,11 @@ data class AppSettingsScreen(
         data class SetupDevice(
             val deviceMacId: String,
         ) : Event()
+
+        /**
+         * Event triggered when the override display model button is clicked.
+         */
+        data object OverrideDisplayModelPressed : Event()
     }
 }
 
@@ -469,6 +477,16 @@ class AppSettingsPresenter
                             navigator.goTo(AppInfoScreen)
                         }
 
+                        AppSettingsScreen.Event.OverrideDisplayModelPressed -> {
+                            // Navigate to DeviceModelSelectorScreen
+                            // TODO: Result handling - In Circuit 0.27.1, capturing PopResult in the calling screen
+                            // requires accessing backstack state. For full result handling, upgrade to Circuit 0.31.0
+                            // which provides rememberAnsweringNavigator API. For now, the DeviceModelSelectorScreen
+                            // will pop with a result, but we don't capture it here.
+                            Timber.d("Navigating to DeviceModelSelectorScreen...")
+                            navigator.goTo(DeviceModelSelectorScreen)
+                        }
+
                         is AppSettingsScreen.Event.SetupDevice -> {
                             isDeviceSetupLoading = true
                             deviceSetupMessage = null
@@ -638,6 +656,7 @@ fun AppSettingsContent(
                 onServerUrlChanged = { state.eventSink(AppSettingsScreen.Event.ServerUrlChanged(it)) },
                 onDeviceIdChanged = { state.eventSink(AppSettingsScreen.Event.DeviceMacIdChanged(it)) },
                 onByodMasterDeviceChanged = { state.eventSink(AppSettingsScreen.Event.ByodMasterDeviceChanged(it)) },
+                onOverrideDisplayModelPressed = { state.eventSink(AppSettingsScreen.Event.OverrideDisplayModelPressed) },
                 isServerUrlError = state.validationResult is InvalidServerUrl,
                 serverUrlError = (state.validationResult as? InvalidServerUrl)?.message,
                 isDeviceMacIdError = state.validationResult is ValidationResult.InvalidDeviceMacId,
@@ -854,6 +873,7 @@ private fun DeviceTypeSelectorConfig(
     onServerUrlChanged: (String) -> Unit,
     onDeviceIdChanged: (String) -> Unit,
     onByodMasterDeviceChanged: (Boolean) -> Unit = {},
+    onOverrideDisplayModelPressed: () -> Unit = {},
     isServerUrlError: Boolean = false,
     serverUrlError: String? = null,
     isDeviceMacIdError: Boolean = false,
@@ -968,28 +988,39 @@ private fun DeviceTypeSelectorConfig(
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut(),
         ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Checkbox(
-                    checked = isByodMasterDevice,
-                    onCheckedChange = { onByodMasterDeviceChanged(it) },
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Act as master device (auto-advance playlist image)",
-                        style = MaterialTheme.typography.bodyMedium,
+            Column {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(
+                        checked = isByodMasterDevice,
+                        onCheckedChange = { onByodMasterDeviceChanged(it) },
                     )
-                    Text(
-                        text = "Uncheck if this device should mirror another BYOD device that automatically auto-advances playlist image",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Act as master device (auto-advance playlist image)",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text =
+                                "Uncheck if this device should mirror another BYOD device " +
+                                    "that automatically auto-advances playlist image",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                OutlinedButton(
+                    onClick = onOverrideDisplayModelPressed,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Override Display Model")
                 }
             }
         }
