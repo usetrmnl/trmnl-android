@@ -913,6 +913,19 @@ private fun DeviceTypeSelectorConfig(
     // Control device ID visibility
     var deviceIdVisible by remember { mutableStateOf(false) }
 
+    /**
+     * Device model choosing is disabled for now as it is not supported yet.
+     *
+     * See following references:
+     * - https://github.com/usetrmnl/trmnl-android/issues/229
+     * - https://github.com/usetrmnl/trmnl-android/issues/163
+     * - https://discord.com/channels/1281055965508141100/1331360842809348106/1446953346278625433
+     * - https://discord.com/channels/1281055965508141100/1331360842809348106/1446954432007766140
+     * - https://discord.com/channels/1281055965508141100/1331360842809348106/1446959843507306678
+     * - https://discord.com/channels/1281055965508141100/1331360842809348106/1446959897571889182
+     */
+    val shouldDisableDeviceModel = true
+
     Column(modifier = modifier.fillMaxWidth()) {
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             TrmnlDeviceType.entries.forEachIndexed { index, deviceType ->
@@ -1047,7 +1060,7 @@ private fun DeviceTypeSelectorConfig(
                 }
 
                 // Show saved device model if available
-                if (savedDeviceModel != null) {
+                if (!shouldDisableDeviceModel && savedDeviceModel != null) {
                     Card(
                         modifier =
                             Modifier
@@ -1076,11 +1089,13 @@ private fun DeviceTypeSelectorConfig(
                     }
                 }
 
-                OutlinedButton(
-                    onClick = onOverrideDisplayModelPressed,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Override Display Model")
+                if (!shouldDisableDeviceModel) {
+                    OutlinedButton(
+                        onClick = onOverrideDisplayModelPressed,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Override Display Model")
+                    }
                 }
             }
         }

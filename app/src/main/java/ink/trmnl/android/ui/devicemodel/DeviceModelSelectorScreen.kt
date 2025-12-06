@@ -64,6 +64,18 @@ import kotlinx.parcelize.Parcelize
  * - Select a device model
  * - Return the selected model to the previous screen via PopResult
  *
+ * ----
+ *
+ * ⚠️ NOTE: Device model choosing is disabled for now as it is not supported yet.
+ *
+ * See following references:
+ * - https://github.com/usetrmnl/trmnl-android/issues/229
+ * - https://github.com/usetrmnl/trmnl-android/issues/163
+ * - https://discord.com/channels/1281055965508141100/1331360842809348106/1446953346278625433
+ * - https://discord.com/channels/1281055965508141100/1331360842809348106/1446954432007766140
+ * - https://discord.com/channels/1281055965508141100/1331360842809348106/1446959843507306678
+ * - https://discord.com/channels/1281055965508141100/1331360842809348106/1446959897571889182
+ *
  * @property deviceType The device type this model selection is for (e.g., BYOD, BYOS)
  */
 @Parcelize
