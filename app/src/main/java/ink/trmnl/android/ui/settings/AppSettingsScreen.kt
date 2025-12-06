@@ -77,6 +77,7 @@ import androidx.compose.ui.unit.dp
 import androidx.work.WorkInfo
 import coil3.compose.AsyncImage
 import com.slack.circuit.codegen.annotations.CircuitInject
+import com.slack.circuit.foundation.rememberAnsweringNavigator
 import com.slack.circuit.runtime.CircuitUiEvent
 import com.slack.circuit.runtime.CircuitUiState
 import com.slack.circuit.runtime.Navigator
@@ -280,6 +281,15 @@ class AppSettingsPresenter
                 }
             }
 
+            // Create answering navigator for DeviceModelSelectorScreen
+            val deviceModelNavigator =
+                rememberAnsweringNavigator<DeviceModelSelectorScreen.Result>(navigator) { result ->
+                    Timber.d("User selected device model: ${result.selectedModel}")
+                    Timber.d(
+                        "Device specs - Name: ${result.selectedModel.name}, Display: ${result.selectedModel.width}x${result.selectedModel.height}px",
+                    )
+                }
+
             // Load saved token if available
             LaunchedEffect(Unit) {
                 deviceConfigStore.deviceConfigFlow.filterNotNull().collect {
@@ -478,13 +488,9 @@ class AppSettingsPresenter
                         }
 
                         AppSettingsScreen.Event.OverrideDisplayModelPressed -> {
-                            // Navigate to DeviceModelSelectorScreen
-                            // TODO: Result handling - In Circuit 0.27.1, capturing PopResult in the calling screen
-                            // requires accessing backstack state. For full result handling, upgrade to Circuit 0.31.0
-                            // which provides rememberAnsweringNavigator API. For now, the DeviceModelSelectorScreen
-                            // will pop with a result, but we don't capture it here.
+                            // Navigate to DeviceModelSelectorScreen using answering navigator
                             Timber.d("Navigating to DeviceModelSelectorScreen...")
-                            navigator.goTo(DeviceModelSelectorScreen)
+                            deviceModelNavigator.goTo(DeviceModelSelectorScreen)
                         }
 
                         is AppSettingsScreen.Event.SetupDevice -> {
