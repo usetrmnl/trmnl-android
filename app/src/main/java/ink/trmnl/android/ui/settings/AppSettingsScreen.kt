@@ -25,11 +25,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -96,6 +91,7 @@ import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.ui.aboutapp.AppInfoScreen
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
+import ink.trmnl.android.ui.icons.Icons
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.Failure
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.InvalidServerUrl

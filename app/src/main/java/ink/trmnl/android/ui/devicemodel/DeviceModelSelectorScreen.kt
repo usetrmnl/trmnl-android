@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,6 +50,7 @@ import ink.trmnl.android.data.AppConfig.TRMNL_API_SERVER_BASE_URL
 import ink.trmnl.android.data.TrmnlDisplayRepository
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.model.SupportedDeviceModel
+import ink.trmnl.android.ui.icons.Icons
 import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize

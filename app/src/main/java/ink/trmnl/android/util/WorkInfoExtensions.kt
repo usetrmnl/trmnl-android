@@ -1,16 +1,11 @@
 package ink.trmnl.android.util
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.work.WorkInfo
+import ink.trmnl.android.ui.icons.Icons
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -49,6 +44,7 @@ fun WorkInfo.State?.toColor(): Color =
         null -> MaterialTheme.colorScheme.onSurface
     }
 
+@Composable
 fun WorkInfo.State?.toIcon(): ImageVector =
     when (this) {
         WorkInfo.State.ENQUEUED -> Icons.Default.Refresh
