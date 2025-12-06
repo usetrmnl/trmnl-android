@@ -36,6 +36,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -71,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.work.WorkInfo
 import coil3.compose.AsyncImage
 import com.slack.circuit.codegen.annotations.CircuitInject
+import com.slack.circuit.foundation.rememberAnsweringNavigator
 import com.slack.circuit.runtime.CircuitUiEvent
 import com.slack.circuit.runtime.CircuitUiState
 import com.slack.circuit.runtime.Navigator
@@ -87,9 +89,11 @@ import ink.trmnl.android.data.RepositoryConfigProvider
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.data.TrmnlDisplayRepository
 import ink.trmnl.android.di.AppScope
+import ink.trmnl.android.model.DeviceModelSelection
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.ui.aboutapp.AppInfoScreen
+import ink.trmnl.android.ui.devicemodel.DeviceModelSelectorScreen
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
 import ink.trmnl.android.ui.icons.Icons
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult
@@ -113,6 +117,7 @@ import ink.trmnl.android.work.TrmnlWorkScheduler
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
+import timber.log.Timber
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -142,6 +147,7 @@ data class AppSettingsScreen(
         val isDeviceSetupLoading: Boolean = false,
         val deviceSetupMessage: String? = null,
         val nextRefreshJobInfo: NextImageRefreshDisplayInfo? = null,
+        val savedDeviceModel: DeviceModelSelection? = null,
         val eventSink: (Event) -> Unit,
     ) : CircuitUiState
 
@@ -229,6 +235,11 @@ data class AppSettingsScreen(
         data class SetupDevice(
             val deviceMacId: String,
         ) : Event()
+
+        /**
+         * Event triggered when the override display model button is clicked.
+         */
+        data object OverrideDisplayModelPressed : Event()
     }
 }
 
@@ -268,6 +279,37 @@ class AppSettingsPresenter
                 }
             }
 
+            // Load saved device model preference based on current device type
+            // Flow automatically updates when preferences change in DataStore
+            // Use a single collector that filters by current deviceType value instead of restarting on deviceType change
+            val savedDeviceModel by produceState<DeviceModelSelection?>(initialValue = null) {
+                deviceConfigStore.deviceModelPreferencesFlow.collect { preferences ->
+                    // Update value based on current deviceType (captured from closure)
+                    val newValue = preferences[deviceType.name]
+                    if (value != newValue) {
+                        value = newValue
+                    }
+                }
+            }
+
+            // Create answering navigator for DeviceModelSelectorScreen
+            val deviceModelNavigator =
+                rememberAnsweringNavigator<DeviceModelSelectorScreen.Result>(navigator) { result ->
+                    // Save the selected device model using the device type from the result
+                    // This ensures we save to the correct device type even if the user
+                    // switched device types while on the selector screen
+                    scope.launch {
+                        deviceConfigStore.saveDeviceModelForType(
+                            deviceType = result.deviceType,
+                            modelName = result.selectedModel.name,
+                            modelLabel = result.selectedModel.label,
+                        )
+                        Timber.d(
+                            "Saved device model preference: ${result.deviceType.name} -> ${result.selectedModel.name}",
+                        )
+                    }
+                }
+
             // Load saved token if available
             LaunchedEffect(Unit) {
                 deviceConfigStore.deviceConfigFlow.filterNotNull().collect {
@@ -301,6 +343,7 @@ class AppSettingsPresenter
                 isDeviceSetupLoading = isDeviceSetupLoading,
                 deviceSetupMessage = deviceSetupMessage,
                 nextRefreshJobInfo = nextRefreshInfo,
+                savedDeviceModel = savedDeviceModel,
                 eventSink = { event ->
                     when (event) {
                         is AppSettingsScreen.Event.AccessTokenChanged -> {
@@ -463,6 +506,13 @@ class AppSettingsPresenter
                         AppSettingsScreen.Event.AppInfoPressed -> {
                             // Navigate to AppInfoScreen
                             navigator.goTo(AppInfoScreen)
+                        }
+
+                        AppSettingsScreen.Event.OverrideDisplayModelPressed -> {
+                            // Navigate to DeviceModelSelectorScreen using answering navigator
+                            // Pass the current device type so the screen knows which type this selection is for
+                            Timber.d("Navigating to DeviceModelSelectorScreen for device type: ${deviceType.name}")
+                            deviceModelNavigator.goTo(DeviceModelSelectorScreen(deviceType))
                         }
 
                         is AppSettingsScreen.Event.SetupDevice -> {
@@ -630,10 +680,12 @@ fun AppSettingsContent(
                 serverUrl = state.serverBaseUrl,
                 deviceId = state.deviceMacId,
                 isByodMasterDevice = state.isByodMasterDevice,
+                savedDeviceModel = state.savedDeviceModel,
                 onTypeSelected = { state.eventSink(AppSettingsScreen.Event.DeviceTypeChanged(it)) },
                 onServerUrlChanged = { state.eventSink(AppSettingsScreen.Event.ServerUrlChanged(it)) },
                 onDeviceIdChanged = { state.eventSink(AppSettingsScreen.Event.DeviceMacIdChanged(it)) },
                 onByodMasterDeviceChanged = { state.eventSink(AppSettingsScreen.Event.ByodMasterDeviceChanged(it)) },
+                onOverrideDisplayModelPressed = { state.eventSink(AppSettingsScreen.Event.OverrideDisplayModelPressed) },
                 isServerUrlError = state.validationResult is InvalidServerUrl,
                 serverUrlError = (state.validationResult as? InvalidServerUrl)?.message,
                 isDeviceMacIdError = state.validationResult is ValidationResult.InvalidDeviceMacId,
@@ -846,10 +898,12 @@ private fun DeviceTypeSelectorConfig(
     serverUrl: String = "",
     deviceId: String = "",
     isByodMasterDevice: Boolean = true,
+    savedDeviceModel: DeviceModelSelection? = null,
     onTypeSelected: (TrmnlDeviceType) -> Unit,
     onServerUrlChanged: (String) -> Unit,
     onDeviceIdChanged: (String) -> Unit,
     onByodMasterDeviceChanged: (Boolean) -> Unit = {},
+    onOverrideDisplayModelPressed: () -> Unit = {},
     isServerUrlError: Boolean = false,
     serverUrlError: String? = null,
     isDeviceMacIdError: Boolean = false,
@@ -964,28 +1018,69 @@ private fun DeviceTypeSelectorConfig(
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut(),
         ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Checkbox(
-                    checked = isByodMasterDevice,
-                    onCheckedChange = { onByodMasterDeviceChanged(it) },
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Act as master device (auto-advance playlist image)",
-                        style = MaterialTheme.typography.bodyMedium,
+            Column {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(
+                        checked = isByodMasterDevice,
+                        onCheckedChange = { onByodMasterDeviceChanged(it) },
                     )
-                    Text(
-                        text = "Uncheck if this device should mirror another BYOD device that automatically auto-advances playlist image",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Act as master device (auto-advance playlist image)",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text =
+                                "Uncheck if this device should mirror another BYOD device " +
+                                    "that automatically auto-advances playlist image",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                // Show saved device model if available
+                if (savedDeviceModel != null) {
+                    Card(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp, bottom = 8.dp),
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            ),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                        ) {
+                            Text(
+                                text = "Current Display Model",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                            Text(
+                                text = savedDeviceModel.label,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                        }
+                    }
+                }
+
+                OutlinedButton(
+                    onClick = onOverrideDisplayModelPressed,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Override Display Model")
                 }
             }
         }

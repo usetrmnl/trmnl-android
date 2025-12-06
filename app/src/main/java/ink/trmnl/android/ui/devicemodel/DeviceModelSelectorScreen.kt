@@ -50,6 +50,7 @@ import ink.trmnl.android.data.AppConfig.TRMNL_API_SERVER_BASE_URL
 import ink.trmnl.android.data.TrmnlDisplayRepository
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.model.SupportedDeviceModel
+import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.ui.icons.Icons
 import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
 import kotlinx.coroutines.launch
@@ -62,9 +63,13 @@ import kotlinx.parcelize.Parcelize
  * - View all available device models with their specifications
  * - Select a device model
  * - Return the selected model to the previous screen via PopResult
+ *
+ * @property deviceType The device type this model selection is for (e.g., BYOD, BYOS)
  */
 @Parcelize
-data object DeviceModelSelectorScreen : Screen {
+data class DeviceModelSelectorScreen(
+    val deviceType: TrmnlDeviceType,
+) : Screen {
     /**
      * Represents the UI state for the [DeviceModelSelectorScreen].
      *
@@ -111,10 +116,12 @@ data object DeviceModelSelectorScreen : Screen {
      * using Circuit's PopResult mechanism.
      *
      * @property selectedModel The device model that was selected by the user
+     * @property deviceType The device type this model selection was for
      */
     @Parcelize
     data class Result(
         val selectedModel: SupportedDeviceModel,
+        val deviceType: TrmnlDeviceType,
     ) : PopResult
 }
 
@@ -126,6 +133,7 @@ class DeviceModelSelectorPresenter
     @AssistedInject
     constructor(
         @Assisted private val navigator: Navigator,
+        @Assisted private val screen: DeviceModelSelectorScreen,
         private val repository: TrmnlDisplayRepository,
     ) : Presenter<DeviceModelSelectorScreen.State> {
         /**
@@ -168,7 +176,13 @@ class DeviceModelSelectorPresenter
                         }
                         is DeviceModelSelectorScreen.Event.ModelSelected -> {
                             // Pop with result to return the selected model to the previous screen
-                            navigator.pop(result = DeviceModelSelectorScreen.Result(event.model))
+                            navigator.pop(
+                                result =
+                                    DeviceModelSelectorScreen.Result(
+                                        selectedModel = event.model,
+                                        deviceType = screen.deviceType,
+                                    ),
+                            )
                         }
                         is DeviceModelSelectorScreen.Event.RetryLoad -> {
                             scope.launch {
@@ -211,7 +225,10 @@ class DeviceModelSelectorPresenter
         @CircuitInject(DeviceModelSelectorScreen::class, AppScope::class)
         @AssistedFactory
         fun interface Factory {
-            fun create(navigator: Navigator): DeviceModelSelectorPresenter
+            fun create(
+                navigator: Navigator,
+                screen: DeviceModelSelectorScreen,
+            ): DeviceModelSelectorPresenter
         }
     }
 
