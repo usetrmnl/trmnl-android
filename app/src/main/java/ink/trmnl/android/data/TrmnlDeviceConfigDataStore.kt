@@ -62,6 +62,16 @@ class TrmnlDeviceConfigDataStore
         private val deviceTypeAdapter = moshi.adapter(TrmnlDeviceType::class.java)
         private val deviceConfigAdapter = moshi.adapter(TrmnlDeviceConfig::class.java)
 
+        // Moshi adapter for device model preferences map
+        private val deviceModelPreferencesType =
+            com.squareup.moshi.Types.newParameterizedType(
+                Map::class.java,
+                String::class.java,
+                DeviceModelSelection::class.java,
+            )
+        private val deviceModelPreferencesAdapter =
+            moshi.adapter<Map<String, DeviceModelSelection>>(deviceModelPreferencesType)
+
         /**
          * Gets the device type as a Flow
          */
@@ -119,14 +129,7 @@ class TrmnlDeviceConfigDataStore
                     val json = preferences[DEVICE_MODEL_PREFERENCES_KEY]
                     if (json != null) {
                         try {
-                            val type =
-                                com.squareup.moshi.Types.newParameterizedType(
-                                    Map::class.java,
-                                    String::class.java,
-                                    DeviceModelSelection::class.java,
-                                )
-                            val adapter = moshi.adapter<Map<String, DeviceModelSelection>>(type)
-                            adapter.fromJson(json) ?: emptyMap()
+                            deviceModelPreferencesAdapter.fromJson(json) ?: emptyMap()
                         } catch (e: Exception) {
                             Timber.tag(TAG).e(e, "Failed to parse device model preferences")
                             emptyMap()
@@ -280,14 +283,7 @@ class TrmnlDeviceConfigDataStore
                     val currentMap =
                         if (currentJson != null) {
                             try {
-                                val type =
-                                    com.squareup.moshi.Types.newParameterizedType(
-                                        Map::class.java,
-                                        String::class.java,
-                                        DeviceModelSelection::class.java,
-                                    )
-                                val adapter = moshi.adapter<Map<String, DeviceModelSelection>>(type)
-                                adapter.fromJson(currentJson)?.toMutableMap() ?: mutableMapOf()
+                                deviceModelPreferencesAdapter.fromJson(currentJson)?.toMutableMap() ?: mutableMapOf()
                             } catch (e: Exception) {
                                 Timber.tag(TAG).e(e, "Failed to parse existing device model preferences")
                                 mutableMapOf()
@@ -300,14 +296,7 @@ class TrmnlDeviceConfigDataStore
                     currentMap[deviceType.name] = DeviceModelSelection(modelName, modelLabel)
 
                     // Save back to preferences
-                    val type =
-                        com.squareup.moshi.Types.newParameterizedType(
-                            Map::class.java,
-                            String::class.java,
-                            DeviceModelSelection::class.java,
-                        )
-                    val adapter = moshi.adapter<Map<String, DeviceModelSelection>>(type)
-                    preferences[DEVICE_MODEL_PREFERENCES_KEY] = adapter.toJson(currentMap)
+                    preferences[DEVICE_MODEL_PREFERENCES_KEY] = deviceModelPreferencesAdapter.toJson(currentMap)
 
                     Timber.tag(TAG).d("Saved device model preference: ${deviceType.name} -> $modelName ($modelLabel)")
                 }
