@@ -126,7 +126,6 @@ data object DeviceModelSelectorScreen : Screen {
 class DeviceModelSelectorPresenter
     @AssistedInject
     constructor(
-        @Assisted private val screen: DeviceModelSelectorScreen,
         @Assisted private val navigator: Navigator,
         private val repository: TrmnlDisplayRepository,
     ) : Presenter<DeviceModelSelectorScreen.State> {
@@ -213,10 +212,7 @@ class DeviceModelSelectorPresenter
         @CircuitInject(DeviceModelSelectorScreen::class, AppScope::class)
         @AssistedFactory
         fun interface Factory {
-            fun create(
-                screen: DeviceModelSelectorScreen,
-                navigator: Navigator,
-            ): DeviceModelSelectorPresenter
+            fun create(navigator: Navigator): DeviceModelSelectorPresenter
         }
     }
 
