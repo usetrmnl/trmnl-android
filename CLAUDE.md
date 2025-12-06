@@ -216,6 +216,25 @@ The project uses optimized Gradle settings based on best practices from the [Now
 - Check: `./gradlew lintKotlin` (no modifications)
 - Only customization: Allow PascalCase for `@Composable` functions
 
+## Icons & Vector Drawables
+
+**Custom Icons Class:** `ink.trmnl.android.ui.icons.Icons` replaces deprecated `androidx.compose.material.icons`
+
+- **Location:** `app/src/main/java/ink/trmnl/android/ui/icons/Icons.kt`
+- **Structure:** Nested objects matching Material Icons API
+  - `Icons.Default.*` - Filled icons (CheckCircle, Clear, DateRange, PlayArrow, Refresh, Settings, Share, Warning)
+  - `Icons.Outlined.*` - Outlined variants (Info, Warning)
+  - `Icons.AutoMirrored.Filled.*` - Auto-mirrored for RTL (ArrowBack, ArrowForward, List)
+
+**Adding New Icons:**
+1. Download from [Google Fonts Material Symbols](https://fonts.google.com/icons)
+2. Convert to Android Vector Drawable (use Vector Asset Studio in Android Studio)
+3. Save to `app/src/main/res/drawable/ic_[name]_[size]dp.xml`
+4. Expose in `Icons.kt` with `@Composable get() = ImageVector.vectorResource(id = R.drawable.ic_name)`
+5. Place in appropriate category (Default/Outlined/AutoMirrored)
+
+**Never use:** `androidx.compose.material.icons.Icons` (deprecated, issue #226)
+
 ## Testing
 
 - Unit tests: `app/src/test/` (Robolectric 4.14.1, MockK 1.14.2, Truth 1.4.4)

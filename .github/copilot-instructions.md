@@ -170,6 +170,17 @@ See `RELEASE_CHECKLIST.md` for complete release process.
 - **Always run:** `./gradlew formatKotlin` before committing
 - **Check only:** `./gradlew lintKotlin` (doesn't modify files)
 
+## Icons & Vector Drawables
+
+- **Custom Icons Class:** `ink.trmnl.android.ui.icons.Icons` (replaces deprecated `androidx.compose.material.icons`)
+- **Adding New Icons:**
+  1. Download icon from [Material Symbols](https://fonts.google.com/icons)
+  2. Convert to Android Vector Drawable (use Vector Asset Studio in Android Studio)
+  3. Add drawable to `app/src/main/res/drawable/`
+  4. Expose via `Icons` class with appropriate category (Default, Outlined, AutoMirrored)
+- **Usage:** `Icons.Default.Settings`, `Icons.Outlined.Warning`, `Icons.AutoMirrored.Filled.ArrowBack`
+- **Never use:** `androidx.compose.material.icons.Icons` (deprecated package)
+
 ## Testing
 
 - **Unit Tests:** `app/src/test/` (Robolectric, MockK, Truth assertions)
