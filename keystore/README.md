@@ -14,7 +14,7 @@ signing the app during development.
 
 ## Production Keystore
 
-The production keystore (`trmnl-app-release.keystore`) is used for all release builds and is stored as a base64-encoded secret in GitHub Actions. The keystore is decoded during CI/CD builds.
+The production keystore (`trmnl-app-release.keystore`) is used for all release builds and is stored as a base64-encoded secret in GitHub Actions. The keystore is decoded during CI/CD builds. 📚 See [`RELEASE_CHECKLIST.md`](../RELEASE_CHECKLIST.md) for release process.
 
 **Note:** This project uses only build types (debug/release), not product flavors.
 
