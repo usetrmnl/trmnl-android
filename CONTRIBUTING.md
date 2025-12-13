@@ -115,6 +115,11 @@ Thank you for contributing to TRMNL App!
 ## TRMNL App Image Loading Flow
 Here is a generated sequence diagram illustrating the flow of image loading in the TRMNL application.
 
+<img src="project-resources/diagrams/trmnl-android-sequence-diagram.png" alt="TRMNL Android Image Loading Sequence Diagram" />
+
+<details>
+<summary>Click to expand the mermaid diagram</summary>
+
 ```mermaid
 sequenceDiagram
     participant WorkManager
@@ -173,6 +178,9 @@ sequenceDiagram
         TrmnlMirrorDisplayScreen->>TrmnlMirrorDisplayScreen: Display error message
     end
 ```
+
+</details>
+
 
 ### 📖 Flow Explanation
 
