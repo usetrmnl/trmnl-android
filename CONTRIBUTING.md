@@ -117,89 +117,60 @@ Here is a generated sequence diagram illustrating the flow of image loading in t
 
 ```mermaid
 sequenceDiagram
-    participant WorkManager as 🔄 WorkManager
-    participant Worker as 👷 TrmnlImageRefreshWorker
-    participant Repo as 💾 TrmnlDisplayRepository
-    participant Activity as 📱 MainActivity
-    participant Manager as 🎯 TrmnlImageUpdateManager
-    participant Screen as 🖼️ TrmnlMirrorDisplayScreen
-    participant Image as 🎨 AsyncImage
+    participant WorkManager
+    participant TrmnlImageRefreshWorker
+    participant TrmnlDisplayRepository
+    participant MainActivity
+    participant TrmnlImageUpdateManager
+    participant TrmnlMirrorDisplayScreen
+    participant AsyncImage
 
     Note over WorkManager: Scheduled or one-time work
-    rect rgb(200, 230, 255)
-        Note over WorkManager,Repo: Background Work Execution Phase
-        WorkManager->>Worker: Start work (periodic/one-time)
-        activate Worker
+
+    WorkManager->>TrmnlImageRefreshWorker: Start work (periodic/one-time)
+    
+    TrmnlImageRefreshWorker->>TrmnlDisplayRepository: Get display data
+    TrmnlDisplayRepository-->>TrmnlImageRefreshWorker: Return image URL & metadata
+    
+    alt Success
+        TrmnlImageRefreshWorker-->>WorkManager: Return success with imageUrl in output data
         
-        Worker->>Repo: Get display data
-        activate Repo
-        Repo-->>Worker: Return image URL & metadata
-        deactivate Repo
+        alt Periodic Work
+            Note over TrmnlImageRefreshWorker: Workaround for periodic work observer issue
+            TrmnlImageRefreshWorker->>TrmnlImageUpdateManager: updateImage(imageUrl, refreshInterval)
+        end
+    else Failure
+        TrmnlImageRefreshWorker-->>WorkManager: Return failure with error message
     end
     
-    rect rgb(220, 255, 235)
-        Note over Worker,Manager: Work Result Processing Phase
-        alt Success
-            Worker-->>WorkManager: Return success with imageUrl in output data
-            
-            alt Periodic Work
-                Note over Worker: Workaround for periodic work observer issue
-                Worker->>Manager: updateImage(imageUrl, refreshInterval)
-                activate Manager
-                deactivate Manager
-            end
-        else Failure
-            Worker-->>WorkManager: Return failure with error message
-        end
-        deactivate Worker
+    WorkManager-->>MainActivity: Notify work completed via WorkInfo observer
+
+    alt Success (One-time work)
+        MainActivity->>TrmnlImageUpdateManager: updateImage(imageUrl)
+    else Failure
+        MainActivity->>TrmnlImageUpdateManager: updateImage("", errorMessage)
     end
 
-    rect rgb(255, 235, 210)
-        Note over WorkManager,Manager: MainActivity Observer Phase
-        WorkManager-->>Activity: Notify work completed via WorkInfo observer
-        activate Activity
+    Note right of TrmnlImageUpdateManager: Notifies via imageUpdateFlow
 
-        alt Success (One-time work)
-            Activity->>Manager: updateImage(imageUrl)
-            activate Manager
-            deactivate Manager
-        else Failure
-            Activity->>Manager: updateImage("", errorMessage)
-            activate Manager
-            deactivate Manager
-        end
-        deactivate Activity
-    end
-
-    rect rgb(255, 220, 235)
-        Note over Manager,Screen: UI Update & Image Loading Phase
-        Note right of Manager: Notifies via imageUpdateFlow
-
-        Manager-->>Screen: Emit new image metadata via Flow
-        activate Screen
+    TrmnlImageUpdateManager-->>TrmnlMirrorDisplayScreen: Emit new image metadata
+    
+    alt Success
+        TrmnlMirrorDisplayScreen->>AsyncImage: Load image from URL
         
-        alt Success
-            Screen->>Image: Load image from URL
-            activate Image
-            
-            alt Image Loads Successfully
-                Image-->>Screen: Image displayed
-                Note over Screen: ✅ Display complete
-            else Image Load Failure (HTTP 403)
-                Image-->>Screen: onError callback triggered
-                deactivate Image
-                Screen->>Screen: eventSink(RefreshCurrentPlaylistItemRequested)
-                Note over Screen: 🔄 Trigger refresh for fresh URL
-            else Image Load Failure (Other errors)
-                Image-->>Screen: onError callback triggered
-                Screen->>Screen: eventSink(ImageLoadingError)
-                Note over Screen: ❌ Display error UI
-            end
-        else Failure
-            Screen->>Screen: Display error message
-            Note over Screen: ⚠️ Show error state
+        alt Image Loads Successfully
+            AsyncImage-->>TrmnlMirrorDisplayScreen: Image displayed
+        else Image Load Failure (HTTP 403 - Expired URL)
+            AsyncImage-->>TrmnlMirrorDisplayScreen: onError callback triggered
+            TrmnlMirrorDisplayScreen->>TrmnlMirrorDisplayScreen: eventSink(RefreshCurrentPlaylistItemRequested)
+            Note over TrmnlMirrorDisplayScreen: Trigger refresh for fresh URL
+        else Image Load Failure (Other errors)
+            AsyncImage-->>TrmnlMirrorDisplayScreen: onError callback triggered
+            TrmnlMirrorDisplayScreen->>TrmnlMirrorDisplayScreen: eventSink(ImageLoadingError)
+            Note over TrmnlMirrorDisplayScreen: Display error UI
         end
-        deactivate Screen
+    else Failure
+        TrmnlMirrorDisplayScreen->>TrmnlMirrorDisplayScreen: Display error message
     end
 ```
 
