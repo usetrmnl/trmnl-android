@@ -126,7 +126,7 @@ sequenceDiagram
     participant Image as 🎨 AsyncImage
 
     Note over WorkManager: Scheduled or one-time work
-    rect rgb(240, 248, 255)
+    rect rgb(200, 230, 255)
         Note over WorkManager,Repo: Background Work Execution Phase
         WorkManager->>Worker: Start work (periodic/one-time)
         activate Worker
@@ -137,7 +137,7 @@ sequenceDiagram
         deactivate Repo
     end
     
-    rect rgb(245, 255, 250)
+    rect rgb(220, 255, 235)
         Note over Worker,Manager: Work Result Processing Phase
         alt Success
             Worker-->>WorkManager: Return success with imageUrl in output data
@@ -154,7 +154,7 @@ sequenceDiagram
         deactivate Worker
     end
 
-    rect rgb(255, 250, 240)
+    rect rgb(255, 235, 210)
         Note over WorkManager,Manager: MainActivity Observer Phase
         WorkManager-->>Activity: Notify work completed via WorkInfo observer
         activate Activity
@@ -171,7 +171,7 @@ sequenceDiagram
         deactivate Activity
     end
 
-    rect rgb(255, 240, 245)
+    rect rgb(255, 220, 235)
         Note over Manager,Screen: UI Update & Image Loading Phase
         Note right of Manager: Notifies via imageUpdateFlow
 
