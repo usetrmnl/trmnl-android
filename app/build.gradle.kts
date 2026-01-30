@@ -218,3 +218,83 @@ ksp {
 tasks.withType<Test> {
     jvmArgs("-XX:+EnableDynamicAgentLoading")
 }
+
+/**
+ * Validation task to ensure USE_FAKE_API is correctly configured for release builds.
+ * This task will fail the build if:
+ * 1. Release build type has USE_FAKE_API set to anything other than "false"
+ * 2. RepositoryConfigProvider doesn't return `BuildConfig.USE_FAKE_API`
+ * 
+ * Run manually: ./gradlew validateUseFakeApiConfig
+ * Automatically runs before: assembleRelease, bundleRelease
+ */
+val validateUseFakeApiConfig = tasks.register("validateUseFakeApiConfig") {
+    group = "verification"
+    description = "Validates that USE_FAKE_API is correctly configured for release builds"
+    
+    // Capture file paths at configuration time to avoid configuration cache issues
+    val buildGradleFile = project.file("build.gradle.kts")
+    val repositoryConfigFile = project.file("src/main/java/ink/trmnl/android/data/RepositoryConfigProvider.kt")
+    
+    doLast {
+        println("🔍 Validating USE_FAKE_API configuration...")
+        
+        // Check 1: Validate build.gradle.kts release configuration
+        val buildGradleContent = buildGradleFile.readText()
+        
+        // Find the release block and check USE_FAKE_API value
+        val releaseBuildPattern = Regex(
+            """release\s*\{[^}]*buildConfigField\s*\(\s*"Boolean"\s*,\s*"USE_FAKE_API"\s*,\s*"false"\s*\)""",
+            RegexOption.DOT_MATCHES_ALL
+        )
+        
+        if (!releaseBuildPattern.containsMatchIn(buildGradleContent)) {
+            throw GradleException(
+                """
+                ❌ BUILD VALIDATION FAILED!
+                
+                Release build type MUST have USE_FAKE_API set to "false"
+                Expected: buildConfigField("Boolean", "USE_FAKE_API", "false")
+                
+                Location: app/build.gradle.kts (release buildType)
+                """.trimIndent()
+            )
+        }
+        
+        // Check 2: Validate RepositoryConfigProvider.kt
+        if (repositoryConfigFile.exists()) {
+            val repositoryConfigContent = repositoryConfigFile.readText()
+            
+            // Check that shouldUseFakeData returns BuildConfig.USE_FAKE_API
+            val correctReturnPattern = Regex(
+                """val\s+shouldUseFakeData\s*:\s*Boolean[^}]*return\s+BuildConfig\.USE_FAKE_API""",
+                RegexOption.DOT_MATCHES_ALL
+            )
+            
+            if (!correctReturnPattern.containsMatchIn(repositoryConfigContent)) {
+                throw GradleException(
+                    """
+                    ❌ BUILD VALIDATION FAILED!
+                    
+                    RepositoryConfigProvider.shouldUseFakeData MUST return BuildConfig.USE_FAKE_API
+                    Expected: return BuildConfig.USE_FAKE_API
+                    
+                    Location: app/src/main/java/ink/trmnl/android/data/RepositoryConfigProvider.kt
+                    
+                    Do NOT hardcode or override this value in committed code!
+                    """.trimIndent()
+                )
+            }
+        } else {
+            println("⚠️ RepositoryConfigProvider.kt not found, skipping validation")
+        }
+        
+        println("✅ USE_FAKE_API configuration is valid")
+    }
+}
+
+// Automatically run validation before release builds (after Android tasks are registered)
+afterEvaluate {
+    tasks.findByName("assembleRelease")?.dependsOn(validateUseFakeApiConfig)
+    tasks.findByName("bundleRelease")?.dependsOn(validateUseFakeApiConfig)
+}

@@ -53,6 +53,9 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/trmnl-app-release.keystore
       
+      - name: Validate USE_FAKE_API configuration
+        run: ./gradlew validateUseFakeApiConfig
+      
       - name: Build Release APK and AAB
         run: ./gradlew assembleRelease bundleRelease
         env:
