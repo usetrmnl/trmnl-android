@@ -1,0 +1,15 @@
+{
+  "data": {
+    "id": 456,
+    "name": "Test Device",
+    "friendly_id": "TEST-456",
+    "mac_address": "AA:BB:CC:DD:EE:FF",
+    "battery_voltage": null,
+    "rssi": null,
+    "sleep_mode_enabled": null,
+    "sleep_start_time": null,
+    "sleep_end_time": null,
+    "percent_charged": 100.0,
+    "wifi_strength": 100.0
+  }
+}
