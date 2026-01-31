@@ -33,7 +33,6 @@ data class TrmnlUserResponse(
  * @property timeZone The user's timezone in human-readable format (e.g., "Eastern Time (US & Canada)")
  * @property timeZoneIana The user's timezone in IANA format (e.g., "America/New_York")
  * @property utcOffset The user's UTC offset in seconds
- * @property apiKey The user's API key
  */
 @JsonClass(generateAdapter = true)
 data class TrmnlUser(
@@ -55,6 +54,4 @@ data class TrmnlUser(
     val timeZoneIana: String,
     @Json(name = "utc_offset")
     val utcOffset: Int,
-    @Json(name = "api_key")
-    val apiKey: String,
 )

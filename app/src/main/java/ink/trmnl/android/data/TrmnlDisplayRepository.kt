@@ -346,7 +346,6 @@ class TrmnlDisplayRepository
                         timeZone = "Eastern Time (US & Canada)",
                         timeZoneIana = "America/New_York",
                         utcOffset = -14400,
-                        apiKey = "user_test123",
                     ),
                 )
             }
