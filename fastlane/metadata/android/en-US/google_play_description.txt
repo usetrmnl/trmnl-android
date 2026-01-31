@@ -102,13 +102,13 @@ TRMNL is now officially available! Transform your Android device into a smart di
 📱 Requirements:
 • TRMNL device with developer edition, BYOD subscription, or BYOS installation
 
-Learn more at https://usetrmnl.com
+Learn more at https://trmnl.com
 
 
 🎉 Version 2.1.0 - Reliability & Performance Update
 
 🐛 Bug Fixes:
-• Fixed API connectivity with updated usetrmnl.com domain
+• Fixed API connectivity with updated trmnl.com domain
 • Fixed HTTP 429 rate limit handling with smart retry logic
 • Fixed playlist auto-advance for proper content cycling
 • Added confirmation dialog to prevent accidental log deletion
