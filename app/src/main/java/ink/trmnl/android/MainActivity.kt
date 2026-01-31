@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -50,7 +51,19 @@ class MainActivity
     ) : ComponentActivity() {
         @OptIn(ExperimentalSharedTransitionApi::class)
         override fun onCreate(savedInstanceState: Bundle?) {
-            enableEdgeToEdge()
+            // Enable edge-to-edge with transparent system bars that adapt to dark/light content
+            enableEdgeToEdge(
+                statusBarStyle =
+                    SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT,
+                    ),
+                navigationBarStyle =
+                    SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT,
+                    ),
+            )
             super.onCreate(savedInstanceState)
 
             // Setup listener for TRMNL display image updates
