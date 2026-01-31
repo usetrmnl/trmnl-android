@@ -92,7 +92,7 @@ interface TrmnlUserApiService {
      *
      * **Authentication:** Requires Bearer token with user-level Account API key
      *
-     * @param fullApiUrl The complete API URL to call (e.g., "https://usetrmnl.com/api/devices/1")
+     * @param fullApiUrl The complete API URL to call (e.g., "https://trmnl.com/api/devices/1")
      * @param accessToken The bearer authentication token (format: "Bearer your_api_key")
      * @param updateRequest The device update request containing the fields to update
      * @return An [ApiResult] containing [TrmnlDeviceResponse] with the updated device data

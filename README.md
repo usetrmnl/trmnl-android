@@ -55,8 +55,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on how to get started an
 ---
 
 ## Related References 📖
-* https://usetrmnl.com/
-* https://usetrmnl.com/integrations
+* https://trmnl.com/
+* https://trmnl.com/integrations
 * https://github.com/usetrmnl/
 
 
