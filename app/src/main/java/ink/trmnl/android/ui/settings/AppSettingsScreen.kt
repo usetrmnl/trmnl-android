@@ -817,7 +817,7 @@ fun AppSettingsContent(
                             ),
                         supportingText = {
                             Text(
-                                "Optional: Required for device management features like battery reporting. Get this from your TRMNL user account settings.",
+                                "Optional: This token is needed for device management features like battery reporting. Get this from your TRMNL user account settings.",
                             )
                         },
                         trailingIcon = {
