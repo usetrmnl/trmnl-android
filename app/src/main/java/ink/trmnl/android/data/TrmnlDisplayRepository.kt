@@ -1,7 +1,5 @@
 package ink.trmnl.android.data
 
-import android.content.Context
-import android.os.BatteryManager
 import com.slack.eithernet.ApiResult
 import com.slack.eithernet.exceptionOrNull
 import com.squareup.anvil.annotations.optional.SingleIn
@@ -9,7 +7,6 @@ import ink.trmnl.android.BuildConfig.USE_FAKE_API
 import ink.trmnl.android.data.fake.generateFakeDeviceSetupInfo
 import ink.trmnl.android.data.fake.generateFakeTrmnlDisplayInfo
 import ink.trmnl.android.di.AppScope
-import ink.trmnl.android.di.ApplicationContext
 import ink.trmnl.android.model.SupportedDeviceModel
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
@@ -28,11 +25,9 @@ import ink.trmnl.android.network.model.TrmnlUser
 import ink.trmnl.android.network.util.constructApiUrl
 import ink.trmnl.android.network.util.extractHttpResponseMetadata
 import ink.trmnl.android.network.util.extractHttpResponseMetadataFromFailure
+import ink.trmnl.android.util.AndroidDeviceInfoProvider
 import ink.trmnl.android.util.HTTP_500
 import ink.trmnl.android.util.isHttpOk
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -49,29 +44,12 @@ import javax.inject.Inject
 class TrmnlDisplayRepository
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
         private val apiService: TrmnlApiService,
         private val userApiService: TrmnlUserApiService,
         private val imageMetadataStore: ImageMetadataStore,
         private val repositoryConfigProvider: RepositoryConfigProvider,
+        private val androidDeviceInfoProvider: AndroidDeviceInfoProvider,
     ) {
-        /**
-         * Gets the current battery level of the Android device.
-         *
-         * @return Battery percentage (0-100), or null if unable to retrieve
-         */
-        private fun getBatteryLevel(): Int? =
-            try {
-                val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
-                val batteryLevel =
-                    batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-                Timber.i("Current battery level: $batteryLevel%")
-                batteryLevel
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to get battery level")
-                null
-            }
-
         /**
          * Fetches display data for next plugin from the server using the provided access token.
          * If the app is in debug mode, it uses mock data instead.
@@ -128,19 +106,6 @@ class TrmnlDisplayRepository
                             displayInfo.imageUrl,
                             displayInfo.refreshIntervalSeconds,
                         )
-
-                        // Report battery status for BYOD devices (non-blocking)
-                        if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOD &&
-                            trmnlDeviceConfig.deviceId != null &&
-                            trmnlDeviceConfig.userApiToken != null
-                        ) {
-                            val batteryLevel = getBatteryLevel()
-                            if (batteryLevel != null) {
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    reportBatteryStatus(trmnlDeviceConfig, batteryLevel)
-                                }
-                            }
-                        }
                     }
 
                     return displayInfo
@@ -201,19 +166,6 @@ class TrmnlDisplayRepository
                             displayInfo.imageUrl,
                             displayInfo.refreshIntervalSeconds,
                         )
-
-                        // Report battery status for BYOD devices (non-blocking)
-                        if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOD &&
-                            trmnlDeviceConfig.deviceId != null &&
-                            trmnlDeviceConfig.userApiToken != null
-                        ) {
-                            val batteryLevel = getBatteryLevel()
-                            if (batteryLevel != null) {
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    reportBatteryStatus(trmnlDeviceConfig, batteryLevel)
-                                }
-                            }
-                        }
                     }
 
                     return displayInfo
@@ -482,6 +434,45 @@ class TrmnlDisplayRepository
         }
 
         /**
+         * Reports the device's battery status to the TRMNL API for BYOD devices.
+         *
+         * This is a convenience method that checks if the device is a BYOD device with the necessary
+         * configuration (deviceId and userApiToken), retrieves the current battery level,
+         * and reports it to the server.
+         *
+         * This method should be called after successful image refresh operations.
+         *
+         * @param config Device configuration containing device type, device ID, and user API token
+         */
+        suspend fun reportDeviceBatteryStatus(config: TrmnlDeviceConfig) {
+            // Only report battery for BYOD devices with required configuration
+            if (config.type != TrmnlDeviceType.BYOD) {
+                Timber.d("Battery reporting skipped: not a BYOD device (type: ${config.type})")
+                return
+            }
+
+            if (config.deviceId == null) {
+                Timber.w("Battery reporting skipped: device ID is null")
+                return
+            }
+
+            if (config.userApiToken == null) {
+                Timber.w("Battery reporting skipped: user API token is null")
+                return
+            }
+
+            // Get current battery level
+            val batteryLevel = androidDeviceInfoProvider.getBatteryLevel()
+            if (batteryLevel == null) {
+                Timber.w("Battery reporting skipped: unable to get battery level")
+                return
+            }
+
+            // Report battery status
+            reportBatteryStatus(config, batteryLevel)
+        }
+
+        /**
          * Reports the device's battery status to the TRMNL API.
          *
          * This method sends a PATCH request to /api/devices/{id} using user-level authentication
@@ -493,7 +484,7 @@ class TrmnlDisplayRepository
          * @param batteryPercent The current battery percentage (0-100)
          * @return A Result containing Unit on success or an exception on failure
          */
-        suspend fun reportBatteryStatus(
+        private suspend fun reportBatteryStatus(
             config: TrmnlDeviceConfig,
             batteryPercent: Int,
         ): Result<Unit> {

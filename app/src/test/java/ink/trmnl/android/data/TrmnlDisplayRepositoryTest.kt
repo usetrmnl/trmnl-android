@@ -1,6 +1,5 @@
 package ink.trmnl.android.data
 
-import android.content.Context
 import com.google.common.truth.Truth.assertThat
 import com.slack.eithernet.ApiResult
 import ink.trmnl.android.model.TrmnlDeviceConfig
@@ -10,6 +9,7 @@ import ink.trmnl.android.network.TrmnlUserApiService
 import ink.trmnl.android.network.model.TrmnlCurrentImageResponse
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
 import ink.trmnl.android.network.util.constructApiUrl
+import ink.trmnl.android.util.AndroidDeviceInfoProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -29,12 +29,12 @@ import org.junit.Test
 @OptIn(com.slack.eithernet.InternalEitherNetApi::class)
 class TrmnlDisplayRepositoryTest {
     private lateinit var repository: TrmnlDisplayRepository
-    private lateinit var context: Context
     private lateinit var apiService: TrmnlApiService
     private lateinit var userApiService: TrmnlUserApiService
     private lateinit var imageMetadataStore: ImageMetadataStore
     private lateinit var repositoryConfigProvider: RepositoryConfigProvider
     private lateinit var deviceConfigDataStore: TrmnlDeviceConfigDataStore
+    private lateinit var androidDeviceInfoProvider: AndroidDeviceInfoProvider
 
     private val testDeviceConfig =
         TrmnlDeviceConfig(
@@ -62,22 +62,22 @@ class TrmnlDisplayRepositoryTest {
 
     @Before
     fun setup() {
-        context = mockk(relaxed = true)
         apiService = mockk()
         userApiService = mockk()
         repositoryConfigProvider = mockk()
         deviceConfigDataStore = mockk()
         imageMetadataStore = mockk(relaxed = true)
+        androidDeviceInfoProvider = mockk(relaxed = true)
 
         every { repositoryConfigProvider.shouldUseFakeData } returns false
 
         repository =
             TrmnlDisplayRepository(
-                context = context,
                 apiService = apiService,
                 userApiService = userApiService,
                 imageMetadataStore = imageMetadataStore,
                 repositoryConfigProvider = repositoryConfigProvider,
+                androidDeviceInfoProvider = androidDeviceInfoProvider,
             )
     }
 
@@ -587,7 +587,7 @@ class TrmnlDisplayRepositoryTest {
         }
 
     @Test
-    fun `reportBatteryStatus should succeed with valid BYOD config`() =
+    fun `reportDeviceBatteryStatus should report battery for valid BYOD config`() =
         runTest {
             // Arrange
             val byodConfigWithDeviceId =
@@ -595,6 +595,8 @@ class TrmnlDisplayRepositoryTest {
                     deviceId = 123,
                     userApiToken = "user_test_token",
                 )
+
+            every { androidDeviceInfoProvider.getBatteryLevel() } returns 75
 
             val expectedApiUrl = "https://server.example.com/api/devices/123"
 
@@ -607,22 +609,38 @@ class TrmnlDisplayRepositoryTest {
             } returns ApiResult.success(mockk(relaxed = true))
 
             // Act
-            val result = repository.reportBatteryStatus(byodConfigWithDeviceId, 85)
+            repository.reportDeviceBatteryStatus(byodConfigWithDeviceId)
 
-            // Assert
-            assertThat(result.isSuccess).isTrue()
-
+            // Assert - Verify battery status was reported
             coVerify {
                 userApiService.updateDevice(
                     fullApiUrl = expectedApiUrl,
                     accessToken = "Bearer user_test_token",
-                    updateRequest = match { it.percentCharged == 85.0 },
+                    updateRequest = match { it.percentCharged == 75.0 },
                 )
             }
         }
 
     @Test
-    fun `reportBatteryStatus should fail when deviceId is null`() =
+    fun `reportDeviceBatteryStatus should skip for non-BYOD device`() =
+        runTest {
+            // Arrange - TRMNL device (not BYOD)
+            val trmnlConfig =
+                testDeviceConfig.copy(
+                    deviceId = 123,
+                    userApiToken = "user_test_token",
+                )
+
+            // Act
+            repository.reportDeviceBatteryStatus(trmnlConfig)
+
+            // Assert - Verify API was NOT called
+            coVerify(exactly = 0) { userApiService.updateDevice(any(), any(), any()) }
+            coVerify(exactly = 0) { androidDeviceInfoProvider.getBatteryLevel() }
+        }
+
+    @Test
+    fun `reportDeviceBatteryStatus should skip when deviceId is null`() =
         runTest {
             // Arrange
             val configWithoutDeviceId =
@@ -632,19 +650,15 @@ class TrmnlDisplayRepositoryTest {
                 )
 
             // Act
-            val result = repository.reportBatteryStatus(configWithoutDeviceId, 85)
+            repository.reportDeviceBatteryStatus(configWithoutDeviceId)
 
-            // Assert
-            assertThat(result.isFailure).isTrue()
-            assertThat(result.exceptionOrNull()).isInstanceOf(IllegalStateException::class.java)
-            assertThat(result.exceptionOrNull()?.message).contains("Device ID is required")
-
-            // Verify API was NOT called
+            // Assert - Verify API was NOT called
             coVerify(exactly = 0) { userApiService.updateDevice(any(), any(), any()) }
+            coVerify(exactly = 0) { androidDeviceInfoProvider.getBatteryLevel() }
         }
 
     @Test
-    fun `reportBatteryStatus should fail when userApiToken is null`() =
+    fun `reportDeviceBatteryStatus should skip when userApiToken is null`() =
         runTest {
             // Arrange
             val configWithoutUserToken =
@@ -654,19 +668,15 @@ class TrmnlDisplayRepositoryTest {
                 )
 
             // Act
-            val result = repository.reportBatteryStatus(configWithoutUserToken, 85)
+            repository.reportDeviceBatteryStatus(configWithoutUserToken)
 
-            // Assert
-            assertThat(result.isFailure).isTrue()
-            assertThat(result.exceptionOrNull()).isInstanceOf(IllegalStateException::class.java)
-            assertThat(result.exceptionOrNull()?.message).contains("User API token is required")
-
-            // Verify API was NOT called
+            // Assert - Verify API was NOT called
             coVerify(exactly = 0) { userApiService.updateDevice(any(), any(), any()) }
+            coVerify(exactly = 0) { androidDeviceInfoProvider.getBatteryLevel() }
         }
 
     @Test
-    fun `reportBatteryStatus should handle API failure`() =
+    fun `reportDeviceBatteryStatus should skip when battery level unavailable`() =
         runTest {
             // Arrange
             val byodConfigWithDeviceId =
@@ -675,46 +685,13 @@ class TrmnlDisplayRepositoryTest {
                     userApiToken = "user_test_token",
                 )
 
-            val expectedApiUrl = "https://server.example.com/api/devices/123"
-            val apiException = java.io.IOException("Network error")
-            val httpFailure: ApiResult.Failure<Unit> =
-                ApiResult.networkFailure(apiException)
-
-            coEvery {
-                userApiService.updateDevice(
-                    fullApiUrl = expectedApiUrl,
-                    accessToken = "Bearer user_test_token",
-                    updateRequest = any(),
-                )
-            } returns httpFailure
+            every { androidDeviceInfoProvider.getBatteryLevel() } returns null
 
             // Act
-            val result = repository.reportBatteryStatus(byodConfigWithDeviceId, 85)
+            repository.reportDeviceBatteryStatus(byodConfigWithDeviceId)
 
-            // Assert
-            assertThat(result.isFailure).isTrue()
-            assertThat(result.exceptionOrNull()).isEqualTo(apiException)
-        }
-
-    @Test
-    fun `reportBatteryStatus should skip API call in fake data mode`() =
-        runTest {
-            // Arrange
-            every { repositoryConfigProvider.shouldUseFakeData } returns true
-
-            val byodConfigWithDeviceId =
-                byodDeviceConfig.copy(
-                    deviceId = 123,
-                    userApiToken = "user_test_token",
-                )
-
-            // Act
-            val result = repository.reportBatteryStatus(byodConfigWithDeviceId, 85)
-
-            // Assert
-            assertThat(result.isSuccess).isTrue()
-
-            // Verify API was NOT called
+            // Assert - Verify battery level was requested but API was NOT called
+            coVerify(exactly = 1) { androidDeviceInfoProvider.getBatteryLevel() }
             coVerify(exactly = 0) { userApiService.updateDevice(any(), any(), any()) }
         }
 }
