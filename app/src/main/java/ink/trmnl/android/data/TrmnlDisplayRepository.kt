@@ -478,7 +478,8 @@ class TrmnlDisplayRepository
          * This method sends a PATCH request to /api/devices/{id} using user-level authentication
          * to update the device's battery percentage on the server.
          *
-         * This operation is non-blocking and should not affect display updates.
+         * This suspend function performs network I/O and should be called from a background
+         * coroutine so it does not block or delay display updates.
          *
          * @param config Device configuration containing the device ID and user API token
          * @param batteryPercent The current battery percentage (0-100)
