@@ -1,0 +1,15 @@
+{
+  "data": {
+    "id": 789,
+    "name": "Edge Case Device",
+    "friendly_id": "EDGE-789",
+    "mac_address": "00:00:00:00:00:00",
+    "battery_voltage": 4.2,
+    "rssi": -100,
+    "sleep_mode_enabled": true,
+    "sleep_start_time": 0,
+    "sleep_end_time": 1439,
+    "percent_charged": 0.0,
+    "wifi_strength": 0.0
+  }
+}

@@ -12,15 +12,20 @@ import retrofit2.http.Headers
 import retrofit2.http.Url
 
 /**
- * API service interface for TRMNL or BYOS servers.
+ * API service interface for TRMNL device-level API endpoints.
  *
- * This interface defines the endpoints for the TRMNL API.
+ * This interface defines endpoints that require device-level authentication via
+ * Access-Token header (Device API key), as opposed to user-level Bearer token authentication.
+ *
+ * For user-level (account) API endpoints, see [TrmnlUserApiService].
  *
  * See:
  * - https://docs.usetrmnl.com/go
  * - https://docs.usetrmnl.com/go/private-api/introduction
+ * - https://trmnl.com/api-docs/index.html (OpenAPI documentation)
  *
  * @see TrmnlDisplayRepository
+ * @see TrmnlUserApiService
  */
 interface TrmnlApiService {
     companion object {

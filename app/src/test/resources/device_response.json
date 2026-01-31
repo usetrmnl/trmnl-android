@@ -1,0 +1,15 @@
+{
+  "data": {
+    "id": 123,
+    "name": "My TRMNL",
+    "friendly_id": "ABC-123",
+    "mac_address": "12:34:56:78:9A:BC",
+    "battery_voltage": 3.7,
+    "rssi": -70,
+    "sleep_mode_enabled": false,
+    "sleep_start_time": 1320,
+    "sleep_end_time": 480,
+    "percent_charged": 85.0,
+    "wifi_strength": 75.0
+  }
+}
