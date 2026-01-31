@@ -75,6 +75,8 @@ interface TrmnlApiService {
          * **Note:** This endpoint doesn't exist on the server yet. The repository layer
          * provides a mocked response until the server endpoint is implemented.
          *
+         * See https://discord.com/channels/1281055965508141100/1466924426460397765
+         *
          * @see getDeviceMe
          */
         internal const val DEVICE_ME_API_PATH = "api/devices/me"
@@ -156,6 +158,8 @@ interface TrmnlApiService {
      *
      * **Note:** This endpoint doesn't exist on the server yet. The repository layer
      * provides a mocked response until the server endpoint is implemented.
+     *
+     * See https://discord.com/channels/1281055965508141100/1466924426460397765
      *
      * @param fullApiUrl The complete API URL to call (e.g., "https://usetrmnl.com/api/devices/me")
      * @param accessToken The device's API key (required)

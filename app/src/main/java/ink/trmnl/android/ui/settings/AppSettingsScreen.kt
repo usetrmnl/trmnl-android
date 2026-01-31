@@ -524,7 +524,10 @@ class AppSettingsPresenter
                                                 Timber.d("Device ID saved successfully for BYOD device: $deviceId")
                                             }
                                         } else {
-                                            Timber.w("Failed to fetch device ID for BYOD device", deviceIdResult.exceptionOrNull())
+                                            Timber.w(
+                                                "Failed to fetch device ID for BYOD device. Error: %s",
+                                                deviceIdResult.exceptionOrNull(),
+                                            )
                                         }
                                     }
                                 } else {
