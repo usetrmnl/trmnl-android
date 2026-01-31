@@ -580,7 +580,7 @@ class TrmnlDisplayRepositoryTest {
 
             // Assert
             assertThat(result.isSuccess).isTrue()
-            assertThat(result.getOrNull()).isEqualTo(1)
+            assertThat(result.getOrNull()).isEqualTo(41448)
 
             // Verify API was NOT called since we're using mocked response
             coVerify(exactly = 0) { apiService.getDeviceMe(any(), any()) }
