@@ -816,7 +816,7 @@ fun AppSettingsContent(
                                 },
                             ),
                         supportingText = {
-                            Text("Required for device management APIs. Get this from your TRMNL user account settings.")
+                            Text("Optional: Required for device management features like battery reporting. Get this from your TRMNL user account settings.")
                         },
                         trailingIcon = {
                             IconButton(onClick = { userTokenVisible = !userTokenVisible }) {
