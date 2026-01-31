@@ -552,6 +552,14 @@ class AppSettingsPresenter
                                             TrmnlDeviceType.TRMNL -> false
                                         }
 
+                                    // For BYOD devices, retrieve the device ID that was fetched during validation
+                                    val deviceId =
+                                        if (deviceType == TrmnlDeviceType.BYOD) {
+                                            deviceConfigStore.getDeviceId()
+                                        } else {
+                                            null
+                                        }
+
                                     deviceConfigStore.saveDeviceConfig(
                                         TrmnlDeviceConfig(
                                             type = deviceType,
@@ -566,6 +574,8 @@ class AppSettingsPresenter
                                             // We still persist the token here; any invalid or expired token will be
                                             // detected and surfaced via downstream API error handling.
                                             userApiToken = userApiToken.ifBlank { null },
+                                            // Include device ID for BYOD devices (fetched during validation)
+                                            deviceId = deviceId,
                                         ),
                                     )
                                     trmnlWorkScheduler.updateRefreshInterval(result.refreshRateSecs)
