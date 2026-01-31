@@ -571,4 +571,150 @@ class TrmnlDisplayRepositoryTest {
             assertThat(result.httpResponseMetadata?.statusCode).isEqualTo(500)
             assertThat(result.httpResponseMetadata?.contentLength).isEqualTo(123L)
         }
+
+    @Test
+    fun `getDeviceIdFromApi should return mocked device ID`() =
+        runTest {
+            // Act
+            val result = repository.getDeviceIdFromApi(byodDeviceConfig)
+
+            // Assert
+            assertThat(result.isSuccess).isTrue()
+            assertThat(result.getOrNull()).isEqualTo(1)
+
+            // Verify API was NOT called since we're using mocked response
+            coVerify(exactly = 0) { apiService.getDeviceMe(any(), any()) }
+        }
+
+    @Test
+    fun `reportBatteryStatus should succeed with valid BYOD config`() =
+        runTest {
+            // Arrange
+            val byodConfigWithDeviceId =
+                byodDeviceConfig.copy(
+                    deviceId = 123,
+                    userApiToken = "user_test_token",
+                )
+
+            val expectedApiUrl = "https://server.example.com/api/devices/123"
+
+            coEvery {
+                userApiService.updateDevice(
+                    fullApiUrl = expectedApiUrl,
+                    accessToken = "Bearer user_test_token",
+                    updateRequest = any(),
+                )
+            } returns ApiResult.success(mockk(relaxed = true))
+
+            // Act
+            val result = repository.reportBatteryStatus(byodConfigWithDeviceId, 85)
+
+            // Assert
+            assertThat(result.isSuccess).isTrue()
+
+            coVerify {
+                userApiService.updateDevice(
+                    fullApiUrl = expectedApiUrl,
+                    accessToken = "Bearer user_test_token",
+                    updateRequest = match { it.percentCharged == 85.0 },
+                )
+            }
+        }
+
+    @Test
+    fun `reportBatteryStatus should fail when deviceId is null`() =
+        runTest {
+            // Arrange
+            val configWithoutDeviceId =
+                byodDeviceConfig.copy(
+                    deviceId = null,
+                    userApiToken = "user_test_token",
+                )
+
+            // Act
+            val result = repository.reportBatteryStatus(configWithoutDeviceId, 85)
+
+            // Assert
+            assertThat(result.isFailure).isTrue()
+            assertThat(result.exceptionOrNull()).isInstanceOf(IllegalStateException::class.java)
+            assertThat(result.exceptionOrNull()?.message).contains("Device ID is required")
+
+            // Verify API was NOT called
+            coVerify(exactly = 0) { userApiService.updateDevice(any(), any(), any()) }
+        }
+
+    @Test
+    fun `reportBatteryStatus should fail when userApiToken is null`() =
+        runTest {
+            // Arrange
+            val configWithoutUserToken =
+                byodDeviceConfig.copy(
+                    deviceId = 123,
+                    userApiToken = null,
+                )
+
+            // Act
+            val result = repository.reportBatteryStatus(configWithoutUserToken, 85)
+
+            // Assert
+            assertThat(result.isFailure).isTrue()
+            assertThat(result.exceptionOrNull()).isInstanceOf(IllegalStateException::class.java)
+            assertThat(result.exceptionOrNull()?.message).contains("User API token is required")
+
+            // Verify API was NOT called
+            coVerify(exactly = 0) { userApiService.updateDevice(any(), any(), any()) }
+        }
+
+    @Test
+    fun `reportBatteryStatus should handle API failure`() =
+        runTest {
+            // Arrange
+            val byodConfigWithDeviceId =
+                byodDeviceConfig.copy(
+                    deviceId = 123,
+                    userApiToken = "user_test_token",
+                )
+
+            val expectedApiUrl = "https://server.example.com/api/devices/123"
+            val apiException = java.io.IOException("Network error")
+            val httpFailure: ApiResult.Failure<Unit> =
+                ApiResult.networkFailure(apiException)
+
+            coEvery {
+                userApiService.updateDevice(
+                    fullApiUrl = expectedApiUrl,
+                    accessToken = "Bearer user_test_token",
+                    updateRequest = any(),
+                )
+            } returns httpFailure
+
+            // Act
+            val result = repository.reportBatteryStatus(byodConfigWithDeviceId, 85)
+
+            // Assert
+            assertThat(result.isFailure).isTrue()
+            assertThat(result.exceptionOrNull()).isEqualTo(apiException)
+        }
+
+    @Test
+    fun `reportBatteryStatus should skip API call in fake data mode`() =
+        runTest {
+            // Arrange
+            every { repositoryConfigProvider.shouldUseFakeData } returns true
+
+            val byodConfigWithDeviceId =
+                byodDeviceConfig.copy(
+                    deviceId = 123,
+                    userApiToken = "user_test_token",
+                )
+
+            // Act
+            val result = repository.reportBatteryStatus(byodConfigWithDeviceId, 85)
+
+            // Assert
+            assertThat(result.isSuccess).isTrue()
+
+            // Verify API was NOT called
+            coVerify(exactly = 0) { userApiService.updateDevice(any(), any(), any()) }
+        }
 }
