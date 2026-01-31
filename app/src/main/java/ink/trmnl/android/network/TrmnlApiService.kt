@@ -3,28 +3,29 @@ package ink.trmnl.android.network
 import com.slack.eithernet.ApiResult
 import ink.trmnl.android.data.TrmnlDisplayRepository
 import ink.trmnl.android.network.model.TrmnlCurrentImageResponse
-import ink.trmnl.android.network.model.TrmnlDeviceResponse
-import ink.trmnl.android.network.model.TrmnlDeviceUpdateRequest
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
 import ink.trmnl.android.network.model.TrmnlModelsResponse
 import ink.trmnl.android.network.model.TrmnlSetupResponse
-import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Headers
-import retrofit2.http.PATCH
 import retrofit2.http.Url
 
 /**
- * API service interface for TRMNL or BYOS servers.
+ * API service interface for TRMNL device-level API endpoints.
  *
- * This interface defines the endpoints for the TRMNL API.
+ * This interface defines endpoints that require device-level authentication via
+ * Access-Token header (Device API key), as opposed to user-level Bearer token authentication.
+ *
+ * For user-level (account) API endpoints, see [TrmnlUserApiService].
  *
  * See:
  * - https://docs.usetrmnl.com/go
  * - https://docs.usetrmnl.com/go/private-api/introduction
+ * - https://trmnl.com/api-docs/index.html (OpenAPI documentation)
  *
  * @see TrmnlDisplayRepository
+ * @see TrmnlUserApiService
  */
 interface TrmnlApiService {
     companion object {
@@ -64,16 +65,6 @@ interface TrmnlApiService {
          * @see getDeviceModels
          */
         internal const val MODELS_API_PATH = "api/models"
-
-        /**
-         * Path template for the TRMNL API endpoint to get or update a specific device.
-         *
-         * Replace `{id}` with the actual device ID.
-         *
-         * @see getDevice
-         * @see updateDevice
-         */
-        internal const val DEVICE_API_PATH = "api/devices/{id}"
     }
 
     /**
@@ -141,39 +132,4 @@ interface TrmnlApiService {
     suspend fun getDeviceModels(
         @Url fullApiUrl: String,
     ): ApiResult<TrmnlModelsResponse, Unit>
-
-    /**
-     * Retrieve device data for a specific device using [DEVICE_API_PATH].
-     *
-     * This endpoint provides information about a single device including its configuration,
-     * battery status, WiFi strength, and sleep mode settings.
-     *
-     * @param fullApiUrl The complete API URL to call (e.g., "https://usetrmnl.com/api/devices/1")
-     * @param accessToken The bearer authentication token
-     * @return An [ApiResult] containing [TrmnlDeviceResponse] with the device data
-     */
-    @GET
-    suspend fun getDevice(
-        @Url fullApiUrl: String,
-        @Header("Authorization") accessToken: String,
-    ): ApiResult<TrmnlDeviceResponse, Unit>
-
-    /**
-     * Update device settings for a specific device using [DEVICE_API_PATH].
-     *
-     * This endpoint allows updating device configuration such as sleep mode settings
-     * and battery charge percentage.
-     *
-     * @param fullApiUrl The complete API URL to call (e.g., "https://usetrmnl.com/api/devices/1")
-     * @param accessToken The bearer authentication token
-     * @param updateRequest The device update request containing the fields to update
-     * @return An [ApiResult] containing [TrmnlDeviceResponse] with the updated device data
-     */
-    @Headers("Content-Type: application/json")
-    @PATCH
-    suspend fun updateDevice(
-        @Url fullApiUrl: String,
-        @Header("Authorization") accessToken: String,
-        @Body updateRequest: TrmnlDeviceUpdateRequest,
-    ): ApiResult<TrmnlDeviceResponse, Unit>
 }
