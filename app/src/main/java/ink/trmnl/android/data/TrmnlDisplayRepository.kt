@@ -469,7 +469,14 @@ class TrmnlDisplayRepository
             }
 
             // Report battery status
-            reportBatteryStatus(config, batteryLevel)
+            try {
+                val result = reportBatteryStatus(config, batteryLevel)
+                result.onFailure { throwable ->
+                    Timber.e(throwable, "Failed to report battery status")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error during battery reporting")
+            }
         }
 
         /**
