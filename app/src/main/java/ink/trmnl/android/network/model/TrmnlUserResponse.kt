@@ -21,8 +21,8 @@ data class TrmnlUserResponse(
 /**
  * Represents a TRMNL user's information.
  *
- * Contains details about the authenticated user including their profile information,
- * timezone settings, and API key.
+ * Contains details about the authenticated user including their profile information
+ * and timezone settings.
  *
  * @property id The unique identifier for the user
  * @property name The user's full name
