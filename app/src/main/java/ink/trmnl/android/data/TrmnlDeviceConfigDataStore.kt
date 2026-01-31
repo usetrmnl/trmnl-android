@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.squareup.anvil.annotations.optional.SingleIn
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
 import ink.trmnl.android.data.AppConfig.TRMNL_API_SERVER_BASE_URL
 import ink.trmnl.android.di.AppScope
@@ -134,7 +135,7 @@ class TrmnlDeviceConfigDataStore
          * ```
          */
         private val deviceModelPreferencesType =
-            com.squareup.moshi.Types.newParameterizedType(
+            Types.newParameterizedType(
                 Map::class.java,
                 String::class.java,
                 DeviceModelSelection::class.java,
@@ -234,13 +235,9 @@ class TrmnlDeviceConfigDataStore
                 val configJson = preferences[CONFIG_JSON_KEY]
                 if (configJson != null) {
                     try {
-                        val config = deviceConfigAdapter.fromJson(configJson)
+                        val config: TrmnlDeviceConfig? = deviceConfigAdapter.fromJson(configJson)
                         Timber.tag(TAG).d(
-                            "Loading device config (JSON): type=${config?.type}, userApiToken=${config
-                                ?.userApiToken
-                                ?.take(
-                                    8,
-                                )?.plus("...") ?: "null"}",
+                            "Loading device config (JSON): type=${config?.type}, userApiToken=${config?.userApiToken.obfuscated()}",
                         )
                         config
                     } catch (e: Exception) {
@@ -266,7 +263,7 @@ class TrmnlDeviceConfigDataStore
                     val userApiToken = preferences[USER_API_TOKEN_KEY]
 
                     Timber.tag(TAG).d(
-                        "Loading device config (legacy): type=$type, userApiToken=${userApiToken.obfuscated()}",
+                        "Loading device config (legacy): type=$type, deviceApiToken=${token.obfuscated()}",
                     )
 
                     if (token != null) {
