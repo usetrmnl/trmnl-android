@@ -38,6 +38,48 @@ private val Context.deviceConfigStore: DataStore<Preferences> by preferencesData
  * This class provides methods for storing, retrieving, and managing the device configuration
  * including access token, device type, server URL, and refresh rate settings using
  * Android's DataStore.
+ *
+ * ## Preference Storage Strategy
+ *
+ * The device configuration uses a **dual-storage approach** for backward compatibility:
+ *
+ * ### 1. Modern Approach (Primary)
+ * - Stores complete `TrmnlDeviceConfig` as JSON in `CONFIG_JSON_KEY`
+ * - Single source of truth, easier to maintain
+ * - Preferred method for reading and writing device config
+ *
+ * ### 2. Legacy Approach (Backward Compatibility)
+ * - Stores individual fields as separate preference keys:
+ *   - `DEVICE_TYPE_KEY` - Device type (TRMNL, BYOS, BYOD)
+ *   - `ACCESS_TOKEN_KEY` - Device access token
+ *   - `API_BASE_URL_KEY` - Server base URL
+ *   - `REFRESH_RATE_SEC_KEY` - Refresh rate in seconds
+ *   - `DEVICE_MAC_ID_KEY` - Device MAC address
+ *   - `IS_MASTER_DEVICE_KEY` - Master device flag (BYOD only)
+ *   - `USER_API_TOKEN_KEY` - User-level API token (BYOD only)
+ * - Maintained for users upgrading from older app versions
+ *
+ * ### Loading Priority
+ * When loading config via `deviceConfigFlow`:
+ * 1. Check if `CONFIG_JSON_KEY` exists → load from JSON
+ * 2. Otherwise → use legacy migration path (build config from individual keys)
+ *
+ * ### Saving Behavior
+ * When saving via `saveDeviceConfig()`:
+ * - **Always** saves JSON to `CONFIG_JSON_KEY` (modern)
+ * - **Also** saves individual fields (legacy backward compatibility)
+ * - This ensures both old and new app versions can read the config
+ *
+ * ## Device Model Preferences
+ *
+ * Device model preferences are stored separately from device config:
+ * - Key: `DEVICE_MODEL_PREFERENCES_KEY`
+ * - Value: JSON map of device type → `DeviceModelSelection`
+ * - Example: `{"BYOD": {"name": "amazon_kindle_2024", "label": "Amazon Kindle 2024"}}`
+ * - Allows different device models per device type
+ *
+ * @see TrmnlDeviceConfig for the device configuration data model
+ * @see DeviceModelSelection for device model selection data
  */
 @SingleIn(AppScope::class)
 class TrmnlDeviceConfigDataStore
@@ -63,7 +105,34 @@ class TrmnlDeviceConfigDataStore
         private val deviceTypeAdapter = moshi.adapter(TrmnlDeviceType::class.java)
         private val deviceConfigAdapter = moshi.adapter(TrmnlDeviceConfig::class.java)
 
-        // Moshi adapter for device model preferences map
+        /**
+         * Obfuscates a token string for logging purposes.
+         * Shows only the first 8 characters followed by "..." for security.
+         *
+         * @return Obfuscated token string, or "null" if the token is null
+         */
+        private fun String?.obfuscated(): String = this?.take(8)?.plus("...") ?: "null"
+
+        /**
+         * Moshi adapter for device model preferences map.
+         *
+         * Stores a mapping of device type name (String) to DeviceModelSelection.
+         * This allows each device type (TRMNL, BYOS, BYOD) to have its own selected model.
+         *
+         * Example JSON structure:
+         * ```json
+         * {
+         *   "BYOD": {
+         *     "name": "amazon_kindle_2024",
+         *     "label": "Amazon Kindle 2024"
+         *   },
+         *   "BYOS": {
+         *     "name": "waveshare_7in3f",
+         *     "label": "Waveshare 7.3\" ACeP"
+         *   }
+         * }
+         * ```
+         */
         private val deviceModelPreferencesType =
             com.squareup.moshi.Types.newParameterizedType(
                 Map::class.java,
@@ -142,13 +211,38 @@ class TrmnlDeviceConfigDataStore
 
         /**
          * Gets the complete device config as a Flow
+         *
+         * ## Loading Strategy
+         * This Flow uses a dual-path approach to support both modern and legacy storage:
+         *
+         * **Primary Path (Modern):**
+         * - Checks for `CONFIG_JSON_KEY` preference
+         * - If exists, deserializes JSON to `TrmnlDeviceConfig`
+         * - Logs: "Loading device config (JSON): type=..., userApiToken=..."
+         *
+         * **Fallback Path (Legacy Migration):**
+         * - If `CONFIG_JSON_KEY` doesn't exist, builds config from individual preference keys
+         * - Reads: `DEVICE_TYPE_KEY`, `ACCESS_TOKEN_KEY`, `API_BASE_URL_KEY`, etc.
+         * - Logs: "Loading device config (legacy): type=..., userApiToken=..."
+         * - Only returns config if `ACCESS_TOKEN_KEY` exists (required field)
+         *
+         * This approach ensures seamless migration from older app versions while
+         * maintaining forward compatibility with newer storage format.
          */
         val deviceConfigFlow: Flow<TrmnlDeviceConfig?> =
             context.deviceConfigStore.data.map { preferences ->
                 val configJson = preferences[CONFIG_JSON_KEY]
                 if (configJson != null) {
                     try {
-                        deviceConfigAdapter.fromJson(configJson)
+                        val config = deviceConfigAdapter.fromJson(configJson)
+                        Timber.tag(TAG).d(
+                            "Loading device config (JSON): type=${config?.type}, userApiToken=${config
+                                ?.userApiToken
+                                ?.take(
+                                    8,
+                                )?.plus("...") ?: "null"}",
+                        )
+                        config
                     } catch (e: Exception) {
                         Timber.tag(TAG).e(e, "Failed to parse device config")
                         null
@@ -171,6 +265,10 @@ class TrmnlDeviceConfigDataStore
                     val isMasterDevice = preferences[IS_MASTER_DEVICE_KEY]?.toBoolean()
                     val userApiToken = preferences[USER_API_TOKEN_KEY]
 
+                    Timber.tag(TAG).d(
+                        "Loading device config (legacy): type=$type, userApiToken=${userApiToken.obfuscated()}",
+                    )
+
                     if (token != null) {
                         TrmnlDeviceConfig(
                             type = type,
@@ -189,9 +287,32 @@ class TrmnlDeviceConfigDataStore
 
         /**
          * Saves the complete device configuration
+         *
+         * ## Dual-Storage Approach
+         * This method saves the config in **both** formats for maximum compatibility:
+         *
+         * **Modern Storage:**
+         * - Serializes entire `TrmnlDeviceConfig` to JSON
+         * - Saves to `CONFIG_JSON_KEY` preference
+         * - Single source of truth for modern app versions
+         *
+         * **Legacy Storage:**
+         * - Also saves individual fields to separate preference keys
+         * - Ensures older app versions can still read the config
+         * - Fields: `DEVICE_TYPE_KEY`, `ACCESS_TOKEN_KEY`, `USER_API_TOKEN_KEY`, etc.
+         *
+         * **Null Handling:**
+         * - Optional fields (e.g., `userApiToken`, `isMasterDevice`) use `let` operator
+         * - If null, the preference key is removed with `preferences.remove()`
+         * - This keeps DataStore clean and prevents storing empty strings
+         *
+         * @param config The complete device configuration to save
          */
         suspend fun saveDeviceConfig(config: TrmnlDeviceConfig) {
             try {
+                Timber.tag(TAG).d(
+                    "Saving device config: type=${config.type}, userApiToken=${config.userApiToken.obfuscated()}",
+                )
                 val configJson = deviceConfigAdapter.toJson(config)
                 context.deviceConfigStore.edit { preferences ->
                     // Save as JSON for future use
@@ -218,6 +339,7 @@ class TrmnlDeviceConfigDataStore
                         preferences[USER_API_TOKEN_KEY] = userToken
                     } ?: preferences.remove(USER_API_TOKEN_KEY)
                 }
+                Timber.tag(TAG).d("Device config saved successfully")
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Failed to save device config")
             }
@@ -236,18 +358,24 @@ class TrmnlDeviceConfigDataStore
          * Saves the user-level API token (Account API key)
          */
         suspend fun saveUserApiToken(token: String) {
+            Timber.tag(TAG).d("Saving user API token: ${token.obfuscated()}")
             context.deviceConfigStore.edit { preferences ->
                 preferences[USER_API_TOKEN_KEY] = token
             }
+            Timber.tag(TAG).d("User API token saved successfully")
         }
 
         /**
          * Gets the user-level API token
          */
-        suspend fun getUserApiToken(): String? =
-            context.deviceConfigStore.data
-                .map { preferences -> preferences[USER_API_TOKEN_KEY] }
-                .first()
+        suspend fun getUserApiToken(): String? {
+            val token =
+                context.deviceConfigStore.data
+                    .map { preferences -> preferences[USER_API_TOKEN_KEY] }
+                    .first()
+            Timber.tag(TAG).d("Retrieved user API token: ${token.obfuscated()}")
+            return token
+        }
 
         /**
          * Saves the access token
