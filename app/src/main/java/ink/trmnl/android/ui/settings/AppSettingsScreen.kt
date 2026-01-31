@@ -349,13 +349,9 @@ class AppSettingsPresenter
                         }
                     }
 
-                    // Load isMasterDevice setting for BYOD (default to true if not set)
+                    // Load BYOD-specific settings
                     if (it.type == TrmnlDeviceType.BYOD) {
                         isByodMasterDevice = it.isMasterDevice ?: true
-                    }
-
-                    // Load userApiToken for BYOD
-                    if (it.type == TrmnlDeviceType.BYOD) {
                         userApiToken = it.userApiToken ?: ""
                     }
                 }
@@ -418,14 +414,21 @@ class AppSettingsPresenter
                                         result.isSuccess -> {
                                             val user = result.getOrNull()
                                             if (user != null) {
-                                                // Save the user API token
-                                                deviceConfigStore.saveUserApiToken(userApiToken)
+                                                // Token is valid - user will save it via "Save and Continue"
                                                 ValidationResult.UserTokenSuccess(
                                                     userName = user.name,
                                                     userEmail = user.email,
                                                 )
                                             } else {
-                                                ValidationResult.InvalidUserToken("Failed to retrieve user information")
+                                                Timber.e(
+                                                    "validateUserApiToken succeeded but returned null user. " +
+                                                        "apiBaseUrl=%s, deviceType=%s",
+                                                    serverBaseUrl.forDevice(deviceType),
+                                                    deviceType,
+                                                )
+                                                ValidationResult.InvalidUserToken(
+                                                    "Unexpected error: API returned success but no user data was received",
+                                                )
                                             }
                                         }
                                         else -> {
@@ -541,7 +544,10 @@ class AppSettingsPresenter
                                             // Normalize the MAC address to standard format if provided in different format
                                             deviceMacId = normalizeMacAddress(deviceMacId)?.ifBlank { null },
                                             isMasterDevice = isMaster,
-                                            // Save user API token if provided (for BYOD)
+                                            // Save user API token if provided (for BYOD).
+                                            // Note: user token validation is optional and may be skipped by the user.
+                                            // We still persist the token here; any invalid or expired token will be
+                                            // detected and surfaced via downstream API error handling.
                                             userApiToken = userApiToken.ifBlank { null },
                                         ),
                                     )
