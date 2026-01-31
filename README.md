@@ -19,13 +19,13 @@ The TRMNL app serves as a digital display for TRMNL e-ink devices and BYOS insta
 - [x] Refresh history logging for tracking & validation
 
 ## 📜 Preconditions
-You must have a **valid** `access-token` or `ID` _(MAC Address)_ to access the [screen content](https://docs.usetrmnl.com/go/private-api/fetch-screen-content) using TRMNL server API.
+You must have a **valid** `access-token` or `ID` _(MAC Address)_ to access the [screen content](https://docs.trmnl.com/go/private-api/fetch-screen-content) using TRMNL server API.
 
 Here are some of the known ways you can get access to the `access-token`.
 
-1. You must own a [TRMNL](https://usetrmnl.com/) device with "developer edition" add-on purchased
-2. You have purchased their [BYOD](https://docs.usetrmnl.com/go/diy/byod) product.
-3. You have self-serve installation of TRMNL service using [BYOS](https://docs.usetrmnl.com/go/diy/byos)
+1. You must own a [TRMNL](https://trmnl.com/) device with "developer edition" add-on purchased
+2. You have purchased their [BYOD](https://docs.trmnl.com/go/diy/byod) product.
+3. You have self-serve installation of TRMNL service using [BYOS](https://docs.trmnl.com/go/diy/byos)
 
 
 ### 📱 Google Play Store
@@ -65,6 +65,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on how to get started an
 
 Your companion app to monitor and manage your TRMNL e-ink displays on the go.
 
-**TRMNL Android Buddy** is the essential companion app for managing your [TRMNL](https://usetrmnl.com) e-ink display devices. Monitor device health, track battery life over time, and stay on top of your displays' status—all from your Android phone.
+**TRMNL Android Buddy** is the essential companion app for managing your [TRMNL](https://trmnl.com) e-ink display devices. Monitor device health, track battery life over time, and stay on top of your displays' status—all from your Android phone.
 
 <a href="https://play.google.com/store/apps/details?id=ink.trmnl.android.buddy&pcampaignid=web_share" target="_blank"><img src="https://liquidlabs.ca/img/google-play.svg" height="45"></a>

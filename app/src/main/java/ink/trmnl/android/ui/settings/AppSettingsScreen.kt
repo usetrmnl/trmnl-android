@@ -1722,7 +1722,7 @@ private fun PreviewAppSettingsContentByod() {
             state =
                 AppSettingsScreen.State(
                     deviceType = TrmnlDeviceType.BYOD,
-                    serverBaseUrl = "https://usetrmnl.com",
+                    serverBaseUrl = "https://trmnl.com",
                     accessToken = "byod-access-token-here",
                     deviceMacId = "",
                     isByodMasterDevice = false,

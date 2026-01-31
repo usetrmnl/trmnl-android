@@ -21,8 +21,8 @@ import retrofit2.http.Url
  * For user-level (account) API endpoints, see [TrmnlUserApiService].
  *
  * See:
- * - https://docs.usetrmnl.com/go
- * - https://docs.usetrmnl.com/go/private-api/introduction
+ * - https://docs.trmnl.com/go
+ * - https://docs.trmnl.com/go/private-api/introduction
  * - https://trmnl.com/api-docs/index.html (OpenAPI documentation)
  *
  * @see TrmnlDisplayRepository
@@ -33,7 +33,7 @@ interface TrmnlApiService {
         /**
          * Path for the TRMNL API endpoint that provides the next image in a playlist.
          *
-         * - https://docs.usetrmnl.com/go/private-api/fetch-screen-content#auto-advance-content
+         * - https://docs.trmnl.com/go/private-api/fetch-screen-content#auto-advance-content
          * - https://github.com/usetrmnl/byos_hanami?tab=readme-ov-file#display
          *
          * @see getNextDisplayData
@@ -43,7 +43,7 @@ interface TrmnlApiService {
         /**
          * Path for the TRMNL API endpoint that provides the current image in a playlist.
          *
-         * https://docs.usetrmnl.com/go/private-api/fetch-screen-content#current-screen
+         * https://docs.trmnl.com/go/private-api/fetch-screen-content#current-screen
          *
          * @see getCurrentDisplayData
          */
@@ -61,7 +61,7 @@ interface TrmnlApiService {
         /**
          * Path for the TRMNL API endpoint that provides the list of available device models.
          *
-         * https://help.usetrmnl.com/en/articles/11547008-device-model-faq
+         * https://help.trmnl.com/en/articles/11547008-device-model-faq
          *
          * @see getDeviceModels
          */
@@ -138,9 +138,9 @@ interface TrmnlApiService {
      * This endpoint provides information about all supported device models including
      * display specifications, supported palettes, and device characteristics.
      *
-     * See https://help.usetrmnl.com/en/articles/11547008-device-model-faq
+     * See https://help.trmnl.com/en/articles/11547008-device-model-faq
      *
-     * @param fullApiUrl The complete API URL to call (e.g., "https://usetrmnl.com/api/models")
+     * @param fullApiUrl The complete API URL to call (e.g., "https://trmnl.com/api/models")
      * @return An [ApiResult] containing [TrmnlModelsResponse] with the list of device models
      */
     @GET
@@ -161,7 +161,7 @@ interface TrmnlApiService {
      *
      * See https://discord.com/channels/1281055965508141100/1466924426460397765
      *
-     * @param fullApiUrl The complete API URL to call (e.g., "https://usetrmnl.com/api/devices/me")
+     * @param fullApiUrl The complete API URL to call (e.g., "https://trmnl.com/api/devices/me")
      * @param accessToken The device's API key (required)
      * @return An [ApiResult] containing [TrmnlDeviceResponse] with the device information
      */

@@ -5,8 +5,8 @@ This directory contains the OpenAPI specification for the TRMNL API.
 ## Resources
 
 - **OpenAPI Portal:** https://trmnl.com/api-docs/index.html
-- **API Documentation:** https://docs.usetrmnl.com/go
-- **Private API Docs:** https://docs.usetrmnl.com/go/private-api/introduction
+- **API Documentation:** https://docs.trmnl.com/go
+- **Private API Docs:** https://docs.trmnl.com/go/private-api/introduction
 
 ## Files
 
