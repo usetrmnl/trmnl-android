@@ -46,6 +46,8 @@ data class TrmnlDeviceConfig constructor(
      *
      * This ID is fetched during BYOD device validation and is required for
      * reporting battery status and other device-specific updates.
+     *
+     * **Note:** This field is only applicable for BYOD device types.
      */
     val deviceId: Int? = null,
 )

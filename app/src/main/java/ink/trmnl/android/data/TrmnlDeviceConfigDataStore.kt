@@ -383,7 +383,9 @@ class TrmnlDeviceConfigDataStore
         }
 
         /**
-         * Saves the device ID (TRMNL device ID from /api/devices/me)
+         * Saves the device ID (TRMNL device ID from /api/devices/me).
+         *
+         * **Note:** This is only applicable for BYOD device types.
          */
         suspend fun saveDeviceId(deviceId: Int) {
             Timber.tag(TAG).d("Saving device ID: $deviceId")
@@ -394,7 +396,9 @@ class TrmnlDeviceConfigDataStore
         }
 
         /**
-         * Gets the device ID
+         * Gets the device ID.
+         *
+         * **Note:** This is only applicable for BYOD device types.
          */
         suspend fun getDeviceId(): Int? {
             val deviceId =
