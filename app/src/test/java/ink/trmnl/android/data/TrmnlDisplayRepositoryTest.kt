@@ -5,6 +5,7 @@ import com.slack.eithernet.ApiResult
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.network.TrmnlApiService
+import ink.trmnl.android.network.TrmnlUserApiService
 import ink.trmnl.android.network.model.TrmnlCurrentImageResponse
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
 import ink.trmnl.android.network.util.constructApiUrl
@@ -28,6 +29,7 @@ import org.junit.Test
 class TrmnlDisplayRepositoryTest {
     private lateinit var repository: TrmnlDisplayRepository
     private lateinit var apiService: TrmnlApiService
+    private lateinit var userApiService: TrmnlUserApiService
     private lateinit var imageMetadataStore: ImageMetadataStore
     private lateinit var repositoryConfigProvider: RepositoryConfigProvider
     private lateinit var deviceConfigDataStore: TrmnlDeviceConfigDataStore
@@ -59,6 +61,7 @@ class TrmnlDisplayRepositoryTest {
     @Before
     fun setup() {
         apiService = mockk()
+        userApiService = mockk()
         repositoryConfigProvider = mockk()
         deviceConfigDataStore = mockk()
         imageMetadataStore = mockk(relaxed = true)
@@ -68,6 +71,7 @@ class TrmnlDisplayRepositoryTest {
         repository =
             TrmnlDisplayRepository(
                 apiService = apiService,
+                userApiService = userApiService,
                 imageMetadataStore = imageMetadataStore,
                 repositoryConfigProvider = repositoryConfigProvider,
             )

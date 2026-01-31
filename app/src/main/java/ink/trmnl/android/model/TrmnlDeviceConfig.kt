@@ -33,4 +33,11 @@ data class TrmnlDeviceConfig constructor(
      * See https://github.com/usetrmnl/trmnl-android/issues/190
      */
     val isMasterDevice: Boolean? = null,
+    /**
+     * User-level API token (Account API key) for user-level endpoints.
+     * Required for BYOD devices to access user-level API endpoints like /api/me and /api/devices.
+     *
+     * This is separate from [apiAccessToken] which is the device-level API key.
+     */
+    val userApiToken: String? = null,
 )
