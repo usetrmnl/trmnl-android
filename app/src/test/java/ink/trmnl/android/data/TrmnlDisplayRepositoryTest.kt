@@ -1,5 +1,6 @@
 package ink.trmnl.android.data
 
+import android.content.Context
 import com.google.common.truth.Truth.assertThat
 import com.slack.eithernet.ApiResult
 import ink.trmnl.android.model.TrmnlDeviceConfig
@@ -28,6 +29,7 @@ import org.junit.Test
 @OptIn(com.slack.eithernet.InternalEitherNetApi::class)
 class TrmnlDisplayRepositoryTest {
     private lateinit var repository: TrmnlDisplayRepository
+    private lateinit var context: Context
     private lateinit var apiService: TrmnlApiService
     private lateinit var userApiService: TrmnlUserApiService
     private lateinit var imageMetadataStore: ImageMetadataStore
@@ -60,6 +62,7 @@ class TrmnlDisplayRepositoryTest {
 
     @Before
     fun setup() {
+        context = mockk(relaxed = true)
         apiService = mockk()
         userApiService = mockk()
         repositoryConfigProvider = mockk()
@@ -70,6 +73,7 @@ class TrmnlDisplayRepositoryTest {
 
         repository =
             TrmnlDisplayRepository(
+                context = context,
                 apiService = apiService,
                 userApiService = userApiService,
                 imageMetadataStore = imageMetadataStore,

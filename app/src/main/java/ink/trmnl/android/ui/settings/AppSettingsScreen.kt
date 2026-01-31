@@ -513,6 +513,20 @@ class AppSettingsPresenter
                                             response.imageUrl,
                                             response.refreshIntervalSeconds ?: DEFAULT_REFRESH_INTERVAL_SEC,
                                         )
+
+                                    // For BYOD devices, also fetch and save the device ID
+                                    if (deviceType == TrmnlDeviceType.BYOD) {
+                                        val deviceIdResult = displayRepository.getDeviceIdFromApi(deviceConfig)
+                                        if (deviceIdResult.isSuccess) {
+                                            val deviceId = deviceIdResult.getOrNull()
+                                            if (deviceId != null) {
+                                                deviceConfigStore.saveDeviceId(deviceId)
+                                                Timber.d("Device ID saved successfully for BYOD device: $deviceId")
+                                            }
+                                        } else {
+                                            Timber.w("Failed to fetch device ID for BYOD device", deviceIdResult.exceptionOrNull())
+                                        }
+                                    }
                                 } else {
                                     // No error but also no image URL
                                     val errorMessage = response.error ?: ""

@@ -100,6 +100,7 @@ class TrmnlDeviceConfigDataStore
             private val DEVICE_MAC_ID_KEY = stringPreferencesKey("device_mac_id")
             private val IS_MASTER_DEVICE_KEY = stringPreferencesKey("is_master_device")
             private val USER_API_TOKEN_KEY = stringPreferencesKey("user_api_token")
+            private val DEVICE_ID_KEY = stringPreferencesKey("device_id")
             private val DEVICE_MODEL_PREFERENCES_KEY = stringPreferencesKey("device_model_preferences")
         }
 
@@ -261,9 +262,10 @@ class TrmnlDeviceConfigDataStore
                     val deviceMacId = preferences[DEVICE_MAC_ID_KEY]
                     val isMasterDevice = preferences[IS_MASTER_DEVICE_KEY]?.toBoolean()
                     val userApiToken = preferences[USER_API_TOKEN_KEY]
+                    val deviceId = preferences[DEVICE_ID_KEY]?.toIntOrNull()
 
                     Timber.tag(TAG).d(
-                        "Loading device config (legacy): type=$type, deviceApiToken=${token.obfuscated()}",
+                        "Loading device config (legacy): type=$type, deviceApiToken=${token.obfuscated()}, deviceId=$deviceId",
                     )
 
                     if (token != null) {
@@ -275,6 +277,7 @@ class TrmnlDeviceConfigDataStore
                             refreshRateSecs = refreshRate,
                             isMasterDevice = isMasterDevice,
                             userApiToken = userApiToken,
+                            deviceId = deviceId,
                         )
                     } else {
                         null
@@ -335,6 +338,11 @@ class TrmnlDeviceConfigDataStore
                     config.userApiToken?.let { userToken ->
                         preferences[USER_API_TOKEN_KEY] = userToken
                     } ?: preferences.remove(USER_API_TOKEN_KEY)
+
+                    // Save deviceId if available
+                    config.deviceId?.let { deviceId ->
+                        preferences[DEVICE_ID_KEY] = deviceId.toString()
+                    } ?: preferences.remove(DEVICE_ID_KEY)
                 }
                 Timber.tag(TAG).d("Device config saved successfully")
             } catch (e: Exception) {
@@ -372,6 +380,29 @@ class TrmnlDeviceConfigDataStore
                     .first()
             Timber.tag(TAG).d("Retrieved user API token: ${token.obfuscated()}")
             return token
+        }
+
+        /**
+         * Saves the device ID (TRMNL device ID from /api/devices/me)
+         */
+        suspend fun saveDeviceId(deviceId: Int) {
+            Timber.tag(TAG).d("Saving device ID: $deviceId")
+            context.deviceConfigStore.edit { preferences ->
+                preferences[DEVICE_ID_KEY] = deviceId.toString()
+            }
+            Timber.tag(TAG).d("Device ID saved successfully")
+        }
+
+        /**
+         * Gets the device ID
+         */
+        suspend fun getDeviceId(): Int? {
+            val deviceId =
+                context.deviceConfigStore.data
+                    .map { preferences -> preferences[DEVICE_ID_KEY]?.toIntOrNull() }
+                    .first()
+            Timber.tag(TAG).d("Retrieved device ID: $deviceId")
+            return deviceId
         }
 
         /**

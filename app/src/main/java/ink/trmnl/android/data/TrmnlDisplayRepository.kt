@@ -1,5 +1,7 @@
 package ink.trmnl.android.data
 
+import android.content.Context
+import android.os.BatteryManager
 import com.slack.eithernet.ApiResult
 import com.slack.eithernet.exceptionOrNull
 import com.squareup.anvil.annotations.optional.SingleIn
@@ -7,6 +9,7 @@ import ink.trmnl.android.BuildConfig.USE_FAKE_API
 import ink.trmnl.android.data.fake.generateFakeDeviceSetupInfo
 import ink.trmnl.android.data.fake.generateFakeTrmnlDisplayInfo
 import ink.trmnl.android.di.AppScope
+import ink.trmnl.android.di.ApplicationContext
 import ink.trmnl.android.model.SupportedDeviceModel
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
@@ -15,8 +18,11 @@ import ink.trmnl.android.network.TrmnlApiService.Companion.CURRENT_PLAYLIST_SCRE
 import ink.trmnl.android.network.TrmnlApiService.Companion.MODELS_API_PATH
 import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_PLAYLIST_SCREEN_API_PATH
 import ink.trmnl.android.network.TrmnlUserApiService
+import ink.trmnl.android.network.TrmnlUserApiService.Companion.DEVICE_API_PATH
 import ink.trmnl.android.network.TrmnlUserApiService.Companion.USER_INFO_API_PATH
+import ink.trmnl.android.network.model.TrmnlDevice
 import ink.trmnl.android.network.model.TrmnlDeviceModel
+import ink.trmnl.android.network.model.TrmnlDeviceUpdateRequest
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
 import ink.trmnl.android.network.model.TrmnlUser
 import ink.trmnl.android.network.util.constructApiUrl
@@ -24,6 +30,9 @@ import ink.trmnl.android.network.util.extractHttpResponseMetadata
 import ink.trmnl.android.network.util.extractHttpResponseMetadataFromFailure
 import ink.trmnl.android.util.HTTP_500
 import ink.trmnl.android.util.isHttpOk
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -40,11 +49,26 @@ import javax.inject.Inject
 class TrmnlDisplayRepository
     @Inject
     constructor(
+        @ApplicationContext private val context: Context,
         private val apiService: TrmnlApiService,
         private val userApiService: TrmnlUserApiService,
         private val imageMetadataStore: ImageMetadataStore,
         private val repositoryConfigProvider: RepositoryConfigProvider,
     ) {
+        /**
+         * Gets the current battery level of the Android device.
+         *
+         * @return Battery percentage (0-100), or null if unable to retrieve
+         */
+        private fun getBatteryLevel(): Int? =
+            try {
+                val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
+                batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to get battery level")
+                null
+            }
+
         /**
          * Fetches display data for next plugin from the server using the provided access token.
          * If the app is in debug mode, it uses mock data instead.
@@ -101,6 +125,19 @@ class TrmnlDisplayRepository
                             displayInfo.imageUrl,
                             displayInfo.refreshIntervalSeconds,
                         )
+
+                        // Report battery status for BYOD devices (non-blocking)
+                        if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOD &&
+                            trmnlDeviceConfig.deviceId != null &&
+                            trmnlDeviceConfig.userApiToken != null
+                        ) {
+                            val batteryLevel = getBatteryLevel()
+                            if (batteryLevel != null) {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    reportBatteryStatus(trmnlDeviceConfig, batteryLevel)
+                                }
+                            }
+                        }
                     }
 
                     return displayInfo
@@ -161,6 +198,19 @@ class TrmnlDisplayRepository
                             displayInfo.imageUrl,
                             displayInfo.refreshIntervalSeconds,
                         )
+
+                        // Report battery status for BYOD devices (non-blocking)
+                        if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOD &&
+                            trmnlDeviceConfig.deviceId != null &&
+                            trmnlDeviceConfig.userApiToken != null
+                        ) {
+                            val batteryLevel = getBatteryLevel()
+                            if (batteryLevel != null) {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    reportBatteryStatus(trmnlDeviceConfig, batteryLevel)
+                                }
+                            }
+                        }
                     }
 
                     return displayInfo
@@ -365,6 +415,125 @@ class TrmnlDisplayRepository
                 is ApiResult.Success -> {
                     Timber.i("User API token validated successfully: ${result.value.data.email}")
                     Result.success(result.value.data)
+                }
+            }
+        }
+
+        /**
+         * Fetches the device ID from the TRMNL API using the device API token.
+         *
+         * This method calls the /api/devices/me endpoint with device-level authentication
+         * to retrieve device information including the device ID, which is needed for
+         * user-level API calls to /api/devices/{id}.
+         *
+         * **Note:** This endpoint doesn't exist on the server yet, so this method
+         * returns a mocked response until the server endpoint is implemented.
+         *
+         * @param config Device configuration containing the device API token
+         * @return A Result containing the device ID on success or an exception on failure
+         */
+        suspend fun getDeviceIdFromApi(config: TrmnlDeviceConfig): Result<Int> {
+            Timber.i("Fetching device ID from API for device type: ${config.type}")
+
+            // Always use mocked response since the endpoint doesn't exist yet
+            // TODO: Remove this mock when the server endpoint is implemented
+            val mockedDevice =
+                TrmnlDevice(
+                    id = 1,
+                    name = "BYOD TRMNL",
+                    friendlyId = "_____",
+                    macAddress = "********",
+                    batteryVoltage = null,
+                    rssi = null,
+                    sleepModeEnabled = false,
+                    sleepStartTime = 1320,
+                    sleepEndTime = 480,
+                    percentCharged = 100.0,
+                    wifiStrength = 100.0,
+                )
+
+            Timber.i("Using mocked device ID: ${mockedDevice.id}")
+            return Result.success(mockedDevice.id)
+
+            /*
+             * TODO: Uncomment this when the server endpoint is implemented:
+             *
+             * val result = apiService.getDeviceMe(
+             *     fullApiUrl = constructApiUrl(config.apiBaseUrl, DEVICE_ME_API_PATH),
+             *     accessToken = config.apiAccessToken,
+             * )
+             *
+             * return when (result) {
+             *     is ApiResult.Failure -> {
+             *         val exception = result.exceptionOrNull()
+             *         Timber.e(exception, "Failed to fetch device ID")
+             *         Result.failure(exception ?: Exception("Failed to fetch device ID"))
+             *     }
+             *     is ApiResult.Success -> {
+             *         val deviceId = result.value.data.id
+             *         Timber.i("Device ID fetched successfully: $deviceId")
+             *         Result.success(deviceId)
+             *     }
+             * }
+             */
+        }
+
+        /**
+         * Reports the device's battery status to the TRMNL API.
+         *
+         * This method sends a PATCH request to /api/devices/{id} using user-level authentication
+         * to update the device's battery percentage on the server.
+         *
+         * This operation is non-blocking and should not affect display updates.
+         *
+         * @param config Device configuration containing the device ID and user API token
+         * @param batteryPercent The current battery percentage (0-100)
+         * @return A Result containing Unit on success or an exception on failure
+         */
+        suspend fun reportBatteryStatus(
+            config: TrmnlDeviceConfig,
+            batteryPercent: Int,
+        ): Result<Unit> {
+            val deviceId = config.deviceId
+            val userApiToken = config.userApiToken
+
+            if (deviceId == null) {
+                Timber.w("Cannot report battery status: device ID is null")
+                return Result.failure(IllegalStateException("Device ID is required"))
+            }
+
+            if (userApiToken == null) {
+                Timber.w("Cannot report battery status: user API token is null")
+                return Result.failure(IllegalStateException("User API token is required"))
+            }
+
+            Timber.d("Reporting battery status: $batteryPercent% for device ID: $deviceId")
+
+            if (repositoryConfigProvider.shouldUseFakeData) {
+                // Skip API call in debug mode
+                Timber.d("Skipping battery status report (fake API mode)")
+                return Result.success(Unit)
+            }
+
+            val updateRequest = TrmnlDeviceUpdateRequest(percentCharged = batteryPercent.toDouble())
+            val apiUrl = constructApiUrl(config.apiBaseUrl, DEVICE_API_PATH.replace("{id}", deviceId.toString()))
+
+            val result =
+                userApiService.updateDevice(
+                    fullApiUrl = apiUrl,
+                    accessToken = "Bearer $userApiToken",
+                    updateRequest = updateRequest,
+                )
+
+            return when (result) {
+                is ApiResult.Failure -> {
+                    val exception = result.exceptionOrNull()
+                    Timber.e(exception, "Failed to report battery status")
+                    Result.failure(exception ?: Exception("Failed to report battery status"))
+                }
+                is ApiResult.Success -> {
+                    Timber.d("Battery status reported successfully")
+                    Result.success(Unit)
                 }
             }
         }
