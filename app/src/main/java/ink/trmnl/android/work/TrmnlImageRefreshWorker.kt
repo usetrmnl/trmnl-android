@@ -170,6 +170,9 @@ class TrmnlImageRefreshWorker(
             httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
         )
 
+        // Report battery status for BYOD devices after successful image refresh
+        displayRepository.reportDeviceBatteryStatus(deviceConfig)
+
         // NOTE: Image metadata caching is handled automatically by `TrmnlDisplayRepository`
         // when the API call succeeds, so we don't need to save it again here.
         // See https://github.com/usetrmnl/trmnl-android/issues/195

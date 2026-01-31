@@ -3,6 +3,7 @@ package ink.trmnl.android.network
 import com.slack.eithernet.ApiResult
 import ink.trmnl.android.data.TrmnlDisplayRepository
 import ink.trmnl.android.network.model.TrmnlCurrentImageResponse
+import ink.trmnl.android.network.model.TrmnlDeviceResponse
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
 import ink.trmnl.android.network.model.TrmnlModelsResponse
 import ink.trmnl.android.network.model.TrmnlSetupResponse
@@ -65,6 +66,20 @@ interface TrmnlApiService {
          * @see getDeviceModels
          */
         internal const val MODELS_API_PATH = "api/models"
+
+        /**
+         * Path for the TRMNL API endpoint to get the device information.
+         *
+         * **Authentication:** Requires device-level Access-Token header
+         *
+         * **Note:** This endpoint doesn't exist on the server yet. The repository layer
+         * provides a mocked response until the server endpoint is implemented.
+         *
+         * See https://discord.com/channels/1281055965508141100/1466924426460397765
+         *
+         * @see getDeviceMe
+         */
+        internal const val DEVICE_ME_API_PATH = "api/devices/me"
     }
 
     /**
@@ -132,4 +147,27 @@ interface TrmnlApiService {
     suspend fun getDeviceModels(
         @Url fullApiUrl: String,
     ): ApiResult<TrmnlModelsResponse, Unit>
+
+    /**
+     * Retrieve device information using [DEVICE_ME_API_PATH].
+     *
+     * This endpoint provides device details including the device ID, which is needed
+     * for making user-level API calls to `/api/devices/{id}`.
+     *
+     * **Authentication:** Requires device-level Access-Token header (device API key)
+     *
+     * **Note:** This endpoint doesn't exist on the server yet. The repository layer
+     * provides a mocked response until the server endpoint is implemented.
+     *
+     * See https://discord.com/channels/1281055965508141100/1466924426460397765
+     *
+     * @param fullApiUrl The complete API URL to call (e.g., "https://usetrmnl.com/api/devices/me")
+     * @param accessToken The device's API key (required)
+     * @return An [ApiResult] containing [TrmnlDeviceResponse] with the device information
+     */
+    @GET
+    suspend fun getDeviceMe(
+        @Url fullApiUrl: String,
+        @Header("access-token") accessToken: String,
+    ): ApiResult<TrmnlDeviceResponse, Unit>
 }

@@ -513,6 +513,23 @@ class AppSettingsPresenter
                                             response.imageUrl,
                                             response.refreshIntervalSeconds ?: DEFAULT_REFRESH_INTERVAL_SEC,
                                         )
+
+                                    // For BYOD devices, also fetch and save the device ID
+                                    if (deviceType == TrmnlDeviceType.BYOD) {
+                                        val deviceIdResult = displayRepository.getDeviceIdFromApi(deviceConfig)
+                                        if (deviceIdResult.isSuccess) {
+                                            val deviceId = deviceIdResult.getOrNull()
+                                            if (deviceId != null) {
+                                                deviceConfigStore.saveDeviceId(deviceId)
+                                                Timber.d("Device ID saved successfully for BYOD device: $deviceId")
+                                            }
+                                        } else {
+                                            Timber.w(
+                                                "Failed to fetch device ID for BYOD device. Error: %s",
+                                                deviceIdResult.exceptionOrNull(),
+                                            )
+                                        }
+                                    }
                                 } else {
                                     // No error but also no image URL
                                     val errorMessage = response.error ?: ""
@@ -535,6 +552,14 @@ class AppSettingsPresenter
                                             TrmnlDeviceType.TRMNL -> false
                                         }
 
+                                    // For BYOD devices, retrieve the device ID that was fetched during validation
+                                    val deviceId =
+                                        if (deviceType == TrmnlDeviceType.BYOD) {
+                                            deviceConfigStore.getDeviceId()
+                                        } else {
+                                            null
+                                        }
+
                                     deviceConfigStore.saveDeviceConfig(
                                         TrmnlDeviceConfig(
                                             type = deviceType,
@@ -549,6 +574,8 @@ class AppSettingsPresenter
                                             // We still persist the token here; any invalid or expired token will be
                                             // detected and surfaced via downstream API error handling.
                                             userApiToken = userApiToken.ifBlank { null },
+                                            // Include device ID for BYOD devices (fetched during validation)
+                                            deviceId = deviceId,
                                         ),
                                     )
                                     trmnlWorkScheduler.updateRefreshInterval(result.refreshRateSecs)

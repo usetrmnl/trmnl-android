@@ -40,4 +40,14 @@ data class TrmnlDeviceConfig constructor(
      * This is separate from [apiAccessToken] which is the device-level API key.
      */
     val userApiToken: String? = null,
+    /**
+     * TRMNL device ID extracted from /api/devices/me endpoint.
+     * Used for making user-level API calls to /api/devices/{id}.
+     *
+     * This ID is fetched during BYOD device validation and is required for
+     * reporting battery status and other device-specific updates.
+     *
+     * **Note:** This field is only applicable for BYOD device types.
+     */
+    val deviceId: Int? = null,
 )
