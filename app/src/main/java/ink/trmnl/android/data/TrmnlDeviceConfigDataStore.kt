@@ -56,6 +56,7 @@ class TrmnlDeviceConfigDataStore
             private val CONFIG_JSON_KEY = stringPreferencesKey("config_json")
             private val DEVICE_MAC_ID_KEY = stringPreferencesKey("device_mac_id")
             private val IS_MASTER_DEVICE_KEY = stringPreferencesKey("is_master_device")
+            private val USER_API_TOKEN_KEY = stringPreferencesKey("user_api_token")
             private val DEVICE_MODEL_PREFERENCES_KEY = stringPreferencesKey("device_model_preferences")
         }
 
@@ -168,6 +169,7 @@ class TrmnlDeviceConfigDataStore
                     val refreshRate = preferences[REFRESH_RATE_SEC_KEY] ?: DEFAULT_REFRESH_INTERVAL_SEC
                     val deviceMacId = preferences[DEVICE_MAC_ID_KEY]
                     val isMasterDevice = preferences[IS_MASTER_DEVICE_KEY]?.toBoolean()
+                    val userApiToken = preferences[USER_API_TOKEN_KEY]
 
                     if (token != null) {
                         TrmnlDeviceConfig(
@@ -177,6 +179,7 @@ class TrmnlDeviceConfigDataStore
                             deviceMacId = deviceMacId,
                             refreshRateSecs = refreshRate,
                             isMasterDevice = isMasterDevice,
+                            userApiToken = userApiToken,
                         )
                     } else {
                         null
@@ -209,6 +212,11 @@ class TrmnlDeviceConfigDataStore
                     config.isMasterDevice?.let { isMaster ->
                         preferences[IS_MASTER_DEVICE_KEY] = isMaster.toString()
                     } ?: preferences.remove(IS_MASTER_DEVICE_KEY)
+
+                    // Save userApiToken if available
+                    config.userApiToken?.let { userToken ->
+                        preferences[USER_API_TOKEN_KEY] = userToken
+                    } ?: preferences.remove(USER_API_TOKEN_KEY)
                 }
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Failed to save device config")
@@ -223,6 +231,23 @@ class TrmnlDeviceConfigDataStore
                 preferences[DEVICE_TYPE_KEY] = deviceTypeAdapter.toJson(type)
             }
         }
+
+        /**
+         * Saves the user-level API token (Account API key)
+         */
+        suspend fun saveUserApiToken(token: String) {
+            context.deviceConfigStore.edit { preferences ->
+                preferences[USER_API_TOKEN_KEY] = token
+            }
+        }
+
+        /**
+         * Gets the user-level API token
+         */
+        suspend fun getUserApiToken(): String? =
+            context.deviceConfigStore.data
+                .map { preferences -> preferences[USER_API_TOKEN_KEY] }
+                .first()
 
         /**
          * Saves the access token

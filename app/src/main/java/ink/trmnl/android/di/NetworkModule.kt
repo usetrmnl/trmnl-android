@@ -12,6 +12,7 @@ import dagger.Module
 import dagger.Provides
 import ink.trmnl.android.BuildConfig
 import ink.trmnl.android.network.TrmnlApiService
+import ink.trmnl.android.network.TrmnlUserApiService
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -100,4 +101,8 @@ object NetworkModule {
     @Provides
     @SingleIn(AppScope::class)
     fun provideTrmnlApiService(retrofit: Retrofit): TrmnlApiService = retrofit.create(TrmnlApiService::class.java)
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideTrmnlUserApiService(retrofit: Retrofit): TrmnlUserApiService = retrofit.create(TrmnlUserApiService::class.java)
 }

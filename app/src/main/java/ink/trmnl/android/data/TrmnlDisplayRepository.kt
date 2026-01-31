@@ -14,8 +14,11 @@ import ink.trmnl.android.network.TrmnlApiService
 import ink.trmnl.android.network.TrmnlApiService.Companion.CURRENT_PLAYLIST_SCREEN_API_PATH
 import ink.trmnl.android.network.TrmnlApiService.Companion.MODELS_API_PATH
 import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_PLAYLIST_SCREEN_API_PATH
+import ink.trmnl.android.network.TrmnlUserApiService
+import ink.trmnl.android.network.TrmnlUserApiService.Companion.USER_INFO_API_PATH
 import ink.trmnl.android.network.model.TrmnlDeviceModel
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
+import ink.trmnl.android.network.model.TrmnlUser
 import ink.trmnl.android.network.util.constructApiUrl
 import ink.trmnl.android.network.util.extractHttpResponseMetadata
 import ink.trmnl.android.network.util.extractHttpResponseMetadataFromFailure
@@ -38,6 +41,7 @@ class TrmnlDisplayRepository
     @Inject
     constructor(
         private val apiService: TrmnlApiService,
+        private val userApiService: TrmnlUserApiService,
         private val imageMetadataStore: ImageMetadataStore,
         private val repositoryConfigProvider: RepositoryConfigProvider,
     ) {
@@ -312,4 +316,56 @@ class TrmnlDisplayRepository
                 mimeType = mimeType,
                 kind = kind,
             )
+
+        /**
+         * Validates a user API token by calling the /api/me endpoint.
+         *
+         * This method is used to verify user-level (account) API tokens before saving them.
+         * On success, returns the user's information.
+         *
+         * @param apiBaseUrl The base URL of the TRMNL API server
+         * @param userApiToken The user API token to validate (should start with "user_")
+         * @return A Result containing TrmnlUser on success or an exception on failure
+         */
+        suspend fun validateUserApiToken(
+            apiBaseUrl: String,
+            userApiToken: String,
+        ): Result<TrmnlUser> {
+            Timber.i("Validating user API token")
+
+            if (repositoryConfigProvider.shouldUseFakeData) {
+                // Return fake user data in debug mode
+                return Result.success(
+                    TrmnlUser(
+                        id = 42,
+                        name = "Test User",
+                        email = "test@example.com",
+                        firstName = "Test",
+                        lastName = "User",
+                        locale = "en",
+                        timeZone = "Eastern Time (US & Canada)",
+                        timeZoneIana = "America/New_York",
+                        utcOffset = -14400,
+                    ),
+                )
+            }
+
+            val result =
+                userApiService.getUserInfo(
+                    fullApiUrl = constructApiUrl(apiBaseUrl, USER_INFO_API_PATH),
+                    accessToken = "Bearer $userApiToken",
+                )
+
+            return when (result) {
+                is ApiResult.Failure -> {
+                    val exception = result.exceptionOrNull()
+                    Timber.e(exception, "User API token validation failed")
+                    Result.failure(exception ?: Exception("Failed to validate user token"))
+                }
+                is ApiResult.Success -> {
+                    Timber.i("User API token validated successfully: ${result.value.data.email}")
+                    Result.success(result.value.data)
+                }
+            }
+        }
     }

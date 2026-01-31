@@ -3,6 +3,7 @@ package ink.trmnl.android.network
 import com.slack.eithernet.ApiResult
 import ink.trmnl.android.network.model.TrmnlDeviceResponse
 import ink.trmnl.android.network.model.TrmnlDeviceUpdateRequest
+import ink.trmnl.android.network.model.TrmnlUserResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -23,6 +24,17 @@ import retrofit2.http.Url
 interface TrmnlUserApiService {
     companion object {
         /**
+         * Path for the TRMNL API endpoint to get the authenticated user's information.
+         *
+         * **Authentication:** Requires Bearer token (user-level Account API key)
+         *
+         * See: https://trmnl.com/api-docs/index.html#/Users/get_api_me
+         *
+         * @see getUserInfo
+         */
+        internal const val USER_INFO_API_PATH = "api/me"
+
+        /**
          * Path template for the TRMNL API endpoint to get or update a specific device.
          *
          * Replace `{id}` with the actual device ID.
@@ -36,6 +48,23 @@ interface TrmnlUserApiService {
          */
         internal const val DEVICE_API_PATH = "api/devices/{id}"
     }
+
+    /**
+     * Retrieve the authenticated user's information using [USER_INFO_API_PATH].
+     *
+     * This endpoint is used to validate the user's API token and retrieve their profile information.
+     *
+     * **Authentication:** Requires Bearer token with user-level Account API key
+     *
+     * @param fullApiUrl The complete API URL to call (e.g., "https://usetrmnl.com/api/me")
+     * @param accessToken The bearer authentication token (format: "Bearer your_api_key")
+     * @return An [ApiResult] containing [TrmnlUserResponse] with the user's information
+     */
+    @GET
+    suspend fun getUserInfo(
+        @Url fullApiUrl: String,
+        @Header("Authorization") accessToken: String,
+    ): ApiResult<TrmnlUserResponse, Unit>
 
     /**
      * Retrieve device data for a specific device using [DEVICE_API_PATH].
