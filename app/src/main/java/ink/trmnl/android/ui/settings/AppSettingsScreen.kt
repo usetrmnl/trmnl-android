@@ -836,12 +836,48 @@ fun AppSettingsContent(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
+                    // Determine button state based on validation result
+                    val isValidationSuccess = state.validationResult is ValidationResult.UserTokenSuccess
+                    val isValidationError = state.validationResult is ValidationResult.InvalidUserToken
+
                     Button(
                         onClick = { state.eventSink(AppSettingsScreen.Event.ValidateUserToken) },
                         enabled = state.userApiToken.isNotBlank() && !state.isLoading,
                         modifier = Modifier.fillMaxWidth(),
+                        colors =
+                            when {
+                                isValidationSuccess ->
+                                    ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                isValidationError ->
+                                    ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                else -> ButtonDefaults.buttonColors()
+                            },
                     ) {
                         Text("Validate User Token")
+                        when {
+                            isValidationSuccess -> {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    painter = painterResource(R.drawable.check_circle_24dp),
+                                    contentDescription = "Validation successful",
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                            isValidationError -> {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    painter = painterResource(R.drawable.error_24dp),
+                                    contentDescription = "Validation failed",
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                        }
                     }
                 }
             }
