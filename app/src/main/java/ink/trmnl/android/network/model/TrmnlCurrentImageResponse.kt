@@ -11,7 +11,7 @@ import com.squareup.moshi.JsonClass
  * {
  *   "status": 200,
  *   "refresh_rate": 3590,
- *   "image_url": "https://usetrmnl.com/plugin-image.bmp",
+ *   "image_url": "https://trmnl.com/plugin-image.bmp",
  *   "filename": "plugin-image",
  *   "rendered_at": null
  * }

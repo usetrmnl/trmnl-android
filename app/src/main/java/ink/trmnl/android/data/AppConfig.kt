@@ -24,7 +24,7 @@ object AppConfig {
      * Base URL for the TRMNL API server.
      * Ref: https://github.com/usetrmnl/trmnl-android/issues/171
      */
-    const val TRMNL_API_SERVER_BASE_URL = "https://usetrmnl.com/"
+    const val TRMNL_API_SERVER_BASE_URL = "https://trmnl.com/"
 
     /**
      * URL for the TRMNL Android app on GitHub.
@@ -34,5 +34,5 @@ object AppConfig {
     /**
      * URL for the TRMNL main website.
      */
-    const val TRMNL_SITE_URL = "https://usetrmnl.com/"
+    const val TRMNL_SITE_URL = "https://trmnl.com/"
 }

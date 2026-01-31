@@ -18,7 +18,7 @@ import retrofit2.http.Url
  * (Account API key), as opposed to device-level authentication.
  *
  * See:
- * - https://docs.usetrmnl.com/go
+ * - https://docs.trmnl.com/go
  * - https://trmnl.com/api-docs/index.html (OpenAPI documentation)
  */
 interface TrmnlUserApiService {
@@ -56,7 +56,7 @@ interface TrmnlUserApiService {
      *
      * **Authentication:** Requires Bearer token with user-level Account API key
      *
-     * @param fullApiUrl The complete API URL to call (e.g., "https://usetrmnl.com/api/me")
+     * @param fullApiUrl The complete API URL to call (e.g., "https://trmnl.com/api/me")
      * @param accessToken The bearer authentication token (format: "Bearer your_api_key")
      * @return An [ApiResult] containing [TrmnlUserResponse] with the user's information
      */
@@ -74,7 +74,7 @@ interface TrmnlUserApiService {
      *
      * **Authentication:** Requires Bearer token with user-level Account API key
      *
-     * @param fullApiUrl The complete API URL to call (e.g., "https://usetrmnl.com/api/devices/1")
+     * @param fullApiUrl The complete API URL to call (e.g., "https://trmnl.com/api/devices/1")
      * @param accessToken The bearer authentication token (format: "Bearer your_api_key")
      * @return An [ApiResult] containing [TrmnlDeviceResponse] with the device data
      */

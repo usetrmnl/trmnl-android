@@ -659,7 +659,7 @@ class TrmnlDeviceConfigDataStoreTest {
                 TrmnlDeviceConfig(
                     type = TrmnlDeviceType.BYOD,
                     apiAccessToken = "test-token",
-                    apiBaseUrl = "https://usetrmnl.com",
+                    apiBaseUrl = "https://trmnl.com",
                     userApiToken = "user_test_token",
                     deviceId = 999,
                 )
@@ -683,7 +683,7 @@ class TrmnlDeviceConfigDataStoreTest {
             // Arrange - Save individual fields (legacy approach) without JSON
             deviceConfigDataStore.saveDeviceType(TrmnlDeviceType.BYOD)
             deviceConfigDataStore.saveAccessToken("test-token")
-            deviceConfigDataStore.saveServerUrl("https://usetrmnl.com")
+            deviceConfigDataStore.saveServerUrl("https://trmnl.com")
             deviceConfigDataStore.saveDeviceId(777)
 
             // Act
@@ -703,7 +703,7 @@ class TrmnlDeviceConfigDataStoreTest {
                 TrmnlDeviceConfig(
                     type = TrmnlDeviceType.BYOD,
                     apiAccessToken = "test-token",
-                    apiBaseUrl = "https://usetrmnl.com",
+                    apiBaseUrl = "https://trmnl.com",
                     deviceId = 123,
                 )
             deviceConfigDataStore.saveDeviceConfig(configWithDeviceId)

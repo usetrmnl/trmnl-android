@@ -59,9 +59,9 @@ internal fun TrmnlDeviceTypeInfoText() {
 
             withLink(
                 LinkAnnotation.Url(
-                    url = "https://usetrmnl.com/dashboard",
+                    url = "https://trmnl.com/dashboard",
                     styles = TextLinkStyles(style = linkStyle),
-                    linkInteractionListener = { uriHandler.openUri("https://usetrmnl.com/dashboard") },
+                    linkInteractionListener = { uriHandler.openUri("https://trmnl.com/dashboard") },
                 ),
             ) {
                 withStyle(style = linkStyle) {
@@ -73,9 +73,9 @@ internal fun TrmnlDeviceTypeInfoText() {
 
             withLink(
                 LinkAnnotation.Url(
-                    url = "https://docs.usetrmnl.com/go/private-api/introduction",
+                    url = "https://docs.trmnl.com/go/private-api/introduction",
                     styles = TextLinkStyles(style = linkStyle),
-                    linkInteractionListener = { uriHandler.openUri("https://docs.usetrmnl.com/go/private-api/introduction") },
+                    linkInteractionListener = { uriHandler.openUri("https://docs.trmnl.com/go/private-api/introduction") },
                 ),
             ) {
                 withStyle(style = linkStyle) {
@@ -114,9 +114,9 @@ internal fun ByodDeviceTypeInfoText() {
 
             withLink(
                 LinkAnnotation.Url(
-                    url = "https://docs.usetrmnl.com/go/diy/byod-s",
+                    url = "https://docs.trmnl.com/go/diy/byod-s",
                     styles = TextLinkStyles(style = linkStyle),
-                    linkInteractionListener = { uriHandler.openUri("https://docs.usetrmnl.com/go/diy/byod-s") },
+                    linkInteractionListener = { uriHandler.openUri("https://docs.trmnl.com/go/diy/byod-s") },
                 ),
             ) {
                 withStyle(style = linkStyle) {
@@ -155,9 +155,9 @@ internal fun ByosDeviceTypeInfoText() {
 
             withLink(
                 LinkAnnotation.Url(
-                    url = "https://docs.usetrmnl.com/go/diy/byos",
+                    url = "https://docs.trmnl.com/go/diy/byos",
                     styles = TextLinkStyles(style = linkStyle),
-                    linkInteractionListener = { uriHandler.openUri("https://docs.usetrmnl.com/go/diy/byos") },
+                    linkInteractionListener = { uriHandler.openUri("https://docs.trmnl.com/go/diy/byos") },
                 ),
             ) {
                 withStyle(style = linkStyle) {

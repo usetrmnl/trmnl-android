@@ -4,7 +4,7 @@ import androidx.annotation.Keep
 
 /**
  * Enum class to represent the type of TRMNL device and service.
- * - https://usetrmnl.com/developers
+ * - https://trmnl.com/developers
  */
 @Keep
 enum class TrmnlDeviceType {

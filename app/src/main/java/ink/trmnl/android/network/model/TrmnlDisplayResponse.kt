@@ -25,7 +25,7 @@ import ink.trmnl.android.util.HTTP_NONE
  * ```json
  * {
  *   "status": 0,
- *   "image_url": "https://usetrmnl.com/images/setup/sleep.bmp",
+ *   "image_url": "https://trmnl.com/images/setup/sleep.bmp",
  *   "filename": "sleep",
  *   "refresh_rate": 28498
  * }
