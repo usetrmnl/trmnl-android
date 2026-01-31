@@ -63,7 +63,10 @@ class TrmnlDisplayRepository
         private fun getBatteryLevel(): Int? =
             try {
                 val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
-                batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                val batteryLevel =
+                    batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                Timber.i("Current battery level: $batteryLevel%")
+                batteryLevel
             } catch (e: Exception) {
                 Timber.e(e, "Failed to get battery level")
                 null
@@ -439,7 +442,7 @@ class TrmnlDisplayRepository
             // TODO: Remove this mock when the server endpoint is implemented
             val mockedDevice =
                 TrmnlDevice(
-                    id = 1,
+                    id = 41448,
                     name = "BYOD TRMNL",
                     friendlyId = "_____",
                     macAddress = "********",
