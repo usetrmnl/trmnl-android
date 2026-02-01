@@ -87,10 +87,13 @@ interface TrmnlApiService {
      *
      * NOTE: This API always loads the next plugin image from the playlist.
      *
+     * See [API Doc](https://docs.trmnl.com/go/private-api/screens) for additional details.
+     *
      * @param fullApiUrl The complete API URL to call
      * @param accessToken The device's API key (required)
      * @param deviceMacId The device's MAC address (optional)
      * @param useBase64 Whether to request Base64-encoded image data (optional)
+     * @param rssi WiFi signal strength in dBm (optional, -100 to 0). See https://github.com/usetrmnl/trmnl-firmware/blob/main/src/api-client/display.cpp for additional references.
      *
      * @see getCurrentDisplayData
      */
@@ -100,12 +103,15 @@ interface TrmnlApiService {
         @Header("access-token") accessToken: String,
         @Header("ID") deviceMacId: String? = null,
         @Header("BASE64") useBase64: Boolean? = null,
+        @Header("RSSI") rssi: Int? = null,
     ): ApiResult<TrmnlDisplayResponse, Unit>
 
     /**
      * Retrieve TRMNL image that is currently being displayed using [CURRENT_PLAYLIST_SCREEN_API_PATH].
      *
      * NOTE: This API always loads the current plugin image from the playlist.
+     *
+     * See [API Doc](https://docs.trmnl.com/go/private-api/screens) for additional details.
      *
      * @see getNextDisplayData
      */
