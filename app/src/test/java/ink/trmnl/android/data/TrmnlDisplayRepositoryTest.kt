@@ -109,6 +109,7 @@ class TrmnlDisplayRepositoryTest {
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = testDeviceConfig.apiAccessToken,
                     useBase64 = any(),
+                    rssi = any(),
                 )
             } returns ApiResult.success(successResponse)
 
@@ -150,6 +151,7 @@ class TrmnlDisplayRepositoryTest {
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = testDeviceConfig.apiAccessToken,
                     useBase64 = any(),
+                    rssi = any(),
                 )
             } returns ApiResult.success(errorResponse)
 
@@ -360,6 +362,7 @@ class TrmnlDisplayRepositoryTest {
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = byosDeviceConfig.apiAccessToken,
                     useBase64 = any(),
+                    rssi = any(),
                 )
             } returns ApiResult.success(successResponse)
 
@@ -377,6 +380,7 @@ class TrmnlDisplayRepositoryTest {
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = byosDeviceConfig.apiAccessToken,
                     useBase64 = any(),
+                    rssi = any(),
                 )
             }
         }
@@ -405,6 +409,7 @@ class TrmnlDisplayRepositoryTest {
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = byodDeviceConfig.apiAccessToken,
                     useBase64 = any(),
+                    rssi = any(),
                 )
             } returns ApiResult.success(successResponse)
 
@@ -422,6 +427,7 @@ class TrmnlDisplayRepositoryTest {
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = byodDeviceConfig.apiAccessToken,
                     useBase64 = any(),
+                    rssi = any(),
                 )
             }
         }
@@ -502,6 +508,7 @@ class TrmnlDisplayRepositoryTest {
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = testDeviceConfig.apiAccessToken,
                     useBase64 = any(),
+                    rssi = any(),
                 )
             } returns httpFailure
 
