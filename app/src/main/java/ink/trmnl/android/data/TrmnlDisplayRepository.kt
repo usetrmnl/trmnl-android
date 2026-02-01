@@ -75,6 +75,13 @@ class TrmnlDisplayRepository
                         // TEMP FIX: Use Base64 encoding to avoid relative path issue
                         // See https://github.com/usetrmnl/trmnl-android/issues/76#issuecomment-2980018109
                         // useBase64 = trmnlDeviceConfig.type == TrmnlDeviceType.BYOS, // Disabled for now
+                        rssi =
+                            if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOD) {
+                                // Send WiFi signal strength (RSSI) if available for BYOD devices only
+                                androidDeviceInfoProvider.getWifiSignalStrength()
+                            } else {
+                                null
+                            },
                     )
 
             when (result) {
