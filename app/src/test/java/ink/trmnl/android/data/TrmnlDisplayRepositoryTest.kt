@@ -701,4 +701,225 @@ class TrmnlDisplayRepositoryTest {
             coVerify(exactly = 1) { androidDeviceInfoProvider.getBatteryLevel() }
             coVerify(exactly = 0) { userApiService.updateDevice(any(), any(), any()) }
         }
+
+    // WiFi Signal Strength (RSSI) Tests
+
+    @Test
+    fun `getNextDisplayData should send RSSI for BYOD device when WiFi available`() =
+        runTest {
+            // Arrange
+            val byodConfig =
+                byodDeviceConfig.copy(
+                    deviceId = null,
+                    userApiToken = "test_token",
+                    apiAccessToken = "test_api_key",
+                )
+            val expectedRssi = -65
+
+            every { androidDeviceInfoProvider.getWifiSignalStrength() } returns expectedRssi
+
+            coEvery {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = expectedRssi,
+                )
+            } returns ApiResult.success(mockk(relaxed = true))
+
+            // Act
+            repository.getNextDisplayData(byodConfig)
+
+            // Assert - Verify RSSI was fetched and sent
+            coVerify(exactly = 1) { androidDeviceInfoProvider.getWifiSignalStrength() }
+            coVerify {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = expectedRssi,
+                )
+            }
+        }
+
+    @Test
+    fun `getNextDisplayData should send null RSSI for BYOD when WiFi unavailable`() =
+        runTest {
+            // Arrange
+            val byodConfig =
+                byodDeviceConfig.copy(
+                    deviceId = null,
+                    userApiToken = "test_token",
+                    apiAccessToken = "test_api_key",
+                )
+
+            every { androidDeviceInfoProvider.getWifiSignalStrength() } returns null
+
+            coEvery { apiService.getNextDisplayData(any(), any(), any(), any()) } returns
+                ApiResult.success(mockk(relaxed = true))
+
+            // Act
+            repository.getNextDisplayData(byodConfig)
+
+            // Assert - Verify RSSI was fetched but null was sent
+            coVerify(exactly = 1) { androidDeviceInfoProvider.getWifiSignalStrength() }
+            coVerify {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = null,
+                )
+            }
+        }
+
+    @Test
+    fun `getNextDisplayData should NOT send RSSI for TRMNL device`() =
+        runTest {
+            // Arrange - TRMNL device (not BYOD)
+            val trmnlConfig =
+                testDeviceConfig.copy(
+                    apiAccessToken = "trmnl_api_key",
+                )
+
+            coEvery { apiService.getNextDisplayData(any(), any(), any(), any()) } returns
+                ApiResult.success(mockk(relaxed = true))
+
+            // Act
+            repository.getNextDisplayData(trmnlConfig)
+
+            // Assert - Verify WiFi signal was NOT fetched and null RSSI was sent
+            coVerify(exactly = 0) { androidDeviceInfoProvider.getWifiSignalStrength() }
+            coVerify {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = null,
+                )
+            }
+        }
+
+    @Test
+    fun `getNextDisplayData should NOT send RSSI for BYOS device`() =
+        runTest {
+            // Arrange - BYOS device uses next display data endpoint (not current_screen)
+            val byosConfig =
+                byosDeviceConfig.copy(
+                    apiAccessToken = "byos_api_key",
+                )
+
+            coEvery { apiService.getNextDisplayData(any(), any(), any(), any(), any()) } returns
+                ApiResult.success(mockk(relaxed = true))
+
+            // Act
+            repository.getNextDisplayData(byosConfig)
+
+            // Assert - Verify WiFi signal was NOT fetched for BYOS device
+            coVerify(exactly = 0) { androidDeviceInfoProvider.getWifiSignalStrength() }
+            // Verify null RSSI was sent
+            coVerify {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = null,
+                )
+            }
+        }
+
+    @Test
+    fun `getNextDisplayData should call getWifiSignalStrength only for BYOD devices`() =
+        runTest {
+            // Arrange - Multiple device types
+            val byodConfig = byodDeviceConfig.copy(apiAccessToken = "byod_key")
+            val trmnlConfig = testDeviceConfig.copy(apiAccessToken = "trmnl_key")
+            val byosConfig = byosDeviceConfig.copy(apiAccessToken = "byos_key")
+
+            every { androidDeviceInfoProvider.getWifiSignalStrength() } returns -70
+
+            coEvery { apiService.getNextDisplayData(any(), any(), any(), any(), any()) } returns
+                ApiResult.success(mockk(relaxed = true))
+
+            // Act - Fetch for all device types
+            repository.getNextDisplayData(byodConfig)
+            repository.getNextDisplayData(trmnlConfig)
+            repository.getNextDisplayData(byosConfig)
+
+            // Assert - Verify WiFi signal was called only once (for BYOD)
+            coVerify(exactly = 1) { androidDeviceInfoProvider.getWifiSignalStrength() }
+        }
+
+    @Test
+    fun `getNextDisplayData should include RSSI in header for BYOD with strong signal`() =
+        runTest {
+            // Arrange
+            val byodConfig = byodDeviceConfig.copy(apiAccessToken = "test_key")
+            val strongSignal = -30 // Excellent signal
+
+            every { androidDeviceInfoProvider.getWifiSignalStrength() } returns strongSignal
+
+            coEvery {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = strongSignal,
+                )
+            } returns ApiResult.success(mockk(relaxed = true))
+
+            // Act
+            repository.getNextDisplayData(byodConfig)
+
+            // Assert
+            coVerify {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = strongSignal,
+                )
+            }
+        }
+
+    @Test
+    fun `getNextDisplayData should include RSSI in header for BYOD with weak signal`() =
+        runTest {
+            // Arrange
+            val byodConfig = byodDeviceConfig.copy(apiAccessToken = "test_key")
+            val weakSignal = -90 // Very weak signal
+
+            every { androidDeviceInfoProvider.getWifiSignalStrength() } returns weakSignal
+
+            coEvery {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = weakSignal,
+                )
+            } returns ApiResult.success(mockk(relaxed = true))
+
+            // Act
+            repository.getNextDisplayData(byodConfig)
+
+            // Assert
+            coVerify {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = weakSignal,
+                )
+            }
+        }
 }
