@@ -1,0 +1,7 @@
+- Updated to the latest version (2.6.0)
+- Migrated battery reporting to Percent-Charged header for improved efficiency
+- Added WiFi signal strength (RSSI) reporting for BYOD devices
+- Refactored codebase to isolate deprecated APIs
+- Updated URLs to trmnl.com domain
+- Enhanced BYOD device configuration and validation
+- Improved code architecture and maintainability
