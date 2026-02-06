@@ -391,6 +391,10 @@ class AppSettingsPresenter
                         }
 
                         AppSettingsScreen.Event.ValidateUserToken -> {
+                            // DEPRECATED: User API token validation is no longer needed
+                            // Battery reporting now uses Percent-Charged header instead of user-level API
+                            Timber.d("User token validation skipped - no longer needed for battery reporting")
+                            /* DISABLED - User token no longer needed for battery reporting
                             scope.launch {
                                 focusManager.clearFocus()
                                 isLoading = true
@@ -440,6 +444,7 @@ class AppSettingsPresenter
 
                                 isLoading = false
                             }
+                             */
                         }
 
                         AppSettingsScreen.Event.ValidateToken -> {
@@ -514,6 +519,10 @@ class AppSettingsPresenter
                                             response.refreshIntervalSeconds ?: DEFAULT_REFRESH_INTERVAL_SEC,
                                         )
 
+                                    // DEPRECATED: Device ID fetching no longer needed
+                                    // Battery reporting now uses Percent-Charged header instead of user-level API
+
+                                    /* DISABLED - Device ID no longer needed for battery reporting
                                     // For BYOD devices, also fetch and save the device ID
                                     if (deviceType == TrmnlDeviceType.BYOD) {
                                         val deviceIdResult = displayRepository.getDeviceIdFromApi(deviceConfig)
@@ -530,6 +539,7 @@ class AppSettingsPresenter
                                             )
                                         }
                                     }
+                                     */
                                 } else {
                                     // No error but also no image URL
                                     val errorMessage = response.error ?: ""
@@ -813,6 +823,17 @@ fun AppSettingsContent(
                 deviceIdError = (state.validationResult as? ValidationResult.InvalidDeviceMacId)?.message,
             )
 
+            //
+            // DEPRECATED: User API Token field is no longer needed
+            //
+            // Battery reporting now uses the Percent-Charged header in /api/display call,
+            // which only requires device-level authentication (Access-Token).
+            // User-level authentication is no longer needed for BYOD device battery reporting.
+            //
+            // This UI has been disabled but kept in code for reference.
+            //
+
+            /* DISABLED - User API token no longer needed for battery reporting
             // User API Token field (only for BYOD)
             AnimatedVisibility(
                 visible = state.deviceType == TrmnlDeviceType.BYOD,
@@ -908,6 +929,7 @@ fun AppSettingsContent(
                     }
                 }
             }
+             */
 
             Spacer(modifier = Modifier.height(16.dp))
 

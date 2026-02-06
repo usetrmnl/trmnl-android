@@ -361,7 +361,14 @@ class TrmnlDeviceConfigDataStore
 
         /**
          * Saves the user-level API token (Account API key)
+         *
+         * **DEPRECATED:** User API token is no longer needed for battery reporting.
+         * Battery percentage is now sent via the Percent-Charged header in /api/display call.
          */
+        @Deprecated(
+            message = "No longer needed for battery reporting. Battery is now sent via Percent-Charged header.",
+            level = DeprecationLevel.WARNING,
+        )
         suspend fun saveUserApiToken(token: String) {
             Timber.tag(TAG).d("Saving user API token: ${token.obfuscated()}")
             context.deviceConfigStore.edit { preferences ->
@@ -372,7 +379,14 @@ class TrmnlDeviceConfigDataStore
 
         /**
          * Gets the user-level API token
+         *
+         * **DEPRECATED:** User API token is no longer needed for battery reporting.
+         * Battery percentage is now sent via the Percent-Charged header in /api/display call.
          */
+        @Deprecated(
+            message = "No longer needed for battery reporting. Battery is now sent via Percent-Charged header.",
+            level = DeprecationLevel.WARNING,
+        )
         suspend fun getUserApiToken(): String? {
             val token =
                 context.deviceConfigStore.data
@@ -385,8 +399,15 @@ class TrmnlDeviceConfigDataStore
         /**
          * Saves the device ID (TRMNL device ID from /api/devices/me).
          *
+         * **DEPRECATED:** Device ID is no longer needed for battery reporting.
+         * Battery percentage is now sent via the Percent-Charged header in /api/display call.
+         *
          * **Note:** This is only applicable for BYOD device types.
          */
+        @Deprecated(
+            message = "No longer needed for battery reporting. Battery is now sent via Percent-Charged header.",
+            level = DeprecationLevel.WARNING,
+        )
         suspend fun saveDeviceId(deviceId: Int) {
             Timber.tag(TAG).d("Saving device ID: $deviceId")
             context.deviceConfigStore.edit { preferences ->
@@ -398,8 +419,15 @@ class TrmnlDeviceConfigDataStore
         /**
          * Gets the device ID.
          *
+         * **DEPRECATED:** Device ID is no longer needed for battery reporting.
+         * Battery percentage is now sent via the Percent-Charged header in /api/display call.
+         *
          * **Note:** This is only applicable for BYOD device types.
          */
+        @Deprecated(
+            message = "No longer needed for battery reporting. Battery is now sent via Percent-Charged header.",
+            level = DeprecationLevel.WARNING,
+        )
         suspend fun getDeviceId(): Int? {
             val deviceId =
                 context.deviceConfigStore.data

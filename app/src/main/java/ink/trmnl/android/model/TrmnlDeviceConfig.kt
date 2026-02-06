@@ -35,13 +35,31 @@ data class TrmnlDeviceConfig constructor(
     val isMasterDevice: Boolean? = null,
     /**
      * User-level API token (Account API key) for user-level endpoints.
+     *
+     * **DEPRECATED:** This field is no longer needed for battery reporting.
+     * Battery percentage is now sent via the Percent-Charged header in /api/display call,
+     * which only requires device-level authentication ([apiAccessToken]).
+     *
+     * This field is kept for backward compatibility and may be removed in a future version.
+     *
      * Required for BYOD devices to access user-level API endpoints like /api/me and /api/devices.
      *
      * This is separate from [apiAccessToken] which is the device-level API key.
      */
+    @Deprecated(
+        message = "No longer needed for battery reporting. Battery is now sent via Percent-Charged header.",
+        level = DeprecationLevel.WARNING,
+    )
     val userApiToken: String? = null,
     /**
      * TRMNL device ID extracted from /api/devices/me endpoint.
+     *
+     * **DEPRECATED:** This field is no longer needed for battery reporting.
+     * Battery percentage is now sent via the Percent-Charged header in /api/display call,
+     * which doesn't require device ID or user-level authentication.
+     *
+     * This field is kept for backward compatibility and may be removed in a future version.
+     *
      * Used for making user-level API calls to /api/devices/{id}.
      *
      * This ID is fetched during BYOD device validation and is required for
@@ -49,5 +67,9 @@ data class TrmnlDeviceConfig constructor(
      *
      * **Note:** This field is only applicable for BYOD device types.
      */
+    @Deprecated(
+        message = "No longer needed for battery reporting. Battery is now sent via Percent-Charged header.",
+        level = DeprecationLevel.WARNING,
+    )
     val deviceId: Int? = null,
 )

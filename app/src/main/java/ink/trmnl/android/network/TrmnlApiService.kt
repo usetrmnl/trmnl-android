@@ -94,6 +94,7 @@ interface TrmnlApiService {
      * @param deviceMacId The device's MAC address (optional)
      * @param useBase64 Whether to request Base64-encoded image data (optional)
      * @param rssi WiFi signal strength in dBm (optional, -100 to 0). See https://github.com/usetrmnl/trmnl-firmware/blob/main/src/api-client/display.cpp for additional references.
+     * @param percentCharged Battery percentage (optional, 0.0 to 100.0). Only sent for BYOD devices.
      *
      * @see getCurrentDisplayData
      */
@@ -104,6 +105,7 @@ interface TrmnlApiService {
         @Header("ID") deviceMacId: String? = null,
         @Header("BASE64") useBase64: Boolean? = null,
         @Header("RSSI") rssi: Int? = null,
+        @Header("Percent-Charged") percentCharged: Double? = null,
     ): ApiResult<TrmnlDisplayResponse, Unit>
 
     /**

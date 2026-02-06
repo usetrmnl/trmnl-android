@@ -14,6 +14,12 @@ import retrofit2.http.Url
 /**
  * API service interface for TRMNL user-level (account) API endpoints.
  *
+ * **DEPRECATED:** This service is no longer needed for battery reporting.
+ * Battery percentage is now sent via the Percent-Charged header in /api/display call,
+ * which only requires device-level authentication (Access-Token).
+ *
+ * This interface is kept for backward compatibility and may be removed in a future version.
+ *
  * This interface defines endpoints that require user-level authentication via Bearer token
  * (Account API key), as opposed to device-level authentication.
  *
@@ -21,6 +27,10 @@ import retrofit2.http.Url
  * - https://docs.trmnl.com/go
  * - https://trmnl.com/api-docs/index.html (OpenAPI documentation)
  */
+@Deprecated(
+    message = "No longer needed for battery reporting. Battery is now sent via Percent-Charged header.",
+    level = DeprecationLevel.WARNING,
+)
 interface TrmnlUserApiService {
     companion object {
         /**
