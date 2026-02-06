@@ -5,7 +5,6 @@ import com.slack.eithernet.ApiResult
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
 import ink.trmnl.android.network.TrmnlApiService
-import ink.trmnl.android.network.TrmnlUserApiService
 import ink.trmnl.android.network.model.TrmnlCurrentImageResponse
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
 import ink.trmnl.android.network.util.constructApiUrl
@@ -21,7 +20,6 @@ import okhttp3.Request
 import okhttp3.Response
 import org.junit.After
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 
 /**
@@ -31,7 +29,6 @@ import org.junit.Test
 class TrmnlDisplayRepositoryTest {
     private lateinit var repository: TrmnlDisplayRepository
     private lateinit var apiService: TrmnlApiService
-    private lateinit var userApiService: TrmnlUserApiService
     private lateinit var imageMetadataStore: ImageMetadataStore
     private lateinit var repositoryConfigProvider: RepositoryConfigProvider
     private lateinit var deviceConfigDataStore: TrmnlDeviceConfigDataStore
@@ -64,7 +61,6 @@ class TrmnlDisplayRepositoryTest {
     @Before
     fun setup() {
         apiService = mockk()
-        userApiService = mockk()
         repositoryConfigProvider = mockk()
         deviceConfigDataStore = mockk()
         imageMetadataStore = mockk(relaxed = true)
@@ -75,7 +71,6 @@ class TrmnlDisplayRepositoryTest {
         repository =
             TrmnlDisplayRepository(
                 apiService = apiService,
-                userApiService = userApiService,
                 imageMetadataStore = imageMetadataStore,
                 repositoryConfigProvider = repositoryConfigProvider,
                 androidDeviceInfoProvider = androidDeviceInfoProvider,
@@ -582,123 +577,6 @@ class TrmnlDisplayRepositoryTest {
             assertThat(result.httpResponseMetadata?.url).isEqualTo(expectedCurrentApiUrl)
             assertThat(result.httpResponseMetadata?.statusCode).isEqualTo(500)
             assertThat(result.httpResponseMetadata?.contentLength).isEqualTo(123L)
-        }
-
-    // DEPRECATED: Device ID fetching is no longer needed for battery reporting
-    // Battery is now sent via Percent-Charged header
-    @Ignore("Device ID fetching deprecated - battery now uses Percent-Charged header")
-    @Test
-    fun `getDeviceIdFromApi should return mocked device ID`() =
-        runTest {
-            // Act
-            val result = repository.getDeviceIdFromApi(byodDeviceConfig)
-
-            // Assert
-            assertThat(result.isSuccess).isTrue()
-            assertThat(result.getOrNull()).isEqualTo(41448)
-
-            // Verify API was NOT called since we're using mocked response
-            coVerify(exactly = 0) { apiService.getDeviceMe(any(), any()) }
-        }
-
-    // DEPRECATED: Battery reporting via separate API call is no longer used
-    // Battery is now sent via Percent-Charged header in /api/display call
-    @Ignore("Battery reporting via PATCH /api/devices/{id} deprecated - now uses Percent-Charged header")
-    @Test
-    fun `reportDeviceBatteryStatus should report battery for valid BYOD config`() =
-        runTest {
-            // Arrange
-            val byodConfigWithDeviceId = byodDeviceConfig
-
-            every { androidDeviceInfoProvider.getBatteryLevel() } returns 75
-
-            val expectedApiUrl = "https://server.example.com/api/devices/123"
-
-            coEvery {
-                userApiService.updateDevice(
-                    fullApiUrl = expectedApiUrl,
-                    accessToken = "Bearer user_test_token",
-                    updateRequest = any(),
-                )
-            } returns ApiResult.success(mockk(relaxed = true))
-
-            // Act
-            repository.reportDeviceBatteryStatus(byodConfigWithDeviceId)
-
-            // Assert - Verify battery status was reported
-            coVerify {
-                userApiService.updateDevice(
-                    fullApiUrl = expectedApiUrl,
-                    accessToken = "Bearer user_test_token",
-                    updateRequest = match { it.percentCharged == 75 },
-                )
-            }
-        }
-
-    // DEPRECATED: Battery reporting via separate API call is no longer used
-    @Ignore("Battery reporting via PATCH /api/devices/{id} deprecated - now uses Percent-Charged header")
-    @Test
-    fun `reportDeviceBatteryStatus should skip for non-BYOD device`() =
-        runTest {
-            // Arrange - TRMNL device (not BYOD)
-            val trmnlConfig = testDeviceConfig
-
-            // Act
-            repository.reportDeviceBatteryStatus(trmnlConfig)
-
-            // Assert - Verify API was NOT called
-            coVerify(exactly = 0) { userApiService.updateDevice(any(), any(), any()) }
-            coVerify(exactly = 0) { androidDeviceInfoProvider.getBatteryLevel() }
-        }
-
-    // DEPRECATED: Battery reporting via separate API call is no longer used
-    @Ignore("Battery reporting via PATCH /api/devices/{id} deprecated - now uses Percent-Charged header")
-    @Test
-    fun `reportDeviceBatteryStatus should skip when deviceId is null`() =
-        runTest {
-            // Arrange
-            val configWithoutDeviceId = byodDeviceConfig
-
-            // Act
-            repository.reportDeviceBatteryStatus(configWithoutDeviceId)
-
-            // Assert - Verify API was NOT called
-            coVerify(exactly = 0) { userApiService.updateDevice(any(), any(), any()) }
-            coVerify(exactly = 0) { androidDeviceInfoProvider.getBatteryLevel() }
-        }
-
-    // DEPRECATED: Battery reporting via separate API call is no longer used
-    @Ignore("Battery reporting via PATCH /api/devices/{id} deprecated - now uses Percent-Charged header")
-    @Test
-    fun `reportDeviceBatteryStatus should skip when userApiToken is null`() =
-        runTest {
-            // Arrange
-            val configWithoutUserToken = byodDeviceConfig
-
-            // Act
-            repository.reportDeviceBatteryStatus(configWithoutUserToken)
-
-            // Assert - Verify API was NOT called
-            coVerify(exactly = 0) { userApiService.updateDevice(any(), any(), any()) }
-            coVerify(exactly = 0) { androidDeviceInfoProvider.getBatteryLevel() }
-        }
-
-    // DEPRECATED: Battery reporting via separate API call is no longer used
-    @Ignore("Battery reporting via PATCH /api/devices/{id} deprecated - now uses Percent-Charged header")
-    @Test
-    fun `reportDeviceBatteryStatus should skip when battery level unavailable`() =
-        runTest {
-            // Arrange
-            val byodConfigWithDeviceId = byodDeviceConfig
-
-            every { androidDeviceInfoProvider.getBatteryLevel() } returns null
-
-            // Act
-            repository.reportDeviceBatteryStatus(byodConfigWithDeviceId)
-
-            // Assert - Verify battery level was requested but API was NOT called
-            coVerify(exactly = 1) { androidDeviceInfoProvider.getBatteryLevel() }
-            coVerify(exactly = 0) { userApiService.updateDevice(any(), any(), any()) }
         }
 
     // WiFi Signal Strength (RSSI) Tests
