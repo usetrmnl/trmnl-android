@@ -105,7 +105,7 @@ interface TrmnlApiService {
         @Header("ID") deviceMacId: String? = null,
         @Header("BASE64") useBase64: Boolean? = null,
         @Header("RSSI") rssi: Int? = null,
-        @Header("Percent-Charged") percentCharged: Double? = null,
+        @Header("Percent-Charged") percentCharged: Int? = null,
     ): ApiResult<TrmnlDisplayResponse, Unit>
 
     /**

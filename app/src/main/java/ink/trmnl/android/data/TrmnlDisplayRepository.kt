@@ -86,7 +86,7 @@ class TrmnlDisplayRepository
                                 // https://github.com/usetrmnl/trmnl-android/issues/252
                                 // https://github.com/usetrmnl/trmnl-android/issues/239
                                 // https://discord.com/channels/1281055965508141100/1466030731770855434/1469103763846463620
-                                androidDeviceInfoProvider.getBatteryLevel()?.toDouble()
+                                androidDeviceInfoProvider.getBatteryLevel()
                             } else {
                                 null
                             },
@@ -434,7 +434,7 @@ class TrmnlDisplayRepository
                     sleepModeEnabled = false,
                     sleepStartTime = 1320,
                     sleepEndTime = 480,
-                    percentCharged = 100.0,
+                    percentCharged = 100,
                     wifiStrength = 100.0,
                 )
 
@@ -567,7 +567,7 @@ class TrmnlDisplayRepository
                 return Result.success(Unit)
             }
 
-            val updateRequest = TrmnlDeviceUpdateRequest(percentCharged = batteryPercent.toDouble())
+            val updateRequest = TrmnlDeviceUpdateRequest(percentCharged = batteryPercent)
             val apiUrl = constructApiUrl(config.apiBaseUrl, DEVICE_API_PATH.replace("{id}", deviceId.toString()))
 
             val result =

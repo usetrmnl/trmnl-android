@@ -630,7 +630,7 @@ class TrmnlDisplayRepositoryTest {
                 userApiService.updateDevice(
                     fullApiUrl = expectedApiUrl,
                     accessToken = "Bearer user_test_token",
-                    updateRequest = match { it.percentCharged == 75.0 },
+                    updateRequest = match { it.percentCharged == 75 },
                 )
             }
         }
@@ -724,7 +724,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = expectedRssi,
-                    percentCharged = expectedBattery.toDouble(),
+                    percentCharged = expectedBattery,
                 )
             } returns ApiResult.success(mockk(relaxed = true))
 
@@ -740,7 +740,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = expectedRssi,
-                    percentCharged = expectedBattery.toDouble(),
+                    percentCharged = expectedBattery,
                 )
             }
         }
@@ -773,7 +773,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = null,
-                    percentCharged = expectedBattery.toDouble(),
+                    percentCharged = expectedBattery,
                 )
             }
         }
@@ -858,7 +858,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = any(),
-                    percentCharged = 75.0,
+                    percentCharged = 75,
                 )
             } returns ApiResult.success(mockk(relaxed = true))
 
@@ -874,7 +874,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = any(),
-                    percentCharged = 75.0,
+                    percentCharged = 75,
                 )
             }
         }
@@ -1035,7 +1035,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = strongSignal,
-                    percentCharged = expectedBattery.toDouble(),
+                    percentCharged = expectedBattery,
                 )
             } returns ApiResult.success(mockk(relaxed = true))
 
@@ -1050,7 +1050,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = strongSignal,
-                    percentCharged = expectedBattery.toDouble(),
+                    percentCharged = expectedBattery,
                 )
             }
         }
@@ -1073,7 +1073,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = weakSignal,
-                    percentCharged = expectedBattery.toDouble(),
+                    percentCharged = expectedBattery,
                 )
             } returns ApiResult.success(mockk(relaxed = true))
 
@@ -1088,7 +1088,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = weakSignal,
-                    percentCharged = expectedBattery.toDouble(),
+                    percentCharged = expectedBattery,
                 )
             }
         }

@@ -38,5 +38,5 @@ data class TrmnlDeviceUpdateRequest(
     @Json(name = "sleep_mode_enabled") val sleepModeEnabled: Boolean? = null,
     @Json(name = "sleep_start_time") val sleepStartTime: Int? = null,
     @Json(name = "sleep_end_time") val sleepEndTime: Int? = null,
-    @Json(name = "percent_charged") val percentCharged: Double? = null,
+    @Json(name = "percent_charged") val percentCharged: Int? = null,
 )
