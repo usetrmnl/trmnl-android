@@ -143,7 +143,6 @@ data class AppSettingsScreen(
         val accessToken: String,
         val deviceMacId: String,
         val isByodMasterDevice: Boolean,
-        val userApiToken: String,
         val usesFakeApiData: Boolean,
         val isLoading: Boolean = false,
         val validationResult: ValidationResult? = null,
@@ -196,18 +195,6 @@ data class AppSettingsScreen(
         data class AccessTokenChanged(
             val token: String,
         ) : Event()
-
-        /**
-         * Event triggered when the user API token is changed.
-         */
-        data class UserApiTokenChanged(
-            val token: String,
-        ) : Event()
-
-        /**
-         * Event triggered to validate the current user API token.
-         */
-        data object ValidateUserToken : Event()
 
         /**
          * Event triggered to validate the current access token.
@@ -289,7 +276,6 @@ class AppSettingsPresenter
             var accessToken by remember { mutableStateOf("") }
             var deviceMacId by remember { mutableStateOf("") }
             var isByodMasterDevice by remember { mutableStateOf(true) }
-            var userApiToken by remember { mutableStateOf("") }
             var isLoading by remember { mutableStateOf(false) }
             var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
             var isDeviceSetupLoading by remember { mutableStateOf(false) }
@@ -352,7 +338,6 @@ class AppSettingsPresenter
                     // Load BYOD-specific settings
                     if (it.type == TrmnlDeviceType.BYOD) {
                         isByodMasterDevice = it.isMasterDevice ?: true
-                        userApiToken = it.userApiToken ?: ""
                     }
                 }
             }
@@ -363,7 +348,6 @@ class AppSettingsPresenter
                 accessToken = accessToken,
                 deviceMacId = deviceMacId,
                 isByodMasterDevice = isByodMasterDevice,
-                userApiToken = userApiToken,
                 usesFakeApiData = usesFakeApiData,
                 isLoading = isLoading,
                 validationResult = validationResult,
@@ -378,73 +362,6 @@ class AppSettingsPresenter
                             // Clear previous validation when token changes
                             validationResult = null
                             deviceSetupMessage = null
-                        }
-
-                        is AppSettingsScreen.Event.UserApiTokenChanged -> {
-                            userApiToken = event.token
-                            // Clear previous validation when user token changes
-                            if (validationResult is ValidationResult.UserTokenSuccess ||
-                                validationResult is ValidationResult.InvalidUserToken
-                            ) {
-                                validationResult = null
-                            }
-                        }
-
-                        AppSettingsScreen.Event.ValidateUserToken -> {
-                            // DEPRECATED: User API token validation is no longer needed
-                            // Battery reporting now uses Percent-Charged header instead of user-level API
-                            Timber.d("User token validation skipped - no longer needed for battery reporting")
-                            /* DISABLED - User token no longer needed for battery reporting
-                            scope.launch {
-                                focusManager.clearFocus()
-                                isLoading = true
-
-                                // Clear previous user token validation
-                                if (validationResult is ValidationResult.UserTokenSuccess ||
-                                    validationResult is ValidationResult.InvalidUserToken
-                                ) {
-                                    validationResult = null
-                                }
-
-                                // Validate user API token by calling /api/me
-                                val result =
-                                    displayRepository.validateUserApiToken(
-                                        apiBaseUrl = serverBaseUrl.forDevice(deviceType),
-                                        userApiToken = userApiToken,
-                                    )
-
-                                validationResult =
-                                    when {
-                                        result.isSuccess -> {
-                                            val user = result.getOrNull()
-                                            if (user != null) {
-                                                // Token is valid - user will save it via "Save and Continue"
-                                                ValidationResult.UserTokenSuccess(
-                                                    userName = user.name,
-                                                    userEmail = user.email,
-                                                )
-                                            } else {
-                                                Timber.e(
-                                                    "validateUserApiToken succeeded but returned null user. " +
-                                                        "apiBaseUrl=%s, deviceType=%s",
-                                                    serverBaseUrl.forDevice(deviceType),
-                                                    deviceType,
-                                                )
-                                                ValidationResult.InvalidUserToken(
-                                                    "Unexpected error: API returned success but no user data was received",
-                                                )
-                                            }
-                                        }
-                                        else -> {
-                                            ValidationResult.InvalidUserToken(
-                                                result.exceptionOrNull()?.message ?: "Invalid user API token",
-                                            )
-                                        }
-                                    }
-
-                                isLoading = false
-                            }
-                             */
                         }
 
                         AppSettingsScreen.Event.ValidateToken -> {
@@ -518,28 +435,6 @@ class AppSettingsPresenter
                                             response.imageUrl,
                                             response.refreshIntervalSeconds ?: DEFAULT_REFRESH_INTERVAL_SEC,
                                         )
-
-                                    // DEPRECATED: Device ID fetching no longer needed
-                                    // Battery reporting now uses Percent-Charged header instead of user-level API
-
-                                    /* DISABLED - Device ID no longer needed for battery reporting
-                                    // For BYOD devices, also fetch and save the device ID
-                                    if (deviceType == TrmnlDeviceType.BYOD) {
-                                        val deviceIdResult = displayRepository.getDeviceIdFromApi(deviceConfig)
-                                        if (deviceIdResult.isSuccess) {
-                                            val deviceId = deviceIdResult.getOrNull()
-                                            if (deviceId != null) {
-                                                deviceConfigStore.saveDeviceId(deviceId)
-                                                Timber.d("Device ID saved successfully for BYOD device: $deviceId")
-                                            }
-                                        } else {
-                                            Timber.w(
-                                                "Failed to fetch device ID for BYOD device. Error: %s",
-                                                deviceIdResult.exceptionOrNull(),
-                                            )
-                                        }
-                                    }
-                                     */
                                 } else {
                                     // No error but also no image URL
                                     val errorMessage = response.error ?: ""
@@ -562,14 +457,6 @@ class AppSettingsPresenter
                                             TrmnlDeviceType.TRMNL -> false
                                         }
 
-                                    // For BYOD devices, retrieve the device ID that was fetched during validation
-                                    val deviceId =
-                                        if (deviceType == TrmnlDeviceType.BYOD) {
-                                            deviceConfigStore.getDeviceId()
-                                        } else {
-                                            null
-                                        }
-
                                     deviceConfigStore.saveDeviceConfig(
                                         TrmnlDeviceConfig(
                                             type = deviceType,
@@ -579,13 +466,6 @@ class AppSettingsPresenter
                                             // Normalize the MAC address to standard format if provided in different format
                                             deviceMacId = normalizeMacAddress(deviceMacId)?.ifBlank { null },
                                             isMasterDevice = isMaster,
-                                            // Save user API token if provided (for BYOD).
-                                            // Note: user token validation is optional and may be skipped by the user.
-                                            // We still persist the token here; any invalid or expired token will be
-                                            // detected and surfaced via downstream API error handling.
-                                            userApiToken = userApiToken.ifBlank { null },
-                                            // Include device ID for BYOD devices (fetched during validation)
-                                            deviceId = deviceId,
                                         ),
                                     )
                                     trmnlWorkScheduler.updateRefreshInterval(result.refreshRateSecs)
@@ -822,116 +702,6 @@ fun AppSettingsContent(
                 isDeviceMacIdError = state.validationResult is ValidationResult.InvalidDeviceMacId,
                 deviceIdError = (state.validationResult as? ValidationResult.InvalidDeviceMacId)?.message,
             )
-
-            //
-            // DEPRECATED: User API Token field is no longer needed
-            //
-            // Battery reporting now uses the Percent-Charged header in /api/display call,
-            // which only requires device-level authentication (Access-Token).
-            // User-level authentication is no longer needed for BYOD device battery reporting.
-            //
-            // This UI has been disabled but kept in code for reference.
-            //
-
-            /* DISABLED - User API token no longer needed for battery reporting
-            // User API Token field (only for BYOD)
-            AnimatedVisibility(
-                visible = state.deviceType == TrmnlDeviceType.BYOD,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
-                Column {
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    var userTokenVisible by remember { mutableStateOf(false) }
-
-                    OutlinedTextField(
-                        value = state.userApiToken,
-                        onValueChange = { state.eventSink(AppSettingsScreen.Event.UserApiTokenChanged(it)) },
-                        label = { Text("User API Token (Account Key)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        visualTransformation = if (userTokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions =
-                            KeyboardOptions(
-                                keyboardType = KeyboardType.Password,
-                                imeAction = ImeAction.Done,
-                            ),
-                        keyboardActions =
-                            KeyboardActions(
-                                onDone = {
-                                    state.eventSink(AppSettingsScreen.Event.ValidateUserToken)
-                                },
-                            ),
-                        supportingText = {
-                            Text(
-                                "Optional: This token is needed for device management features like battery reporting. Get this from your TRMNL user account settings.",
-                            )
-                        },
-                        trailingIcon = {
-                            IconButton(onClick = { userTokenVisible = !userTokenVisible }) {
-                                Icon(
-                                    painter =
-                                        painterResource(
-                                            if (userTokenVisible) R.drawable.visibility_off_24dp else R.drawable.visibility_24dp,
-                                        ),
-                                    contentDescription = if (userTokenVisible) "Hide user token" else "Show user token",
-                                )
-                            }
-                        },
-                        isError = state.validationResult is ValidationResult.InvalidUserToken,
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Determine button state based on validation result
-                    val isValidationSuccess = state.validationResult is ValidationResult.UserTokenSuccess
-                    val isValidationError = state.validationResult is ValidationResult.InvalidUserToken
-
-                    Button(
-                        onClick = { state.eventSink(AppSettingsScreen.Event.ValidateUserToken) },
-                        enabled = state.userApiToken.isNotBlank() && !state.isLoading,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors =
-                            when {
-                                isValidationSuccess ->
-                                    ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    )
-                                isValidationError ->
-                                    ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                    )
-                                else -> ButtonDefaults.buttonColors()
-                            },
-                    ) {
-                        Text("Validate User Token")
-                        when {
-                            isValidationSuccess -> {
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Icon(
-                                    painter = painterResource(R.drawable.check_circle_24dp),
-                                    contentDescription = "Validation successful",
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            }
-                            isValidationError -> {
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Icon(
-                                    painter = painterResource(R.drawable.error_24dp),
-                                    contentDescription = "Validation failed",
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-             */
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             // Password field with toggle visibility button
             OutlinedTextField(
@@ -1556,7 +1326,6 @@ private fun PreviewAppSettingsContentInitial() {
                     accessToken = "",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isByodMasterDevice = true,
-                    userApiToken = "",
                     usesFakeApiData = true,
                     isLoading = false,
                     validationResult = null,
@@ -1579,7 +1348,6 @@ private fun PreviewAppSettingsContentLoading() {
                     accessToken = "some-token",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isByodMasterDevice = true,
-                    userApiToken = "",
                     usesFakeApiData = false,
                     isLoading = true,
                     validationResult = null,
@@ -1602,7 +1370,6 @@ private fun PreviewAppSettingsContentSuccess() {
                     accessToken = "valid-token-123",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isByodMasterDevice = true,
-                    userApiToken = "",
                     usesFakeApiData = false,
                     isLoading = false,
                     validationResult =
@@ -1629,7 +1396,6 @@ private fun PreviewAppSettingsContentFailure() {
                     accessToken = "invalid-token",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isByodMasterDevice = true,
-                    userApiToken = "",
                     usesFakeApiData = false,
                     isLoading = false,
                     validationResult =
@@ -1659,7 +1425,6 @@ private fun PreviewAppSettingsContentWithWork() {
                     accessToken = "valid-token-123",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isByodMasterDevice = true,
-                    userApiToken = "",
                     usesFakeApiData = false,
                     isLoading = false,
                     validationResult = null, // Can also be Success state
@@ -1692,7 +1457,6 @@ private fun PreviewWorkScheduleStatusCardScheduled() {
                     accessToken = "some-token",
                     deviceMacId = "AA:BB:CC:DD:EE:FF",
                     isByodMasterDevice = true,
-                    userApiToken = "",
                     usesFakeApiData = false,
                     nextRefreshJobInfo =
                         NextImageRefreshDisplayInfo(
@@ -1719,7 +1483,6 @@ private fun PreviewWorkScheduleStatusCardNoWork() {
                     accessToken = "some-token",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isByodMasterDevice = true,
-                    userApiToken = "",
                     usesFakeApiData = false,
                     nextRefreshJobInfo = null,
                     eventSink = {},
@@ -1748,7 +1511,6 @@ private fun PreviewAppSettingsContentByod() {
                     accessToken = "byod-access-token-here",
                     deviceMacId = "",
                     isByodMasterDevice = false,
-                    userApiToken = "user_test123",
                     usesFakeApiData = false,
                     isLoading = false,
                     validationResult = null,
@@ -1772,7 +1534,6 @@ private fun PreviewAppSettingsContentByos() {
                     accessToken = "byos-access-token-here",
                     deviceMacId = "AA:BB:CC:DD:EE:FF",
                     isByodMasterDevice = true,
-                    userApiToken = "",
                     usesFakeApiData = false,
                     isLoading = false,
                     validationResult = null,

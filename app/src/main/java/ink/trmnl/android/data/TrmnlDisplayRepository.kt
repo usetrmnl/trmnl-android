@@ -82,6 +82,10 @@ class TrmnlDisplayRepository
                         percentCharged =
                             if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOD) {
                                 // Send battery percentage if available for BYOD devices only
+                                // See following for context:
+                                // https://github.com/usetrmnl/trmnl-android/issues/252
+                                // https://github.com/usetrmnl/trmnl-android/issues/239
+                                // https://discord.com/channels/1281055965508141100/1466030731770855434/1469103763846463620
                                 androidDeviceInfoProvider.getBatteryLevel()?.toDouble()
                             } else {
                                 null
