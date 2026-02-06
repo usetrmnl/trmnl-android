@@ -151,7 +151,7 @@ internal fun ByosDeviceTypeInfoText() {
     val linkStyle = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)
     val annotatedString =
         buildAnnotatedString {
-            append("Bring your own server (BYOS) config. Only secure HTTPS URL supported. ")
+            append("Bring your own server (BYOS) config.")
 
             withLink(
                 LinkAnnotation.Url(

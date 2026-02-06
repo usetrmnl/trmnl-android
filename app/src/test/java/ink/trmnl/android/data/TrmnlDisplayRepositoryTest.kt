@@ -21,6 +21,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.junit.After
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 
 /**
@@ -410,6 +411,8 @@ class TrmnlDisplayRepositoryTest {
                     accessToken = byodDeviceConfig.apiAccessToken,
                     useBase64 = any(),
                     rssi = any(),
+                    percentCharged = any(),
+                    deviceMacId = any(),
                 )
             } returns ApiResult.success(successResponse)
 
@@ -426,8 +429,10 @@ class TrmnlDisplayRepositoryTest {
                 apiService.getNextDisplayData(
                     fullApiUrl = expectedNextApiUrl,
                     accessToken = byodDeviceConfig.apiAccessToken,
+                    deviceMacId = any(),
                     useBase64 = any(),
                     rssi = any(),
+                    percentCharged = any(),
                 )
             }
         }
@@ -579,6 +584,9 @@ class TrmnlDisplayRepositoryTest {
             assertThat(result.httpResponseMetadata?.contentLength).isEqualTo(123L)
         }
 
+    // DEPRECATED: Device ID fetching is no longer needed for battery reporting
+    // Battery is now sent via Percent-Charged header
+    @Ignore("Device ID fetching deprecated - battery now uses Percent-Charged header")
     @Test
     fun `getDeviceIdFromApi should return mocked device ID`() =
         runTest {
@@ -593,15 +601,14 @@ class TrmnlDisplayRepositoryTest {
             coVerify(exactly = 0) { apiService.getDeviceMe(any(), any()) }
         }
 
+    // DEPRECATED: Battery reporting via separate API call is no longer used
+    // Battery is now sent via Percent-Charged header in /api/display call
+    @Ignore("Battery reporting via PATCH /api/devices/{id} deprecated - now uses Percent-Charged header")
     @Test
     fun `reportDeviceBatteryStatus should report battery for valid BYOD config`() =
         runTest {
             // Arrange
-            val byodConfigWithDeviceId =
-                byodDeviceConfig.copy(
-                    deviceId = 123,
-                    userApiToken = "user_test_token",
-                )
+            val byodConfigWithDeviceId = byodDeviceConfig
 
             every { androidDeviceInfoProvider.getBatteryLevel() } returns 75
 
@@ -623,20 +630,18 @@ class TrmnlDisplayRepositoryTest {
                 userApiService.updateDevice(
                     fullApiUrl = expectedApiUrl,
                     accessToken = "Bearer user_test_token",
-                    updateRequest = match { it.percentCharged == 75.0 },
+                    updateRequest = match { it.percentCharged == 75 },
                 )
             }
         }
 
+    // DEPRECATED: Battery reporting via separate API call is no longer used
+    @Ignore("Battery reporting via PATCH /api/devices/{id} deprecated - now uses Percent-Charged header")
     @Test
     fun `reportDeviceBatteryStatus should skip for non-BYOD device`() =
         runTest {
             // Arrange - TRMNL device (not BYOD)
-            val trmnlConfig =
-                testDeviceConfig.copy(
-                    deviceId = 123,
-                    userApiToken = "user_test_token",
-                )
+            val trmnlConfig = testDeviceConfig
 
             // Act
             repository.reportDeviceBatteryStatus(trmnlConfig)
@@ -646,15 +651,13 @@ class TrmnlDisplayRepositoryTest {
             coVerify(exactly = 0) { androidDeviceInfoProvider.getBatteryLevel() }
         }
 
+    // DEPRECATED: Battery reporting via separate API call is no longer used
+    @Ignore("Battery reporting via PATCH /api/devices/{id} deprecated - now uses Percent-Charged header")
     @Test
     fun `reportDeviceBatteryStatus should skip when deviceId is null`() =
         runTest {
             // Arrange
-            val configWithoutDeviceId =
-                byodDeviceConfig.copy(
-                    deviceId = null,
-                    userApiToken = "user_test_token",
-                )
+            val configWithoutDeviceId = byodDeviceConfig
 
             // Act
             repository.reportDeviceBatteryStatus(configWithoutDeviceId)
@@ -664,15 +667,13 @@ class TrmnlDisplayRepositoryTest {
             coVerify(exactly = 0) { androidDeviceInfoProvider.getBatteryLevel() }
         }
 
+    // DEPRECATED: Battery reporting via separate API call is no longer used
+    @Ignore("Battery reporting via PATCH /api/devices/{id} deprecated - now uses Percent-Charged header")
     @Test
     fun `reportDeviceBatteryStatus should skip when userApiToken is null`() =
         runTest {
             // Arrange
-            val configWithoutUserToken =
-                byodDeviceConfig.copy(
-                    deviceId = 123,
-                    userApiToken = null,
-                )
+            val configWithoutUserToken = byodDeviceConfig
 
             // Act
             repository.reportDeviceBatteryStatus(configWithoutUserToken)
@@ -682,15 +683,13 @@ class TrmnlDisplayRepositoryTest {
             coVerify(exactly = 0) { androidDeviceInfoProvider.getBatteryLevel() }
         }
 
+    // DEPRECATED: Battery reporting via separate API call is no longer used
+    @Ignore("Battery reporting via PATCH /api/devices/{id} deprecated - now uses Percent-Charged header")
     @Test
     fun `reportDeviceBatteryStatus should skip when battery level unavailable`() =
         runTest {
             // Arrange
-            val byodConfigWithDeviceId =
-                byodDeviceConfig.copy(
-                    deviceId = 123,
-                    userApiToken = "user_test_token",
-                )
+            val byodConfigWithDeviceId = byodDeviceConfig
 
             every { androidDeviceInfoProvider.getBatteryLevel() } returns null
 
@@ -710,13 +709,13 @@ class TrmnlDisplayRepositoryTest {
             // Arrange
             val byodConfig =
                 byodDeviceConfig.copy(
-                    deviceId = null,
-                    userApiToken = "test_token",
                     apiAccessToken = "test_api_key",
                 )
             val expectedRssi = -65
+            val expectedBattery = 80
 
             every { androidDeviceInfoProvider.getWifiSignalStrength() } returns expectedRssi
+            every { androidDeviceInfoProvider.getBatteryLevel() } returns expectedBattery
 
             coEvery {
                 apiService.getNextDisplayData(
@@ -725,6 +724,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = expectedRssi,
+                    percentCharged = expectedBattery,
                 )
             } returns ApiResult.success(mockk(relaxed = true))
 
@@ -740,6 +740,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = expectedRssi,
+                    percentCharged = expectedBattery,
                 )
             }
         }
@@ -750,14 +751,14 @@ class TrmnlDisplayRepositoryTest {
             // Arrange
             val byodConfig =
                 byodDeviceConfig.copy(
-                    deviceId = null,
-                    userApiToken = "test_token",
                     apiAccessToken = "test_api_key",
                 )
+            val expectedBattery = 80
 
             every { androidDeviceInfoProvider.getWifiSignalStrength() } returns null
+            every { androidDeviceInfoProvider.getBatteryLevel() } returns expectedBattery
 
-            coEvery { apiService.getNextDisplayData(any(), any(), any(), any()) } returns
+            coEvery { apiService.getNextDisplayData(any(), any(), any(), any(), any(), any()) } returns
                 ApiResult.success(mockk(relaxed = true))
 
             // Act
@@ -772,6 +773,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = null,
+                    percentCharged = expectedBattery,
                 )
             }
         }
@@ -785,7 +787,7 @@ class TrmnlDisplayRepositoryTest {
                     apiAccessToken = "trmnl_api_key",
                 )
 
-            coEvery { apiService.getNextDisplayData(any(), any(), any(), any()) } returns
+            coEvery { apiService.getNextDisplayData(any(), any(), any(), any(), any(), any()) } returns
                 ApiResult.success(mockk(relaxed = true))
 
             // Act
@@ -800,6 +802,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = null,
+                    percentCharged = null,
                 )
             }
         }
@@ -833,6 +836,164 @@ class TrmnlDisplayRepositoryTest {
             }
         }
 
+    // Battery Percentage (Percent-Charged Header) Tests
+
+    @Test
+    fun `getNextDisplayData should send battery percentage for BYOD device when available`() =
+        runTest {
+            // Arrange
+            val byodConfig =
+                byodDeviceConfig.copy(
+                    apiAccessToken = "test_api_key",
+                )
+            val expectedBatteryLevel = 75
+
+            every { androidDeviceInfoProvider.getBatteryLevel() } returns expectedBatteryLevel
+            every { androidDeviceInfoProvider.getWifiSignalStrength() } returns -65
+
+            coEvery {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = any(),
+                    percentCharged = 75,
+                )
+            } returns ApiResult.success(mockk(relaxed = true))
+
+            // Act
+            repository.getNextDisplayData(byodConfig)
+
+            // Assert - Verify battery level was fetched and sent as header
+            coVerify(exactly = 1) { androidDeviceInfoProvider.getBatteryLevel() }
+            coVerify {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = any(),
+                    percentCharged = 75,
+                )
+            }
+        }
+
+    @Test
+    fun `getNextDisplayData should send null battery percentage for BYOD when unavailable`() =
+        runTest {
+            // Arrange
+            val byodConfig =
+                byodDeviceConfig.copy(
+                    apiAccessToken = "test_api_key",
+                )
+
+            every { androidDeviceInfoProvider.getBatteryLevel() } returns null
+            every { androidDeviceInfoProvider.getWifiSignalStrength() } returns -65
+
+            coEvery {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = any(),
+                    percentCharged = null,
+                )
+            } returns ApiResult.success(mockk(relaxed = true))
+
+            // Act
+            repository.getNextDisplayData(byodConfig)
+
+            // Assert - Verify battery level was fetched but null was sent
+            coVerify(exactly = 1) { androidDeviceInfoProvider.getBatteryLevel() }
+            coVerify {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = any(),
+                    percentCharged = null,
+                )
+            }
+        }
+
+    @Test
+    fun `getNextDisplayData should NOT send battery percentage for TRMNL device`() =
+        runTest {
+            // Arrange - TRMNL device (not BYOD)
+            val trmnlConfig =
+                testDeviceConfig.copy(
+                    apiAccessToken = "trmnl_api_key",
+                )
+
+            coEvery {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = null,
+                    percentCharged = null,
+                )
+            } returns ApiResult.success(mockk(relaxed = true))
+
+            // Act
+            repository.getNextDisplayData(trmnlConfig)
+
+            // Assert - Verify battery level was NOT fetched and null was sent
+            coVerify(exactly = 0) { androidDeviceInfoProvider.getBatteryLevel() }
+            coVerify {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = null,
+                    percentCharged = null,
+                )
+            }
+        }
+
+    @Test
+    fun `getNextDisplayData should NOT send battery percentage for BYOS device`() =
+        runTest {
+            // Arrange - BYOS device
+            val byosConfig =
+                byosDeviceConfig.copy(
+                    apiAccessToken = "byos_api_key",
+                )
+
+            coEvery {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = null,
+                    percentCharged = null,
+                )
+            } returns ApiResult.success(mockk(relaxed = true))
+
+            // Act
+            repository.getNextDisplayData(byosConfig)
+
+            // Assert - Verify battery level was NOT fetched for BYOS device
+            coVerify(exactly = 0) { androidDeviceInfoProvider.getBatteryLevel() }
+            // Verify null battery percentage was sent
+            coVerify {
+                apiService.getNextDisplayData(
+                    fullApiUrl = any(),
+                    accessToken = any(),
+                    deviceMacId = any(),
+                    useBase64 = any(),
+                    rssi = null,
+                    percentCharged = null,
+                )
+            }
+        }
+
     @Test
     fun `getNextDisplayData should call getWifiSignalStrength only for BYOD devices`() =
         runTest {
@@ -842,8 +1003,9 @@ class TrmnlDisplayRepositoryTest {
             val byosConfig = byosDeviceConfig.copy(apiAccessToken = "byos_key")
 
             every { androidDeviceInfoProvider.getWifiSignalStrength() } returns -70
+            every { androidDeviceInfoProvider.getBatteryLevel() } returns 75
 
-            coEvery { apiService.getNextDisplayData(any(), any(), any(), any(), any()) } returns
+            coEvery { apiService.getNextDisplayData(any(), any(), any(), any(), any(), any()) } returns
                 ApiResult.success(mockk(relaxed = true))
 
             // Act - Fetch for all device types
@@ -861,8 +1023,10 @@ class TrmnlDisplayRepositoryTest {
             // Arrange
             val byodConfig = byodDeviceConfig.copy(apiAccessToken = "test_key")
             val strongSignal = -30 // Excellent signal
+            val expectedBattery = 80
 
             every { androidDeviceInfoProvider.getWifiSignalStrength() } returns strongSignal
+            every { androidDeviceInfoProvider.getBatteryLevel() } returns expectedBattery
 
             coEvery {
                 apiService.getNextDisplayData(
@@ -871,6 +1035,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = strongSignal,
+                    percentCharged = expectedBattery,
                 )
             } returns ApiResult.success(mockk(relaxed = true))
 
@@ -885,6 +1050,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = strongSignal,
+                    percentCharged = expectedBattery,
                 )
             }
         }
@@ -895,8 +1061,10 @@ class TrmnlDisplayRepositoryTest {
             // Arrange
             val byodConfig = byodDeviceConfig.copy(apiAccessToken = "test_key")
             val weakSignal = -90 // Very weak signal
+            val expectedBattery = 80
 
             every { androidDeviceInfoProvider.getWifiSignalStrength() } returns weakSignal
+            every { androidDeviceInfoProvider.getBatteryLevel() } returns expectedBattery
 
             coEvery {
                 apiService.getNextDisplayData(
@@ -905,6 +1073,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = weakSignal,
+                    percentCharged = expectedBattery,
                 )
             } returns ApiResult.success(mockk(relaxed = true))
 
@@ -919,6 +1088,7 @@ class TrmnlDisplayRepositoryTest {
                     deviceMacId = any(),
                     useBase64 = any(),
                     rssi = weakSignal,
+                    percentCharged = expectedBattery,
                 )
             }
         }

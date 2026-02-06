@@ -22,6 +22,12 @@ paths:
         description: Device battery voltage (eg. 3.7)
         schema:
           type: number
+      - name: Percent-Charged
+        in: header
+        required: false
+        description: Device percent charged (eg. 69.4)
+        schema:
+          type: number
       - name: FW-Version
         in: header
         required: false

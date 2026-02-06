@@ -15,11 +15,8 @@ import ink.trmnl.android.network.TrmnlApiService.Companion.CURRENT_PLAYLIST_SCRE
 import ink.trmnl.android.network.TrmnlApiService.Companion.MODELS_API_PATH
 import ink.trmnl.android.network.TrmnlApiService.Companion.NEXT_PLAYLIST_SCREEN_API_PATH
 import ink.trmnl.android.network.TrmnlUserApiService
-import ink.trmnl.android.network.TrmnlUserApiService.Companion.DEVICE_API_PATH
 import ink.trmnl.android.network.TrmnlUserApiService.Companion.USER_INFO_API_PATH
-import ink.trmnl.android.network.model.TrmnlDevice
 import ink.trmnl.android.network.model.TrmnlDeviceModel
-import ink.trmnl.android.network.model.TrmnlDeviceUpdateRequest
 import ink.trmnl.android.network.model.TrmnlDisplayResponse
 import ink.trmnl.android.network.model.TrmnlUser
 import ink.trmnl.android.network.util.constructApiUrl
@@ -79,6 +76,17 @@ class TrmnlDisplayRepository
                             if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOD) {
                                 // Send WiFi signal strength (RSSI) if available for BYOD devices only
                                 androidDeviceInfoProvider.getWifiSignalStrength()
+                            } else {
+                                null
+                            },
+                        percentCharged =
+                            if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOD) {
+                                // Send battery percentage if available for BYOD devices only
+                                // See following for context:
+                                // https://github.com/usetrmnl/trmnl-android/issues/252
+                                // https://github.com/usetrmnl/trmnl-android/issues/239
+                                // https://discord.com/channels/1281055965508141100/1466030731770855434/1469103763846463620
+                                androidDeviceInfoProvider.getBatteryLevel()
                             } else {
                                 null
                             },
@@ -384,6 +392,12 @@ class TrmnlDisplayRepository
         /**
          * Fetches the device ID from the TRMNL API using the device API token.
          *
+         * **DEPRECATED:** Device ID fetching is no longer needed. Battery reporting now uses
+         * the Percent-Charged header in /api/display call, which only requires device-level
+         * authentication (Access-Token), not user-level authentication or device ID.
+         *
+         * This method will be removed in a future version.
+         *
          * This method calls the /api/devices/me endpoint with device-level authentication
          * to retrieve device information including the device ID, which is needed for
          * user-level API calls to /api/devices/{id}.
@@ -394,7 +408,17 @@ class TrmnlDisplayRepository
          * @param config Device configuration containing the device API token
          * @return A Result containing the device ID on success or an exception on failure
          */
+        @Deprecated("Device ID no longer needed for battery reporting. Use Percent-Charged header instead.")
         suspend fun getDeviceIdFromApi(config: TrmnlDeviceConfig): Result<Int> {
+            Timber.w("getDeviceIdFromApi is deprecated. Device ID is no longer needed for battery reporting.")
+            return Result.failure(
+                UnsupportedOperationException(
+                    "Device ID fetching is deprecated. Battery reporting now uses Percent-Charged header " +
+                        "in /api/display, which doesn't require device ID or user API token.",
+                ),
+            )
+
+            /* DISABLED - Device ID no longer needed for battery reporting
             Timber.i("Fetching device ID from API for device type: ${config.type}")
 
             // Always use mocked response since the endpoint doesn't exist yet
@@ -410,7 +434,7 @@ class TrmnlDisplayRepository
                     sleepModeEnabled = false,
                     sleepStartTime = 1320,
                     sleepEndTime = 480,
-                    percentCharged = 100.0,
+                    percentCharged = 100,
                     wifiStrength = 100.0,
                 )
 
@@ -438,20 +462,29 @@ class TrmnlDisplayRepository
              *     }
              * }
              */
+             */
         }
 
         /**
          * Reports the device's battery status to the TRMNL API for BYOD devices.
          *
-         * This is a convenience method that checks if the device is a BYOD device with the necessary
-         * configuration (deviceId and userApiToken), retrieves the current battery level,
-         * and reports it to the server.
+         * **DEPRECATED:** Battery reporting now uses the Percent-Charged header in /api/display call.
+         * This method is disabled and will be removed in a future version.
          *
-         * This method should be called after successful image refresh operations.
+         * Battery percentage is now automatically sent via the Percent-Charged header parameter
+         * when calling getNextDisplayData() for BYOD devices, eliminating the need for a separate
+         * API call and user-level authentication.
          *
          * @param config Device configuration containing device type, device ID, and user API token
+         * @see getNextDisplayData
          */
+        @Deprecated("Battery reporting now uses Percent-Charged header. This method is no longer needed.")
         suspend fun reportDeviceBatteryStatus(config: TrmnlDeviceConfig) {
+            // DEPRECATED: Battery reporting now happens via Percent-Charged header in /api/display
+            Timber.d("Battery reporting via separate API call is deprecated. Battery is now sent via Percent-Charged header.")
+            return
+
+            /* DISABLED - Battery now reported via Percent-Charged header
             // Only report battery for BYOD devices with required configuration
             if (config.type != TrmnlDeviceType.BYOD) {
                 Timber.d("Battery reporting skipped: not a BYOD device (type: ${config.type})")
@@ -484,25 +517,35 @@ class TrmnlDisplayRepository
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error during battery reporting")
             }
+             */
         }
 
         /**
          * Reports the device's battery status to the TRMNL API.
          *
-         * This method sends a PATCH request to /api/devices/{id} using user-level authentication
-         * to update the device's battery percentage on the server.
+         * **DEPRECATED:** This method is no longer used. Battery reporting now uses the
+         * Percent-Charged header in /api/display call instead of PATCH /api/devices/{id}.
          *
-         * This suspend function performs network I/O and should be called from a background
-         * coroutine so it does not block or delay display updates.
+         * This method will be removed in a future version.
          *
          * @param config Device configuration containing the device ID and user API token
          * @param batteryPercent The current battery percentage (0-100)
          * @return A Result containing Unit on success or an exception on failure
          */
+        @Deprecated("Battery reporting now uses Percent-Charged header. This method is no longer needed.")
         private suspend fun reportBatteryStatus(
             config: TrmnlDeviceConfig,
             batteryPercent: Int,
         ): Result<Unit> {
+            // DEPRECATED: This method is no longer used
+            Timber.d("reportBatteryStatus is deprecated and disabled")
+            return Result.failure(
+                UnsupportedOperationException(
+                    "Battery reporting via PATCH /api/devices/{id} is deprecated. Use Percent-Charged header instead.",
+                ),
+            )
+
+            /* DISABLED - Battery now reported via Percent-Charged header
             val deviceId = config.deviceId
             val userApiToken = config.userApiToken
 
@@ -524,7 +567,7 @@ class TrmnlDisplayRepository
                 return Result.success(Unit)
             }
 
-            val updateRequest = TrmnlDeviceUpdateRequest(percentCharged = batteryPercent.toDouble())
+            val updateRequest = TrmnlDeviceUpdateRequest(percentCharged = batteryPercent)
             val apiUrl = constructApiUrl(config.apiBaseUrl, DEVICE_API_PATH.replace("{id}", deviceId.toString()))
 
             val result =
@@ -545,5 +588,6 @@ class TrmnlDisplayRepository
                     Result.success(Unit)
                 }
             }
+             */
         }
     }

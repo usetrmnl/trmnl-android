@@ -170,8 +170,9 @@ class TrmnlImageRefreshWorker(
             httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
         )
 
-        // Report battery status for BYOD devices after successful image refresh
-        displayRepository.reportDeviceBatteryStatus(deviceConfig)
+        // DEPRECATED: Battery reporting now happens via Percent-Charged header in /api/display call
+        // Battery percentage is automatically sent when fetching the next image for BYOD devices
+        // displayRepository.reportDeviceBatteryStatus(deviceConfig)
 
         // NOTE: Image metadata caching is handled automatically by `TrmnlDisplayRepository`
         // when the API call succeeds, so we don't need to save it again here.

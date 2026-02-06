@@ -6,6 +6,11 @@ import com.squareup.moshi.JsonClass
 /**
  * Data class representing a request to update a TRMNL device.
  *
+ * **DEPRECATED:** This model is no longer needed for battery reporting.
+ * Battery percentage is now sent via the Percent-Charged header in /api/display call.
+ *
+ * This class is kept for backward compatibility and may be removed in a future version.
+ *
  * All fields are optional - only include the fields you want to update.
  *
  * Sample JSON request:
@@ -24,10 +29,14 @@ import com.squareup.moshi.JsonClass
  * @property percentCharged The battery percentage charged.
  * @see ink.trmnl.android.network.TrmnlApiService.updateDevice
  */
+@Deprecated(
+    message = "No longer needed for battery reporting. Battery is now sent via Percent-Charged header.",
+    level = DeprecationLevel.WARNING,
+)
 @JsonClass(generateAdapter = true)
 data class TrmnlDeviceUpdateRequest(
     @Json(name = "sleep_mode_enabled") val sleepModeEnabled: Boolean? = null,
     @Json(name = "sleep_start_time") val sleepStartTime: Int? = null,
     @Json(name = "sleep_end_time") val sleepEndTime: Int? = null,
-    @Json(name = "percent_charged") val percentCharged: Double? = null,
+    @Json(name = "percent_charged") val percentCharged: Int? = null,
 )
