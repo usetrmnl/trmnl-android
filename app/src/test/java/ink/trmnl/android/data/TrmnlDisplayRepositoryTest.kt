@@ -608,11 +608,7 @@ class TrmnlDisplayRepositoryTest {
     fun `reportDeviceBatteryStatus should report battery for valid BYOD config`() =
         runTest {
             // Arrange
-            val byodConfigWithDeviceId =
-                byodDeviceConfig.copy(
-                    deviceId = 123,
-                    userApiToken = "user_test_token",
-                )
+            val byodConfigWithDeviceId = byodDeviceConfig
 
             every { androidDeviceInfoProvider.getBatteryLevel() } returns 75
 
@@ -645,11 +641,7 @@ class TrmnlDisplayRepositoryTest {
     fun `reportDeviceBatteryStatus should skip for non-BYOD device`() =
         runTest {
             // Arrange - TRMNL device (not BYOD)
-            val trmnlConfig =
-                testDeviceConfig.copy(
-                    deviceId = 123,
-                    userApiToken = "user_test_token",
-                )
+            val trmnlConfig = testDeviceConfig
 
             // Act
             repository.reportDeviceBatteryStatus(trmnlConfig)
@@ -665,11 +657,7 @@ class TrmnlDisplayRepositoryTest {
     fun `reportDeviceBatteryStatus should skip when deviceId is null`() =
         runTest {
             // Arrange
-            val configWithoutDeviceId =
-                byodDeviceConfig.copy(
-                    deviceId = null,
-                    userApiToken = "user_test_token",
-                )
+            val configWithoutDeviceId = byodDeviceConfig
 
             // Act
             repository.reportDeviceBatteryStatus(configWithoutDeviceId)
@@ -685,11 +673,7 @@ class TrmnlDisplayRepositoryTest {
     fun `reportDeviceBatteryStatus should skip when userApiToken is null`() =
         runTest {
             // Arrange
-            val configWithoutUserToken =
-                byodDeviceConfig.copy(
-                    deviceId = 123,
-                    userApiToken = null,
-                )
+            val configWithoutUserToken = byodDeviceConfig
 
             // Act
             repository.reportDeviceBatteryStatus(configWithoutUserToken)
@@ -705,11 +689,7 @@ class TrmnlDisplayRepositoryTest {
     fun `reportDeviceBatteryStatus should skip when battery level unavailable`() =
         runTest {
             // Arrange
-            val byodConfigWithDeviceId =
-                byodDeviceConfig.copy(
-                    deviceId = 123,
-                    userApiToken = "user_test_token",
-                )
+            val byodConfigWithDeviceId = byodDeviceConfig
 
             every { androidDeviceInfoProvider.getBatteryLevel() } returns null
 
@@ -729,8 +709,6 @@ class TrmnlDisplayRepositoryTest {
             // Arrange
             val byodConfig =
                 byodDeviceConfig.copy(
-                    deviceId = null,
-                    userApiToken = "test_token",
                     apiAccessToken = "test_api_key",
                 )
             val expectedRssi = -65
@@ -773,8 +751,6 @@ class TrmnlDisplayRepositoryTest {
             // Arrange
             val byodConfig =
                 byodDeviceConfig.copy(
-                    deviceId = null,
-                    userApiToken = "test_token",
                     apiAccessToken = "test_api_key",
                 )
             val expectedBattery = 80
