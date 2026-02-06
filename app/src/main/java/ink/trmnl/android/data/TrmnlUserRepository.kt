@@ -21,6 +21,12 @@ import javax.inject.Inject
  *
  * **Note:** Most methods in this repository are deprecated as battery reporting has been
  * migrated to use the Percent-Charged header in device-level API calls.
+ *
+ * See:
+ * - https://github.com/usetrmnl/trmnl-android/issues/252
+ * - https://github.com/usetrmnl/trmnl-android/issues/239
+ * - https://github.com/usetrmnl/trmnl-android/pull/253
+ * - https://discord.com/channels/1281055965508141100/1466030731770855434/1469103763846463620
  */
 @SingleIn(AppScope::class)
 class TrmnlUserRepository
