@@ -14,7 +14,7 @@ Utility app to display TRMNL screens on any Android device
 
 FULL DESCRIPTION (Max 4000 characters)
 --------------------------------------------------------------------------------
-TRMNL serves as a digital display for TRMNL e-ink devices and BYOS installations. The app connects to the TRMNL or BYOS API, fetches display data, and shows it on Android devices. It can function both as a mirror for existing TRMNL devices or as a standalone TRMNL display connected directly to a Bring-Your-Own-Server (BYOS).
+TRMNL serves as a digital display for TRMNL e-ink devices and BYOS installations. It can function both as a mirror for existing TRMNL devices or as a standalone TRMNL display connected directly to a Bring-Your-Own-Server (BYOS).
 
 > ⚠️ Note: TRMNL app currently requires device API key for non-BYOS based devices. TRMNL device must have a developer edition or BYOD license to enable device API key.
 
