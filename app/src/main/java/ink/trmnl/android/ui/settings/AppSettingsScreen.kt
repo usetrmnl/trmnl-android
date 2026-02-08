@@ -96,6 +96,7 @@ import ink.trmnl.android.ui.aboutapp.AppInfoScreen
 import ink.trmnl.android.ui.devicemodel.DeviceModelSelectorScreen
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
 import ink.trmnl.android.ui.icons.Icons
+import ink.trmnl.android.ui.refreshlog.DisplayRefreshLogScreen
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.Failure
 import ink.trmnl.android.ui.settings.AppSettingsScreen.ValidationResult.InvalidServerUrl
@@ -251,6 +252,11 @@ data class AppSettingsScreen(
          * Event triggered when the override display model button is clicked.
          */
         data object OverrideDisplayModelPressed : Event()
+
+        /**
+         * Event triggered when the user wants to view the refresh logs.
+         */
+        data object ViewLogsRequested : Event()
     }
 }
 
@@ -517,6 +523,11 @@ class AppSettingsPresenter
                         AppSettingsScreen.Event.AppInfoPressed -> {
                             // Navigate to AppInfoScreen
                             navigator.goTo(AppInfoScreen)
+                        }
+
+                        AppSettingsScreen.Event.ViewLogsRequested -> {
+                            // Navigate to DisplayRefreshLogScreen
+                            navigator.goTo(DisplayRefreshLogScreen)
                         }
 
                         AppSettingsScreen.Event.OverrideDisplayModelPressed -> {
@@ -1252,6 +1263,23 @@ private fun WorkScheduleStatusCard(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Cancel Periodic Refresh Job")
                     }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            state.eventSink(AppSettingsScreen.Event.ViewLogsRequested)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.List,
+                            contentDescription = "View logs",
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("View Refresh Logs")
+                    }
                 }
             } else {
                 Text(
@@ -1262,6 +1290,8 @@ private fun WorkScheduleStatusCard(
             }
         }
     }
+
+    Spacer(modifier = Modifier.height(8.dp))
 }
 
 /**
