@@ -1,9 +1,8 @@
 package ink.trmnl.android.ui.aboutapp
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,9 +15,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -29,6 +30,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import com.slack.circuit.codegen.annotations.CircuitInject
@@ -135,66 +137,135 @@ fun AppInfoContent(
             modifier =
                 Modifier
                     .padding(innerPadding)
-                    .padding(horizontal = 32.dp)
+                    .padding(horizontal = 24.dp)
                     .verticalScroll(rememberScrollState())
                     .fillMaxWidth()
                     .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
+            // App Logo
             Icon(
                 painter = painterResource(R.drawable.trmnl_logo_plain),
                 contentDescription = null,
                 tint = TrmnlOrange,
-                modifier = Modifier.height(64.dp),
+                modifier = Modifier.height(72.dp),
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
+            // App Name
             Text(
                 text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // App Description
             Text(
-                text = "Version: ${state.appVersion}",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Build Type: ${state.buildType}",
+                text = "Display your TRMNL device content on your Android device",
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
 
-            Image(
-                painter = painterResource(R.drawable.trmnl_device_white_transparent),
-                contentDescription = "TRMNL Device",
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // App Details Section
+            Column(
                 modifier =
                     Modifier
-                        .padding(vertical = 16.dp)
-                        .clickable { state.eventSink(Event.OpenTrmnlSite) },
-            )
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .padding(
+                            top = 16.dp,
+                            bottom = 16.dp,
+                        ),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Version",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = state.appVersion,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Build Type",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = state.buildType,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            HorizontalDivider(modifier = Modifier.fillMaxWidth())
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Actions Section
+            Text(
+                text = "Connect & Learn",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // GitHub Button
             Button(
                 onClick = { state.eventSink(Event.OpenGithub) },
-                modifier = Modifier.fillMaxWidth(0.7f),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.code_24dp),
+                    painter = painterResource(R.drawable.github_outline),
                     contentDescription = null,
-                    modifier = Modifier.padding(end = 8.dp),
+                    modifier = Modifier.padding(end = 12.dp),
                 )
-                Text("View Project on GitHub")
+                Text("View on GitHub", modifier = Modifier.weight(1f))
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // TRMNL Website Button
+            OutlinedButton(
+                onClick = { state.eventSink(Event.OpenTrmnlSite) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.outline_link_2_24),
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Text("Visit TRMNL.ink", modifier = Modifier.weight(1f))
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
