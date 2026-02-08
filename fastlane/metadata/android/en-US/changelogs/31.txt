@@ -1,0 +1,4 @@
+- Updated to the latest version (2.7.0)
+- Added quick access to refresh logs from settings screen
+- Redesigned app info screen with improved UI layout
+- Enhanced navigation between settings and display screens
