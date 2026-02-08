@@ -165,10 +165,10 @@ fun AppInfoContent(
 
             // App Description
             Text(
-                text = "Display your TRMNL device content on your Android device",
+                text = "Display your TRMNL content on your Android device",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                textAlign = TextAlign.Center,
             )
 
             Spacer(modifier = Modifier.height(28.dp))
