@@ -170,10 +170,6 @@ class TrmnlImageRefreshWorker(
             httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
         )
 
-        // DEPRECATED: Battery reporting now happens via Percent-Charged header in /api/display call
-        // Battery percentage is automatically sent when fetching the next image for BYOD devices
-        // displayRepository.reportDeviceBatteryStatus(deviceConfig)
-
         // NOTE: Image metadata caching is handled automatically by `TrmnlDisplayRepository`
         // when the API call succeeds, so we don't need to save it again here.
         // See https://github.com/usetrmnl/trmnl-android/issues/195
