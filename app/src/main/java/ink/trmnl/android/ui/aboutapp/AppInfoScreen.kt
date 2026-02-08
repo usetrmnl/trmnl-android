@@ -238,7 +238,7 @@ fun AppInfoContent(
             Spacer(modifier = Modifier.height(16.dp))
 
             // GitHub Button
-            Button(
+            OutlinedButton(
                 onClick = { state.eventSink(Event.OpenGithub) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -247,7 +247,7 @@ fun AppInfoContent(
                     contentDescription = null,
                     modifier = Modifier.padding(end = 12.dp),
                 )
-                Text("View on GitHub", modifier = Modifier.weight(1f))
+                Text("View on GitHub / Report Issues", modifier = Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -262,7 +262,7 @@ fun AppInfoContent(
                     contentDescription = null,
                     modifier = Modifier.padding(end = 12.dp),
                 )
-                Text("Visit TRMNL.ink", modifier = Modifier.weight(1f))
+                Text("Visit TRMNL", modifier = Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(32.dp))
