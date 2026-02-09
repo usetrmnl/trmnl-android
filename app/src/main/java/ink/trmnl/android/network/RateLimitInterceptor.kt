@@ -51,7 +51,7 @@ class RateLimitInterceptor(
      * @param attempt Current retry attempt number (1-indexed)
      * @param maxRetries Maximum number of retries allowed
      * @param delayMs Delay in milliseconds before this retry
-     * @param reason Reason for the retry ("exponential_backoff" or "retry_after_header")
+     * @param reason Reason for the retry ([REASON_EXPONENTIAL_BACKOFF] or [REASON_RETRY_AFTER_HEADER])
      */
     data class RetryEvent(
         val attempt: Int,
@@ -70,6 +70,12 @@ class RateLimitInterceptor(
 
     companion object {
         private const val TAG = "RateLimitInterceptor"
+
+        /**
+         * Retry reason constants for RetryEvent.
+         */
+        const val REASON_EXPONENTIAL_BACKOFF = "exponential_backoff"
+        const val REASON_RETRY_AFTER_HEADER = "retry_after_header"
 
         /**
          * Maximum number of retry attempts for rate-limited requests.
@@ -123,7 +129,7 @@ class RateLimitInterceptor(
 
             // Emit retry event for UI feedback
             val retryAfterHeader = response.header("Retry-After")
-            val reason = if (retryAfterHeader != null) "retry_after_header" else "exponential_backoff"
+            val reason = if (retryAfterHeader != null) REASON_RETRY_AFTER_HEADER else REASON_EXPONENTIAL_BACKOFF
             _retryEvents.tryEmit(
                 RetryEvent(
                     attempt = attempt,

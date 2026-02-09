@@ -160,7 +160,7 @@ class TrmnlMirrorDisplayPresenter
             LaunchedEffect(Unit) {
                 rateLimitInterceptor.retryEvents.collect { event ->
                     val reasonText =
-                        if (event.reason == "retry_after_header") {
+                        if (event.reason == ink.trmnl.android.network.RateLimitInterceptor.REASON_RETRY_AFTER_HEADER) {
                             "Server requested"
                         } else {
                             "Rate limited"
