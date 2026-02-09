@@ -30,8 +30,13 @@ object NetworkModule {
 
     @Provides
     @SingleIn(AppScope::class)
+    fun provideRateLimitInterceptor(): RateLimitInterceptor = RateLimitInterceptor()
+
+    @Provides
+    @SingleIn(AppScope::class)
     fun provideOkHttpClient(
         @ApplicationContext context: Context,
+        rateLimitInterceptor: RateLimitInterceptor,
     ): OkHttpClient {
         // Create cache directory
         val cacheDir = File(context.cacheDir, "http_cache")
@@ -51,7 +56,7 @@ object NetworkModule {
             .Builder()
             // Add rate limit interceptor to handle HTTP 429 with exponential backoff
             // This is an application interceptor placed before others to wrap their behavior
-            .addInterceptor(RateLimitInterceptor())
+            .addInterceptor(rateLimitInterceptor)
             .addInterceptor { chain ->
                 val request =
                     chain

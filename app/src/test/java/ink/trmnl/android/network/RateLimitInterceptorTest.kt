@@ -1,6 +1,8 @@
 package ink.trmnl.android.network
 
+import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.test.runTest
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
@@ -61,12 +63,12 @@ class RateLimitInterceptorTest {
         // Assert
         assertThat(response.code).isEqualTo(200)
         assertThat(fakeSleeper.sleepCalls).hasSize(2) // Slept twice for 2 retries
-        // First retry: ~1s (with jitter 0.5-1.0)
-        assertThat(fakeSleeper.sleepCalls[0]).isAtLeast(500L)
-        assertThat(fakeSleeper.sleepCalls[0]).isAtMost(1000L)
-        // Second retry: ~2s (with jitter 0.5-1.0)
-        assertThat(fakeSleeper.sleepCalls[1]).isAtLeast(1000L)
-        assertThat(fakeSleeper.sleepCalls[1]).isAtMost(2000L)
+        // First retry: ~3s (with jitter 0.5-1.0)
+        assertThat(fakeSleeper.sleepCalls[0]).isAtLeast(1500L)
+        assertThat(fakeSleeper.sleepCalls[0]).isAtMost(3000L)
+        // Second retry: ~6s (with jitter 0.5-1.0)
+        assertThat(fakeSleeper.sleepCalls[1]).isAtLeast(3000L)
+        assertThat(fakeSleeper.sleepCalls[1]).isAtMost(6000L)
     }
 
     @Test
@@ -126,15 +128,15 @@ class RateLimitInterceptorTest {
         assertThat(response.code).isEqualTo(200)
         assertThat(fakeSleeper.sleepCalls).hasSize(3)
         // Verify exponential backoff pattern (with jitter range 0.5-1.0)
-        // Attempt 1: 1s * jitter = 500-1000ms
-        assertThat(fakeSleeper.sleepCalls[0]).isAtLeast(500L)
-        assertThat(fakeSleeper.sleepCalls[0]).isAtMost(1000L)
-        // Attempt 2: 2s * jitter = 1000-2000ms
-        assertThat(fakeSleeper.sleepCalls[1]).isAtLeast(1000L)
-        assertThat(fakeSleeper.sleepCalls[1]).isAtMost(2000L)
-        // Attempt 3: 4s * jitter = 2000-4000ms
-        assertThat(fakeSleeper.sleepCalls[2]).isAtLeast(2000L)
-        assertThat(fakeSleeper.sleepCalls[2]).isAtMost(4000L)
+        // Attempt 1: 3s * jitter = 1500-3000ms
+        assertThat(fakeSleeper.sleepCalls[0]).isAtLeast(1500L)
+        assertThat(fakeSleeper.sleepCalls[0]).isAtMost(3000L)
+        // Attempt 2: 6s * jitter = 3000-6000ms
+        assertThat(fakeSleeper.sleepCalls[1]).isAtLeast(3000L)
+        assertThat(fakeSleeper.sleepCalls[1]).isAtMost(6000L)
+        // Attempt 3: 12s * jitter = 6000-12000ms
+        assertThat(fakeSleeper.sleepCalls[2]).isAtLeast(6000L)
+        assertThat(fakeSleeper.sleepCalls[2]).isAtMost(12000L)
     }
 
     @Test
@@ -153,17 +155,17 @@ class RateLimitInterceptorTest {
         assertThat(response.code).isEqualTo(429)
         assertThat(fakeSleeper.sleepCalls).hasSize(5) // MAX_RETRIES = 5
 
-        // Verify the last attempt (attempt 5: 1s * 2^4 = 16s, capped at 32s, jittered 0.5-1.0x)
-        // The 5th attempt's base delay is 16s, which is already below MAX_BACKOFF_MS,
-        // so it won't be capped by MAX_BACKOFF_MS but will be affected by jitter (8-16s)
+        // Verify the last attempt (attempt 5: 3s * 2^4 = 48s, capped at 32s, jittered 0.5-1.0x)
+        // The 5th attempt's base delay is 48s, which gets capped at MAX_BACKOFF_MS (32s)
+        // so it will be capped and then jittered (16-32s)
         // Let's check that at least one of the later calls (attempts 4 or 5) shows proper exponential growth
-        val attempt4Delay = fakeSleeper.sleepCalls[3] // 1s * 2^3 = 8s with jitter = 4-8s
-        val attempt5Delay = fakeSleeper.sleepCalls[4] // 1s * 2^4 = 16s with jitter = 8-16s
+        val attempt4Delay = fakeSleeper.sleepCalls[3] // 3s * 2^3 = 24s with jitter = 12-24s
+        val attempt5Delay = fakeSleeper.sleepCalls[4] // 3s * 2^4 = 48s, capped at 32s with jitter = 16-32s
 
-        assertThat(attempt4Delay).isAtLeast(4000L)
-        assertThat(attempt4Delay).isAtMost(8000L)
-        assertThat(attempt5Delay).isAtLeast(8000L)
-        assertThat(attempt5Delay).isAtMost(16000L)
+        assertThat(attempt4Delay).isAtLeast(12000L)
+        assertThat(attempt4Delay).isAtMost(24000L)
+        assertThat(attempt5Delay).isAtLeast(16000L)
+        assertThat(attempt5Delay).isAtMost(32000L)
     }
 
     @Test
@@ -346,6 +348,137 @@ class RateLimitInterceptorTest {
         assertThat(response.code).isEqualTo(200)
         assertThat(fakeSleeper.sleepCalls).hasSize(1) // One retry
     }
+
+    @Test
+    fun `intercept emits retry events with exponential backoff reason`() =
+        runTest {
+            // Arrange - Fail twice with 429, then succeed
+            val responses =
+                mutableListOf(
+                    createResponse(429, "Too Many Requests"),
+                    createResponse(429, "Too Many Requests"),
+                    createResponse(200, "OK"),
+                )
+            val mockChain = createMockChainWithMultipleResponses(responses)
+
+            // Act & Assert
+            interceptor.retryEvents.test {
+                val response = interceptor.intercept(mockChain)
+
+                // First retry event
+                val event1 = awaitItem()
+                assertThat(event1.attempt).isEqualTo(1)
+                assertThat(event1.maxRetries).isEqualTo(5)
+                assertThat(event1.delayMs).isAtLeast(1500L)
+                assertThat(event1.delayMs).isAtMost(3000L)
+                assertThat(event1.reason).isEqualTo(RateLimitInterceptor.REASON_EXPONENTIAL_BACKOFF)
+
+                // Second retry event
+                val event2 = awaitItem()
+                assertThat(event2.attempt).isEqualTo(2)
+                assertThat(event2.maxRetries).isEqualTo(5)
+                assertThat(event2.delayMs).isAtLeast(3000L)
+                assertThat(event2.delayMs).isAtMost(6000L)
+                assertThat(event2.reason).isEqualTo(RateLimitInterceptor.REASON_EXPONENTIAL_BACKOFF)
+
+                assertThat(response.code).isEqualTo(200)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `intercept emits retry events with retry-after header reason`() =
+        runTest {
+            // Arrange - 429 with Retry-After header, then success
+            val responses =
+                mutableListOf(
+                    createResponse(429, "Too Many Requests", retryAfterSeconds = "5"),
+                    createResponse(200, "OK"),
+                )
+            val mockChain = createMockChainWithMultipleResponses(responses)
+
+            // Act & Assert
+            interceptor.retryEvents.test {
+                val response = interceptor.intercept(mockChain)
+
+                // Retry event with Retry-After header
+                val event = awaitItem()
+                assertThat(event.attempt).isEqualTo(1)
+                assertThat(event.maxRetries).isEqualTo(5)
+                assertThat(event.delayMs).isEqualTo(5000L) // Exact value from header
+                assertThat(event.reason).isEqualTo(RateLimitInterceptor.REASON_RETRY_AFTER_HEADER)
+
+                assertThat(response.code).isEqualTo(200)
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `intercept does not emit events for successful requests`() =
+        runTest {
+            // Arrange
+            val mockChain = createMockChain(200, "OK")
+
+            // Act & Assert
+            interceptor.retryEvents.test {
+                val response = interceptor.intercept(mockChain)
+
+                assertThat(response.code).isEqualTo(200)
+                expectNoEvents() // No retry events for successful request
+            }
+        }
+
+    @Test
+    fun `intercept does not emit events for non-idempotent requests`() =
+        runTest {
+            // Arrange - POST request with 429
+            val postRequest =
+                Request
+                    .Builder()
+                    .url("https://test.com/api/data")
+                    .post("{}".toRequestBody("application/json".toMediaType()))
+                    .build()
+
+            val mockChain =
+                object : Interceptor.Chain {
+                    override fun request(): Request = postRequest
+
+                    override fun proceed(request: Request): Response = createResponse(429, "Too Many Requests")
+
+                    override fun connection() = null
+
+                    override fun call() = throw UnsupportedOperationException("Not implemented for test")
+
+                    override fun connectTimeoutMillis() = 30_000
+
+                    override fun withConnectTimeout(
+                        timeout: Int,
+                        unit: TimeUnit,
+                    ) = this
+
+                    override fun readTimeoutMillis() = 30_000
+
+                    override fun withReadTimeout(
+                        timeout: Int,
+                        unit: TimeUnit,
+                    ) = this
+
+                    override fun writeTimeoutMillis() = 30_000
+
+                    override fun withWriteTimeout(
+                        timeout: Int,
+                        unit: TimeUnit,
+                    ) = this
+                }
+
+            // Act & Assert
+            interceptor.retryEvents.test {
+                val response = interceptor.intercept(mockChain)
+
+                assertThat(response.code).isEqualTo(429)
+                expectNoEvents() // No retry events for non-idempotent request
+            }
+        }
 
     // Helper functions
 
