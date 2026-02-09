@@ -103,7 +103,7 @@ android {
             // Use fake API response for local development and testing purposes.
             // ℹ️ To override during local development, change this value to `"false"`
             // or, you can change the value in the `RepositoryConfigProvider`
-            buildConfigField("Boolean", "USE_FAKE_API", "true")
+            buildConfigField("Boolean", "USE_FAKE_API", "false")
 
             signingConfig = signingConfigs.getByName("debug")
         }
