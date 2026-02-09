@@ -226,58 +226,87 @@ class TrmnlDeviceConfigDataStore
          * - Logs: "Loading device config (legacy): type=..., userApiToken=..."
          * - Only returns config if `ACCESS_TOKEN_KEY` exists (required field)
          *
+         * **Domain Migration:**
+         * - Automatically migrates `usetrmnl.com` to `trmnl.com` for TRMNL device types
+         * - See: https://github.com/usetrmnl/trmnl-android/issues/240
+         *
          * This approach ensures seamless migration from older app versions while
          * maintaining forward compatibility with newer storage format.
          */
         val deviceConfigFlow: Flow<TrmnlDeviceConfig?> =
-            context.deviceConfigStore.data.map { preferences ->
-                val configJson = preferences[CONFIG_JSON_KEY]
-                if (configJson != null) {
-                    try {
-                        val config: TrmnlDeviceConfig? = deviceConfigAdapter.fromJson(configJson)
-                        Timber.tag(TAG).d(
-                            "Loading device config (JSON): type=${config?.type}",
-                        )
-                        config
-                    } catch (e: Exception) {
-                        Timber.tag(TAG).e(e, "Failed to parse device config")
-                        null
-                    }
-                } else {
-                    // Legacy migration path - build config from individual preferences
-                    val type =
-                        preferences[DEVICE_TYPE_KEY]?.let {
-                            try {
-                                deviceTypeAdapter.fromJson(it)
-                            } catch (e: Exception) {
-                                TrmnlDeviceType.TRMNL
-                            }
-                        } ?: TrmnlDeviceType.TRMNL
-
-                    val token = preferences[ACCESS_TOKEN_KEY]
-                    val url = preferences[API_BASE_URL_KEY] ?: TRMNL_API_SERVER_BASE_URL
-                    val refreshRate = preferences[REFRESH_RATE_SEC_KEY] ?: DEFAULT_REFRESH_INTERVAL_SEC
-                    val deviceMacId = preferences[DEVICE_MAC_ID_KEY]
-                    val isMasterDevice = preferences[IS_MASTER_DEVICE_KEY]?.toBoolean()
-
-                    Timber.tag(TAG).d(
-                        "Loading device config (legacy): type=$type, deviceApiToken=${token.obfuscated()}",
-                    )
-
-                    if (token != null) {
-                        TrmnlDeviceConfig(
-                            type = type,
-                            apiBaseUrl = url,
-                            apiAccessToken = token,
-                            deviceMacId = deviceMacId,
-                            refreshRateSecs = refreshRate,
-                            isMasterDevice = isMasterDevice,
-                        )
+            context.deviceConfigStore.data
+                .map { preferences ->
+                    val configJson = preferences[CONFIG_JSON_KEY]
+                    if (configJson != null) {
+                        try {
+                            val config: TrmnlDeviceConfig? = deviceConfigAdapter.fromJson(configJson)
+                            Timber.tag(TAG).d(
+                                "Loading device config (JSON): type=${config?.type}",
+                            )
+                            config
+                        } catch (e: Exception) {
+                            Timber.tag(TAG).e(e, "Failed to parse device config")
+                            null
+                        }
                     } else {
-                        null
+                        // Legacy migration path - build config from individual preferences
+                        val type =
+                            preferences[DEVICE_TYPE_KEY]?.let {
+                                try {
+                                    deviceTypeAdapter.fromJson(it)
+                                } catch (e: Exception) {
+                                    TrmnlDeviceType.TRMNL
+                                }
+                            } ?: TrmnlDeviceType.TRMNL
+
+                        val token = preferences[ACCESS_TOKEN_KEY]
+                        val url = preferences[API_BASE_URL_KEY] ?: TRMNL_API_SERVER_BASE_URL
+                        val refreshRate = preferences[REFRESH_RATE_SEC_KEY] ?: DEFAULT_REFRESH_INTERVAL_SEC
+                        val deviceMacId = preferences[DEVICE_MAC_ID_KEY]
+                        val isMasterDevice = preferences[IS_MASTER_DEVICE_KEY]?.toBoolean()
+
+                        Timber.tag(TAG).d(
+                            "Loading device config (legacy): type=$type, deviceApiToken=${token.obfuscated()}",
+                        )
+
+                        if (token != null) {
+                            TrmnlDeviceConfig(
+                                type = type,
+                                apiBaseUrl = url,
+                                apiAccessToken = token,
+                                deviceMacId = deviceMacId,
+                                refreshRateSecs = refreshRate,
+                                isMasterDevice = isMasterDevice,
+                            )
+                        } else {
+                            null
+                        }
                     }
-                }
-            }
+                }.map { config ->
+                    // Migrate usetrmnl.com -> trmnl.com for TRMNL device types
+                    // See: https://github.com/usetrmnl/trmnl-android/issues/240
+                    if (config != null &&
+                        config.type == TrmnlDeviceType.TRMNL &&
+                        config.apiBaseUrl.contains(AppConfig.LEGACY_TRMNL_DOMAIN, ignoreCase = true)
+                    ) {
+                        val newUrl = config.apiBaseUrl.replace(AppConfig.LEGACY_TRMNL_DOMAIN, AppConfig.TRMNL_DOMAIN, ignoreCase = true)
+                        Timber.tag(TAG).i(
+                            "Migrating API base URL from ${config.apiBaseUrl} to $newUrl for TRMNL device",
+                        )
+                        val migratedConfig = config.copy(apiBaseUrl = newUrl)
+                        // Persist the migrated config back to DataStore (one-time migration)
+                        // Note: Using runBlocking here as Flow.map doesn't support suspend operations.
+                        // This is acceptable because: (1) it's a one-time migration per user,
+                        // (2) DataStore writes are fast, and (3) distinctUntilChanged() below
+                        // prevents duplicate downstream emissions from the save triggering re-collection.
+                        runBlocking {
+                            saveDeviceConfig(migratedConfig)
+                        }
+                        migratedConfig
+                    } else {
+                        config
+                    }
+                }.distinctUntilChanged()
 
         /**
          * Saves the complete device configuration

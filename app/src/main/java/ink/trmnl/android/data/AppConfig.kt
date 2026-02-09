@@ -21,10 +21,24 @@ object AppConfig {
     const val DEFAULT_REFRESH_INTERVAL_SEC: Long = 7_200L // 2 hours
 
     /**
-     * Base URL for the TRMNL API server.
-     * Ref: https://github.com/usetrmnl/trmnl-android/issues/171
+     * Legacy domain name for TRMNL API (deprecated, used for migration only).
+     * Ref: https://github.com/usetrmnl/trmnl-android/issues/240
      */
-    const val TRMNL_API_SERVER_BASE_URL = "https://trmnl.com/"
+    const val LEGACY_TRMNL_DOMAIN = "usetrmnl.com"
+
+    /**
+     * Current domain name for TRMNL API.
+     * Ref: https://github.com/usetrmnl/trmnl-android/issues/240
+     */
+    const val TRMNL_DOMAIN = "trmnl.com"
+
+    /**
+     * Base URL for the TRMNL API server.
+     * Ref:
+     * - https://github.com/usetrmnl/trmnl-android/issues/171
+     * - https://github.com/usetrmnl/trmnl-android/issues/240
+     */
+    const val TRMNL_API_SERVER_BASE_URL = "https://$TRMNL_DOMAIN/"
 
     /**
      * URL for the TRMNL Android app on GitHub.
