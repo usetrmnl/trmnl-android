@@ -1278,10 +1278,6 @@ private fun WorkScheduleStatusCard(
     Spacer(modifier = Modifier.height(8.dp))
 }
 
-/**
- * A composable function that displays a banner indicating that the app is in developer mode
- * and is using mock data instead of real API calls.
- */
 @Preview(name = "App Settings Content - Initial State")
 @Composable
 private fun PreviewAppSettingsContentInitial() {
