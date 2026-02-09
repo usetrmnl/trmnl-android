@@ -14,8 +14,9 @@ import kotlin.random.Random
  *
  * This interceptor:
  * - Detects HTTP 429 rate limit responses
+ * - **Only retries idempotent methods (GET, HEAD)** to prevent duplicate operations
  * - Implements exponential backoff with jitter to avoid thundering herd
- * - Respects the Retry-After header if provided by the server
+ * - Fully respects the Retry-After header if provided by the server (in seconds only)
  * - Retries the request up to a maximum number of attempts
  * - Logs retry attempts for debugging
  *
@@ -23,11 +24,17 @@ import kotlin.random.Random
  * - Base delay: 1 second
  * - Delay = base * (2 ^ attempt) with jitter
  * - Jitter: delay * (0.5 + 0.5 * random) to distribute load
- * - Max delay: 32 seconds per retry
+ * - Max delay: 32 seconds per retry (for exponential backoff only)
+ * - Retry-After header takes precedence and is NOT capped
+ *
+ * @param sleeper Injectable sleeper for delay execution (defaults to Thread.sleep).
+ *                Allows fake implementations for testing without actual delays.
  *
  * See: https://github.com/usetrmnl/trmnl-android/issues/260
  */
-class RateLimitInterceptor : Interceptor {
+class RateLimitInterceptor(
+    private val sleeper: Sleeper = ThreadSleeper(),
+) : Interceptor {
     companion object {
         private const val TAG = "RateLimitInterceptor"
 
@@ -54,15 +61,19 @@ class RateLimitInterceptor : Interceptor {
         var response = chain.proceed(request)
         var attempt = 0
 
-        // Retry loop for handling 429 responses
-        while (response.code == HTTP_429 && attempt < MAX_RETRIES) {
+        // Only retry idempotent methods (GET, HEAD) to prevent duplicate operations
+        // POST, PUT, PATCH, DELETE should not be retried as they may cause side effects
+        val isIdempotent = request.method == "GET" || request.method == "HEAD"
+
+        // Retry loop for handling 429 responses (only for idempotent methods)
+        while (response.code == HTTP_429 && attempt < MAX_RETRIES && isIdempotent) {
             attempt++
 
             // Calculate backoff delay
             val backoffDelay = calculateBackoffDelay(attempt, response)
 
             Timber.tag(TAG).w(
-                "Rate limit exceeded (HTTP 429) for ${request.url}. " +
+                "Rate limit exceeded (HTTP 429) for ${request.method} ${request.url}. " +
                     "Retry attempt $attempt/$MAX_RETRIES after ${backoffDelay}ms",
             )
 
@@ -71,7 +82,7 @@ class RateLimitInterceptor : Interceptor {
 
             // Wait for the backoff delay
             try {
-                Thread.sleep(backoffDelay)
+                sleeper.sleep(backoffDelay)
             } catch (e: InterruptedException) {
                 Thread.currentThread().interrupt()
                 throw IOException("Interrupted while waiting for rate limit backoff", e)
@@ -81,12 +92,19 @@ class RateLimitInterceptor : Interceptor {
             response = chain.proceed(request)
         }
 
-        // Log if we exhausted all retries
-        if (response.code == HTTP_429 && attempt >= MAX_RETRIES) {
-            Timber.tag(TAG).e(
-                "Rate limit exceeded (HTTP 429) for ${request.url}. " +
-                    "Exhausted all $MAX_RETRIES retry attempts. Giving up.",
-            )
+        // Log if we exhausted all retries or hit non-idempotent method
+        if (response.code == HTTP_429) {
+            if (!isIdempotent) {
+                Timber.tag(TAG).w(
+                    "Rate limit exceeded (HTTP 429) for non-idempotent ${request.method} ${request.url}. " +
+                        "Not retrying to prevent duplicate operations.",
+                )
+            } else if (attempt >= MAX_RETRIES) {
+                Timber.tag(TAG).e(
+                    "Rate limit exceeded (HTTP 429) for ${request.method} ${request.url}. " +
+                        "Exhausted all $MAX_RETRIES retry attempts. Giving up.",
+                )
+            }
         }
 
         return response
@@ -96,8 +114,11 @@ class RateLimitInterceptor : Interceptor {
      * Calculates the backoff delay for the current retry attempt.
      *
      * Priority:
-     * 1. Use Retry-After header if present (seconds or HTTP-date)
-     * 2. Use exponential backoff with jitter
+     * 1. Use Retry-After header if present (in seconds format only)
+     *    - Retry-After values are NOT capped and are honored fully
+     * 2. Use exponential backoff with jitter (capped at MAX_BACKOFF_MS)
+     *
+     * Note: HTTP-date format for Retry-After is not currently supported.
      *
      * @param attempt Current retry attempt (1-indexed)
      * @param response The 429 response containing potential Retry-After header
@@ -113,12 +134,11 @@ class RateLimitInterceptor : Interceptor {
             val retryAfterSeconds = retryAfterHeader.toLongOrNull()
             if (retryAfterSeconds != null) {
                 // Retry-After is in seconds, convert to milliseconds
+                // Honor the server's value without capping
                 val delayMs = retryAfterSeconds * 1000
                 Timber.tag(TAG).d("Using Retry-After header: ${retryAfterSeconds}s (${delayMs}ms)")
-                return min(delayMs, MAX_BACKOFF_MS)
+                return delayMs
             }
-            // Note: We don't handle HTTP-date format for Retry-After as it's rarely used
-            // If needed, it can be parsed using SimpleDateFormat or java.time APIs
         }
 
         // Use exponential backoff with jitter
@@ -128,7 +148,7 @@ class RateLimitInterceptor : Interceptor {
         val jitter = 0.5 + (0.5 * Random.nextDouble())
         val delayMs = (exponentialDelay * jitter).toLong()
 
-        // Cap at maximum backoff delay
+        // Cap exponential backoff at maximum delay (but not Retry-After)
         val cappedDelayMs = min(delayMs, MAX_BACKOFF_MS)
 
         Timber.tag(TAG).d(
