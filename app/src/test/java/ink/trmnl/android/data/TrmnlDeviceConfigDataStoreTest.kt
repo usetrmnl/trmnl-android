@@ -821,7 +821,7 @@ class TrmnlDeviceConfigDataStoreTest {
         }
 
     @Test
-    fun `deviceConfigFlow migration is idempotent - no repeated saves`() =
+    fun `deviceConfigFlow migration is idempotent across multiple reads`() =
         runTest {
             // Arrange
             val config =

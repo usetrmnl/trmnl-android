@@ -294,8 +294,11 @@ class TrmnlDeviceConfigDataStore
                             "Migrating API base URL from ${config.apiBaseUrl} to $newUrl for TRMNL device",
                         )
                         val migratedConfig = config.copy(apiBaseUrl = newUrl)
-                        // Save the migrated config back to DataStore synchronously
-                        // Using runBlocking is acceptable here as this is a one-time migration
+                        // Persist the migrated config back to DataStore (one-time migration)
+                        // Note: Using runBlocking here as Flow.map doesn't support suspend operations.
+                        // This is acceptable because: (1) it's a one-time migration per user,
+                        // (2) DataStore writes are fast, and (3) distinctUntilChanged() below
+                        // prevents duplicate downstream emissions from the save triggering re-collection.
                         runBlocking {
                             saveDeviceConfig(migratedConfig)
                         }
@@ -303,7 +306,7 @@ class TrmnlDeviceConfigDataStore
                     } else {
                         config
                     }
-                }
+                }.distinctUntilChanged()
 
         /**
          * Saves the complete device configuration
