@@ -55,7 +55,7 @@ internal fun TrmnlDeviceTypeInfoText() {
     val linkStyle = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)
     val annotatedString =
         buildAnnotatedString {
-            append("Your TRMNL device token can be found in settings screen from your ")
+            append("Mirrors your existing TRMNL content. Your TRMNL device token can be found in settings screen from your ")
 
             withLink(
                 LinkAnnotation.Url(
@@ -110,7 +110,7 @@ internal fun ByodDeviceTypeInfoText() {
     val linkStyle = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)
     val annotatedString =
         buildAnnotatedString {
-            append("Bring your own device (BYOD) works like a master TRMNL device. You will need BYOD add-on. ")
+            append("Bring your own device (BYOD) config. You will need BYOD add-on license. ")
 
             withLink(
                 LinkAnnotation.Url(
@@ -151,7 +151,7 @@ internal fun ByosDeviceTypeInfoText() {
     val linkStyle = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)
     val annotatedString =
         buildAnnotatedString {
-            append("Bring your own server (BYOS) config.")
+            append("Bring your own server (BYOS) config. ")
 
             withLink(
                 LinkAnnotation.Url(
