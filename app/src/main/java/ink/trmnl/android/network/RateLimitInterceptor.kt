@@ -1,5 +1,6 @@
 package ink.trmnl.android.network
 
+import ink.trmnl.android.util.HTTP_429
 import okhttp3.Interceptor
 import okhttp3.Response
 import timber.log.Timber
@@ -46,11 +47,6 @@ class RateLimitInterceptor : Interceptor {
          * Prevents exponential backoff from growing too large.
          */
         private const val MAX_BACKOFF_MS = 32_000L
-
-        /**
-         * HTTP status code for "Too Many Requests" (rate limiting).
-         */
-        private const val HTTP_TOO_MANY_REQUESTS = 429
     }
 
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -59,7 +55,7 @@ class RateLimitInterceptor : Interceptor {
         var attempt = 0
 
         // Retry loop for handling 429 responses
-        while (response.code == HTTP_TOO_MANY_REQUESTS && attempt < MAX_RETRIES) {
+        while (response.code == HTTP_429 && attempt < MAX_RETRIES) {
             attempt++
 
             // Calculate backoff delay
@@ -86,7 +82,7 @@ class RateLimitInterceptor : Interceptor {
         }
 
         // Log if we exhausted all retries
-        if (response.code == HTTP_TOO_MANY_REQUESTS && attempt >= MAX_RETRIES) {
+        if (response.code == HTTP_429 && attempt >= MAX_RETRIES) {
             Timber.tag(TAG).e(
                 "Rate limit exceeded (HTTP 429) for ${request.url}. " +
                     "Exhausted all $MAX_RETRIES retry attempts. Giving up.",
