@@ -1,6 +1,9 @@
 package ink.trmnl.android.network
 
 import ink.trmnl.android.util.HTTP_429
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import okhttp3.Interceptor
 import okhttp3.Response
 import timber.log.Timber
@@ -19,6 +22,7 @@ import kotlin.random.Random
  * - Fully respects the Retry-After header if provided by the server (in seconds only)
  * - Retries the request up to a maximum number of attempts
  * - Logs retry attempts for debugging
+ * - Emits retry events for UI feedback
  *
  * Exponential backoff formula:
  * - Base delay: 1 second
@@ -35,6 +39,29 @@ import kotlin.random.Random
 class RateLimitInterceptor(
     private val sleeper: Sleeper = ThreadSleeper(),
 ) : Interceptor {
+    /**
+     * Event emitted when a retry attempt is about to happen.
+     *
+     * @param attempt Current retry attempt number (1-indexed)
+     * @param maxRetries Maximum number of retries allowed
+     * @param delayMs Delay in milliseconds before this retry
+     * @param reason Reason for the retry ("exponential_backoff" or "retry_after_header")
+     */
+    data class RetryEvent(
+        val attempt: Int,
+        val maxRetries: Int,
+        val delayMs: Long,
+        val reason: String,
+    )
+
+    private val _retryEvents = MutableSharedFlow<RetryEvent>(extraBufferCapacity = 10)
+
+    /**
+     * Flow that emits retry events for UI feedback.
+     * UI can collect this to show retry progress to users.
+     */
+    val retryEvents: SharedFlow<RetryEvent> = _retryEvents.asSharedFlow()
+
     companion object {
         private const val TAG = "RateLimitInterceptor"
 
@@ -75,6 +102,18 @@ class RateLimitInterceptor(
             Timber.tag(TAG).w(
                 "Rate limit exceeded (HTTP 429) for ${request.method} ${request.url}. " +
                     "Retry attempt $attempt/$MAX_RETRIES after ${backoffDelay}ms",
+            )
+
+            // Emit retry event for UI feedback
+            val retryAfterHeader = response.header("Retry-After")
+            val reason = if (retryAfterHeader != null) "retry_after_header" else "exponential_backoff"
+            _retryEvents.tryEmit(
+                RetryEvent(
+                    attempt = attempt,
+                    maxRetries = MAX_RETRIES,
+                    delayMs = backoffDelay,
+                    reason = reason,
+                ),
             )
 
             // Close the previous response before retrying

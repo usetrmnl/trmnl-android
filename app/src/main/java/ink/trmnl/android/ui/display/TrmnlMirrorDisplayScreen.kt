@@ -55,6 +55,7 @@ import ink.trmnl.android.data.AppConfig.AUTO_HIDE_APP_CONFIG_WINDOW_MS
 import ink.trmnl.android.data.ImageMetadataStore
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.di.AppScope
+import ink.trmnl.android.network.RateLimitInterceptor
 import ink.trmnl.android.ui.FullScreenMode
 import ink.trmnl.android.ui.refreshlog.DisplayRefreshLogScreen
 import ink.trmnl.android.ui.settings.AppSettingsScreen
@@ -84,8 +85,24 @@ data object TrmnlMirrorDisplayScreen : Screen {
         val errorMessage: String? = null,
         val saveImageResult: SaveImageResult? = null,
         val rateLimitMessage: String? = null,
+        val retryInfo: RetryInfo? = null,
         val eventSink: (Event) -> Unit,
     ) : CircuitUiState
+
+    /**
+     * Information about an ongoing retry attempt.
+     *
+     * @param attempt Current retry attempt number (1-indexed)
+     * @param maxRetries Maximum number of retries allowed
+     * @param delaySeconds Delay in seconds before this retry
+     * @param reason Human-readable reason for the retry
+     */
+    data class RetryInfo(
+        val attempt: Int,
+        val maxRetries: Int,
+        val delaySeconds: Int,
+        val reason: String,
+    )
 
     sealed class SaveImageResult {
         data object Success : SaveImageResult()
@@ -124,6 +141,7 @@ class TrmnlMirrorDisplayPresenter
         private val trmnlWorkScheduler: TrmnlWorkScheduler,
         private val imageMetadataStore: ImageMetadataStore,
         private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
+        private val rateLimitInterceptor: RateLimitInterceptor,
     ) : Presenter<TrmnlMirrorDisplayScreen.State> {
         @Composable
         override fun present(): TrmnlMirrorDisplayScreen.State {
@@ -134,10 +152,33 @@ class TrmnlMirrorDisplayPresenter
             var error by remember { mutableStateOf<String?>(null) }
             var saveImageResult by remember { mutableStateOf<TrmnlMirrorDisplayScreen.SaveImageResult?>(null) }
             var rateLimitMessage by remember { mutableStateOf<String?>(null) }
+            var retryInfo by remember { mutableStateOf<TrmnlMirrorDisplayScreen.RetryInfo?>(null) }
             val scope = rememberCoroutineScope()
             val context = LocalContext.current
 
+            // Collect retry events from RateLimitInterceptor for UI feedback
+            LaunchedEffect(Unit) {
+                rateLimitInterceptor.retryEvents.collect { event ->
+                    val reasonText =
+                        if (event.reason == "retry_after_header") {
+                            "Server requested"
+                        } else {
+                            "Rate limited"
+                        }
+                    retryInfo =
+                        TrmnlMirrorDisplayScreen.RetryInfo(
+                            attempt = event.attempt,
+                            maxRetries = event.maxRetries,
+                            delaySeconds = (event.delayMs / 1000).toInt(),
+                            reason = reasonText,
+                        )
+                    Timber.d("Retry info updated: attempt ${event.attempt}/${event.maxRetries}, delay ${event.delayMs}ms")
+                }
+            }
+
             // Monitor image metadata for rate limit status (HTTP 429)
+            // Note: With the new RateLimitInterceptor, this flow may not receive HTTP 429
+            // since retries are handled transparently at the network layer
             LaunchedEffect(Unit) {
                 imageMetadataStore.imageMetadataFlow.collect { metadata ->
                     if (metadata?.httpStatusCode == HTTP_429) {
@@ -158,6 +199,7 @@ class TrmnlMirrorDisplayPresenter
                         imageUrl = imageMetadata.url
                         isLoading = false
                         error = null
+                        retryInfo = null // Clear retry info on successful load
                     } else {
                         Timber.w("Failed to get cached image URL from TRMNL Image Update Manager `imageUpdateFlow`")
                         // Keep showing loading state until we have a valid response from the server
@@ -219,6 +261,7 @@ class TrmnlMirrorDisplayPresenter
                 errorMessage = error,
                 saveImageResult = saveImageResult,
                 rateLimitMessage = rateLimitMessage,
+                retryInfo = retryInfo,
                 eventSink = { event ->
                     when (event) {
                         TrmnlMirrorDisplayScreen.Event.RefreshCurrentPlaylistItemRequested -> {
@@ -360,7 +403,28 @@ fun TrmnlMirrorDisplayContent(
             contentAlignment = Alignment.Center,
         ) {
             if (state.isLoading) {
-                CircularProgressIndicator()
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(16.dp),
+                ) {
+                    CircularProgressIndicator()
+
+                    // Show retry information if available
+                    state.retryInfo?.let { retry ->
+                        Text(
+                            text = "${retry.reason} - Retrying in ${retry.delaySeconds}s",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(top = 16.dp),
+                        )
+                        Text(
+                            text = "Attempt ${retry.attempt} of ${retry.maxRetries}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                }
             } else if (state.errorMessage != null) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -456,6 +520,7 @@ fun PreviewTrmnlMirrorDisplayImageContent() {
                     isLoading = false,
                     errorMessage = null,
                     saveImageResult = null,
+                    retryInfo = null,
                     eventSink = {},
                 ),
         )
@@ -476,6 +541,7 @@ fun PreviewTrmnlMirrorDisplayWithControls() {
                     isLoading = false,
                     errorMessage = null,
                     saveImageResult = null,
+                    retryInfo = null,
                     eventSink = {},
                 ),
         )
@@ -495,6 +561,33 @@ fun PreviewTrmnlMirrorDisplayErrorContent() {
                     isLoading = false,
                     errorMessage = "Sample Error Message",
                     saveImageResult = null,
+                    retryInfo = null,
+                    eventSink = {},
+                ),
+        )
+    }
+}
+
+@Preview(name = "TRMNL Display Retrying Preview")
+@Composable
+fun PreviewTrmnlMirrorDisplayRetryingContent() {
+    Surface {
+        TrmnlMirrorDisplayContent(
+            state =
+                TrmnlMirrorDisplayScreen.State(
+                    imageUrl = null,
+                    overlayControlsVisible = false,
+                    nextImageRefreshIn = "5 minutes",
+                    isLoading = true,
+                    errorMessage = null,
+                    saveImageResult = null,
+                    retryInfo =
+                        TrmnlMirrorDisplayScreen.RetryInfo(
+                            attempt = 2,
+                            maxRetries = 5,
+                            delaySeconds = 4,
+                            reason = "Rate limited",
+                        ),
                     eventSink = {},
                 ),
         )
