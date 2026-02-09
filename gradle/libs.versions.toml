@@ -52,6 +52,7 @@ coil = "3.3.0"
 mockk = "1.14.7"
 truth = "1.4.5"
 robolectric = "4.16"
+turbine = "1.2.1"
 
 datastore = "1.2.0"
 
@@ -147,6 +148,10 @@ core-ktx = { group = "androidx.test", name = "core-ktx", version.ref = "coreKtxV
 
 # https://robolectric.org/getting-started/#building-with-gradle-kotlin
 test-robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+
+# Turbine - A small testing library for kotlinx.coroutines Flow
+# https://github.com/cashapp/turbine
+test-turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

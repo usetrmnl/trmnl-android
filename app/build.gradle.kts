@@ -206,6 +206,7 @@ dependencies {
     testImplementation(libs.test.mockk)
     testImplementation(libs.test.robolectric)
     testImplementation(libs.test.truth)
+    testImplementation(libs.test.turbine)
 }
 
 ksp {
