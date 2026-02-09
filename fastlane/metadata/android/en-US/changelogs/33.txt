@@ -1,0 +1,5 @@
+- Updated to the latest version (2.8.1)
+- Added real-time retry progress display during rate limit handling
+- Show countdown timer and attempt number during retries
+- Optimized backoff timing for 15s rate limit windows
+- Added 4 new unit tests for retry event emission
