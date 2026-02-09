@@ -172,13 +172,10 @@ The project uses optimized Gradle settings based on best practices from the [Now
 **Note:** This project uses only build TYPES (debug/release), NOT product flavors.
 
 **Debug:**
-- `buildConfigField("Boolean", "USE_FAKE_API", "true")`
 - Uses debug keystore with password "android" (included in repo)
-- Fake API can be overridden in `RepositoryConfigProvider`
 - HttpLoggingInterceptor enabled with BODY level
 
 **Release:**
-- `buildConfigField("Boolean", "USE_FAKE_API", "false")`
 - Requires production keystore from CI secrets or `secret.properties`
 - Keystore env vars: `KEYSTORE_PASSWORD`, `KEY_ALIAS`
 - Code shrinking: `isMinifyEnabled = true`, `isShrinkResources = true`

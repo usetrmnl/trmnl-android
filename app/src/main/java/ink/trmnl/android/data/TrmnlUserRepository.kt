@@ -33,7 +33,6 @@ class TrmnlUserRepository
     @Inject
     constructor(
         private val userApiService: TrmnlUserApiService,
-        private val repositoryConfigProvider: RepositoryConfigProvider,
         private val androidDeviceInfoProvider: AndroidDeviceInfoProvider,
     ) {
         /**
@@ -51,23 +50,6 @@ class TrmnlUserRepository
             userApiToken: String,
         ): Result<TrmnlUser> {
             Timber.i("Validating user API token")
-
-            if (repositoryConfigProvider.shouldUseFakeData) {
-                // Return fake user data in debug mode
-                return Result.success(
-                    TrmnlUser(
-                        id = 42,
-                        name = "Test User",
-                        email = "test@example.com",
-                        firstName = "Test",
-                        lastName = "User",
-                        locale = "en",
-                        timeZone = "Eastern Time (US & Canada)",
-                        timeZoneIana = "America/New_York",
-                        utcOffset = -14400,
-                    ),
-                )
-            }
 
             val result =
                 userApiService.getUserInfo(
@@ -260,11 +242,6 @@ class TrmnlUserRepository
 
             Timber.d("Reporting battery status: $batteryPercent% for device ID: $deviceId")
 
-            if (repositoryConfigProvider.shouldUseFakeData) {
-                // Skip API call in debug mode
-                Timber.d("Skipping battery status report (fake API mode)")
-                return Result.success(Unit)
-            }
 
             val updateRequest = TrmnlDeviceUpdateRequest(percentCharged = batteryPercent)
             val apiUrl = constructApiUrl(config.apiBaseUrl, DEVICE_API_PATH.replace("{id}", deviceId.toString()))
