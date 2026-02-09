@@ -585,7 +585,7 @@ fun PreviewTrmnlMirrorDisplayRetryingContent() {
                         TrmnlMirrorDisplayScreen.RetryInfo(
                             attempt = 2,
                             maxRetries = 5,
-                            delaySeconds = 4,
+                            delaySeconds = 6,
                             reason = "Rate limited",
                         ),
                     eventSink = {},

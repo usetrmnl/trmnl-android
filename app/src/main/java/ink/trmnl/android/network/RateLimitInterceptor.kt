@@ -24,10 +24,16 @@ import kotlin.random.Random
  * - Logs retry attempts for debugging
  * - Emits retry events for UI feedback
  *
- * Exponential backoff formula:
- * - Base delay: 1 second
- * - Delay = base * (2 ^ attempt) with jitter
+ * Exponential backoff formula (optimized for ~15s rate limit recovery):
+ * - Base delay: 3 seconds (optimized for typical API rate limits)
+ * - Delay = base * (2 ^ attempt-1) * jitter
  * - Jitter: delay * (0.5 + 0.5 * random) to distribute load
+ * - Expected progression with jitter (for current ~15s rate limit):
+ *   - Attempt 1: ~2-3s delay (total ~3s elapsed)
+ *   - Attempt 2: ~4-6s delay (total ~7-9s elapsed)
+ *   - Attempt 3: ~8-12s delay (total ~15-21s elapsed) - typically succeeds
+ *   - Attempt 4: ~16-24s delay (total ~31-45s elapsed) - handles longer rate limits
+ *   - Attempt 5: ~32s delay (total ~63-77s elapsed) - final safety net
  * - Max delay: 32 seconds per retry (for exponential backoff only)
  * - Retry-After header takes precedence and is NOT capped
  *
@@ -72,9 +78,20 @@ class RateLimitInterceptor(
         private const val MAX_RETRIES = 5
 
         /**
-         * Initial backoff delay in milliseconds (1 second).
+         * Initial backoff delay in milliseconds (3 seconds).
+         *
+         * Optimized for typical API rate limit recovery time of ~15 seconds.
+         * With exponential backoff and jitter, this produces:
+         * - Attempt 1: ~2-3s delay (total ~3s elapsed)
+         * - Attempt 2: ~4-6s delay (total ~7-9s elapsed)
+         * - Attempt 3: ~8-12s delay (total ~15-21s elapsed) - typically succeeds at 15s
+         * - Attempt 4: ~16-24s delay (total ~31-45s elapsed) - handles longer rate limits
+         * - Attempt 5: ~32s delay (total ~63-77s elapsed) - final attempt
+         *
+         * This reduces wasted attempts compared to 1s initial backoff while still
+         * providing enough attempts to handle future longer rate limit windows.
          */
-        private const val INITIAL_BACKOFF_MS = 1000L
+        private const val INITIAL_BACKOFF_MS = 3000L
 
         /**
          * Maximum backoff delay in milliseconds (32 seconds).
