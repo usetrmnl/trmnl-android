@@ -50,7 +50,7 @@ object NetworkModule {
         return OkHttpClient
             .Builder()
             // Add rate limit interceptor to handle HTTP 429 with exponential backoff
-            // This must be added BEFORE other interceptors to retry at the network layer
+            // This is an application interceptor placed before others to wrap their behavior
             .addInterceptor(RateLimitInterceptor())
             .addInterceptor { chain ->
                 val request =
