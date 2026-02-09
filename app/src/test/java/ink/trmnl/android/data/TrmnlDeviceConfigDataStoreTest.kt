@@ -628,19 +628,19 @@ class TrmnlDeviceConfigDataStoreTest {
         }
 
     // ============================================================================
-    // Domain Migration Tests (usetrmnl.com → trmnl.com)
+    // Domain Migration Tests (${AppConfig.LEGACY_TRMNL_DOMAIN} → ${AppConfig.TRMNL_DOMAIN})
     // See: https://github.com/usetrmnl/trmnl-android/issues/240
     // ============================================================================
 
     @Test
     fun `deviceConfigFlow migrates usetrmnl_com to trmnl_com for TRMNL device with JSON config`() =
         runTest {
-            // Arrange - Save config with old usetrmnl.com URL (JSON storage)
+            // Arrange - Save config with old ${AppConfig.LEGACY_TRMNL_DOMAIN} URL (JSON storage)
             val oldConfig =
                 TrmnlDeviceConfig(
                     type = TrmnlDeviceType.TRMNL,
                     apiAccessToken = "test-token",
-                    apiBaseUrl = "https://usetrmnl.com/",
+                    apiBaseUrl = "https://${AppConfig.LEGACY_TRMNL_DOMAIN}/",
                     refreshRateSecs = 600,
                 )
             deviceConfigDataStore.saveDeviceConfig(oldConfig)
@@ -648,16 +648,16 @@ class TrmnlDeviceConfigDataStoreTest {
             // Act - Read config (should trigger migration)
             val migratedConfig = deviceConfigDataStore.deviceConfigFlow.first()
 
-            // Assert - URL should be migrated to trmnl.com
+            // Assert - URL should be migrated to ${AppConfig.TRMNL_DOMAIN}
             assertThat(migratedConfig).isNotNull()
             assertThat(migratedConfig?.type).isEqualTo(TrmnlDeviceType.TRMNL)
-            assertThat(migratedConfig?.apiBaseUrl).isEqualTo("https://trmnl.com/")
+            assertThat(migratedConfig?.apiBaseUrl).isEqualTo(AppConfig.TRMNL_API_SERVER_BASE_URL)
             assertThat(migratedConfig?.apiAccessToken).isEqualTo("test-token")
             assertThat(migratedConfig?.refreshRateSecs).isEqualTo(600)
 
             // Verify migrated config was saved back to DataStore
             val savedConfig = deviceConfigDataStore.deviceConfigFlow.first()
-            assertThat(savedConfig?.apiBaseUrl).isEqualTo("https://trmnl.com/")
+            assertThat(savedConfig?.apiBaseUrl).isEqualTo(AppConfig.TRMNL_API_SERVER_BASE_URL)
         }
 
     @Test
@@ -666,16 +666,16 @@ class TrmnlDeviceConfigDataStoreTest {
             // Arrange - Save config using legacy individual fields
             deviceConfigDataStore.saveDeviceType(TrmnlDeviceType.TRMNL)
             deviceConfigDataStore.saveAccessToken("test-token")
-            deviceConfigDataStore.saveServerUrl("https://usetrmnl.com/")
+            deviceConfigDataStore.saveServerUrl("https://${AppConfig.LEGACY_TRMNL_DOMAIN}/")
             deviceConfigDataStore.saveRefreshRateSeconds(600L)
 
             // Act - Read config (should trigger migration)
             val migratedConfig = deviceConfigDataStore.deviceConfigFlow.first()
 
-            // Assert - URL should be migrated to trmnl.com
+            // Assert - URL should be migrated to ${AppConfig.TRMNL_DOMAIN}
             assertThat(migratedConfig).isNotNull()
             assertThat(migratedConfig?.type).isEqualTo(TrmnlDeviceType.TRMNL)
-            assertThat(migratedConfig?.apiBaseUrl).isEqualTo("https://trmnl.com/")
+            assertThat(migratedConfig?.apiBaseUrl).isEqualTo(AppConfig.TRMNL_API_SERVER_BASE_URL)
             assertThat(migratedConfig?.apiAccessToken).isEqualTo("test-token")
         }
 
@@ -696,7 +696,7 @@ class TrmnlDeviceConfigDataStoreTest {
             val migratedConfig = deviceConfigDataStore.deviceConfigFlow.first()
 
             // Assert - Should migrate regardless of case (replacement is always lowercase)
-            assertThat(migratedConfig?.apiBaseUrl).isEqualTo("https://trmnl.com/api")
+            assertThat(migratedConfig?.apiBaseUrl).isEqualTo("https://${AppConfig.TRMNL_DOMAIN}/api")
         }
 
     @Test
@@ -716,14 +716,14 @@ class TrmnlDeviceConfigDataStoreTest {
             val migratedConfig = deviceConfigDataStore.deviceConfigFlow.first()
 
             // Assert - Should migrate with normalized lowercase domain
-            assertThat(migratedConfig?.apiBaseUrl).isEqualTo("https://trmnl.com/")
+            assertThat(migratedConfig?.apiBaseUrl).isEqualTo(AppConfig.TRMNL_API_SERVER_BASE_URL)
         }
 
     @Test
     fun `deviceConfigFlow does NOT migrate BYOS device with custom usetrmnl_com URL`() =
         runTest {
-            // Arrange - BYOS device with custom URL that happens to contain usetrmnl.com
-            val customUrl = "https://usetrmnl.com.myserver.io/"
+            // Arrange - BYOS device with custom URL that happens to contain ${AppConfig.LEGACY_TRMNL_DOMAIN}
+            val customUrl = "https://${AppConfig.LEGACY_TRMNL_DOMAIN}.myserver.io/"
             val config =
                 TrmnlDeviceConfig(
                     type = TrmnlDeviceType.BYOS,
@@ -748,7 +748,7 @@ class TrmnlDeviceConfigDataStoreTest {
                 TrmnlDeviceConfig(
                     type = TrmnlDeviceType.BYOD,
                     apiAccessToken = "test-token",
-                    apiBaseUrl = "https://usetrmnl.com/",
+                    apiBaseUrl = "https://${AppConfig.LEGACY_TRMNL_DOMAIN}/",
                     refreshRateSecs = 600,
                 )
             deviceConfigDataStore.saveDeviceConfig(config)
@@ -757,18 +757,18 @@ class TrmnlDeviceConfigDataStoreTest {
             val loadedConfig = deviceConfigDataStore.deviceConfigFlow.first()
 
             // Assert - Only TRMNL device type gets migrated
-            assertThat(loadedConfig?.apiBaseUrl).isEqualTo("https://usetrmnl.com/")
+            assertThat(loadedConfig?.apiBaseUrl).isEqualTo("https://${AppConfig.LEGACY_TRMNL_DOMAIN}/")
         }
 
     @Test
     fun `deviceConfigFlow does NOT migrate already correct trmnl_com URL`() =
         runTest {
-            // Arrange - Already using correct trmnl.com
+            // Arrange - Already using correct ${AppConfig.TRMNL_DOMAIN}
             val config =
                 TrmnlDeviceConfig(
                     type = TrmnlDeviceType.TRMNL,
                     apiAccessToken = "test-token",
-                    apiBaseUrl = "https://trmnl.com/",
+                    apiBaseUrl = AppConfig.TRMNL_API_SERVER_BASE_URL,
                     refreshRateSecs = 600,
                 )
             deviceConfigDataStore.saveDeviceConfig(config)
@@ -777,7 +777,7 @@ class TrmnlDeviceConfigDataStoreTest {
             val loadedConfig = deviceConfigDataStore.deviceConfigFlow.first()
 
             // Assert - Should remain unchanged
-            assertThat(loadedConfig?.apiBaseUrl).isEqualTo("https://trmnl.com/")
+            assertThat(loadedConfig?.apiBaseUrl).isEqualTo(AppConfig.TRMNL_API_SERVER_BASE_URL)
         }
 
     @Test
@@ -788,7 +788,7 @@ class TrmnlDeviceConfigDataStoreTest {
                 TrmnlDeviceConfig(
                     type = TrmnlDeviceType.TRMNL,
                     apiAccessToken = "test-token",
-                    apiBaseUrl = "https://usetrmnl.com",
+                    apiBaseUrl = "https://${AppConfig.LEGACY_TRMNL_DOMAIN}",
                     refreshRateSecs = 600,
                 )
             deviceConfigDataStore.saveDeviceConfig(config)
@@ -797,7 +797,7 @@ class TrmnlDeviceConfigDataStoreTest {
             val migratedConfig = deviceConfigDataStore.deviceConfigFlow.first()
 
             // Assert
-            assertThat(migratedConfig?.apiBaseUrl).isEqualTo("https://trmnl.com")
+            assertThat(migratedConfig?.apiBaseUrl).isEqualTo("https://${AppConfig.TRMNL_DOMAIN}")
         }
 
     @Test
@@ -808,7 +808,7 @@ class TrmnlDeviceConfigDataStoreTest {
                 TrmnlDeviceConfig(
                     type = TrmnlDeviceType.TRMNL,
                     apiAccessToken = "test-token",
-                    apiBaseUrl = "https://usetrmnl.com/api/v1",
+                    apiBaseUrl = "https://${AppConfig.LEGACY_TRMNL_DOMAIN}/api/v1",
                     refreshRateSecs = 600,
                 )
             deviceConfigDataStore.saveDeviceConfig(config)
@@ -817,7 +817,7 @@ class TrmnlDeviceConfigDataStoreTest {
             val migratedConfig = deviceConfigDataStore.deviceConfigFlow.first()
 
             // Assert - Path should be preserved
-            assertThat(migratedConfig?.apiBaseUrl).isEqualTo("https://trmnl.com/api/v1")
+            assertThat(migratedConfig?.apiBaseUrl).isEqualTo("https://${AppConfig.TRMNL_DOMAIN}/api/v1")
         }
 
     @Test
@@ -828,7 +828,7 @@ class TrmnlDeviceConfigDataStoreTest {
                 TrmnlDeviceConfig(
                     type = TrmnlDeviceType.TRMNL,
                     apiAccessToken = "test-token",
-                    apiBaseUrl = "https://usetrmnl.com/",
+                    apiBaseUrl = "https://${AppConfig.LEGACY_TRMNL_DOMAIN}/",
                     refreshRateSecs = 600,
                 )
             deviceConfigDataStore.saveDeviceConfig(config)
@@ -839,9 +839,9 @@ class TrmnlDeviceConfigDataStoreTest {
             val thirdRead = deviceConfigDataStore.deviceConfigFlow.first()
 
             // Assert - All reads should return migrated URL
-            assertThat(firstRead?.apiBaseUrl).isEqualTo("https://trmnl.com/")
-            assertThat(secondRead?.apiBaseUrl).isEqualTo("https://trmnl.com/")
-            assertThat(thirdRead?.apiBaseUrl).isEqualTo("https://trmnl.com/")
+            assertThat(firstRead?.apiBaseUrl).isEqualTo(AppConfig.TRMNL_API_SERVER_BASE_URL)
+            assertThat(secondRead?.apiBaseUrl).isEqualTo(AppConfig.TRMNL_API_SERVER_BASE_URL)
+            assertThat(thirdRead?.apiBaseUrl).isEqualTo(AppConfig.TRMNL_API_SERVER_BASE_URL)
 
             // Verify config is now persistently migrated
             deviceConfigDataStore.clearAll()
@@ -849,12 +849,12 @@ class TrmnlDeviceConfigDataStoreTest {
                 TrmnlDeviceConfig(
                     type = TrmnlDeviceType.TRMNL,
                     apiAccessToken = "test-token",
-                    apiBaseUrl = "https://trmnl.com/",
+                    apiBaseUrl = AppConfig.TRMNL_API_SERVER_BASE_URL,
                     refreshRateSecs = 600,
                 )
             deviceConfigDataStore.saveDeviceConfig(config2)
             val afterReSave = deviceConfigDataStore.deviceConfigFlow.first()
-            assertThat(afterReSave?.apiBaseUrl).isEqualTo("https://trmnl.com/")
+            assertThat(afterReSave?.apiBaseUrl).isEqualTo(AppConfig.TRMNL_API_SERVER_BASE_URL)
         }
 
     @Test
@@ -865,7 +865,7 @@ class TrmnlDeviceConfigDataStoreTest {
                 TrmnlDeviceConfig(
                     type = TrmnlDeviceType.TRMNL,
                     apiAccessToken = "test-token-12345",
-                    apiBaseUrl = "https://usetrmnl.com/",
+                    apiBaseUrl = "https://${AppConfig.LEGACY_TRMNL_DOMAIN}/",
                     refreshRateSecs = 900,
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isMasterDevice = null,
@@ -878,7 +878,7 @@ class TrmnlDeviceConfigDataStoreTest {
             // Assert - All fields preserved except URL
             assertThat(migratedConfig?.type).isEqualTo(TrmnlDeviceType.TRMNL)
             assertThat(migratedConfig?.apiAccessToken).isEqualTo("test-token-12345")
-            assertThat(migratedConfig?.apiBaseUrl).isEqualTo("https://trmnl.com/")
+            assertThat(migratedConfig?.apiBaseUrl).isEqualTo(AppConfig.TRMNL_API_SERVER_BASE_URL)
             assertThat(migratedConfig?.refreshRateSecs).isEqualTo(900)
             assertThat(migratedConfig?.deviceMacId).isEqualTo("aa:bb:cc:dd:ee:ff")
             assertThat(migratedConfig?.isMasterDevice).isNull()

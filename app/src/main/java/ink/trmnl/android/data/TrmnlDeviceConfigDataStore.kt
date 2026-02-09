@@ -287,9 +287,9 @@ class TrmnlDeviceConfigDataStore
                     // See: https://github.com/usetrmnl/trmnl-android/issues/240
                     if (config != null &&
                         config.type == TrmnlDeviceType.TRMNL &&
-                        config.apiBaseUrl.contains("usetrmnl.com", ignoreCase = true)
+                        config.apiBaseUrl.contains(AppConfig.LEGACY_TRMNL_DOMAIN, ignoreCase = true)
                     ) {
-                        val newUrl = config.apiBaseUrl.replace("usetrmnl.com", "trmnl.com", ignoreCase = true)
+                        val newUrl = config.apiBaseUrl.replace(AppConfig.LEGACY_TRMNL_DOMAIN, AppConfig.TRMNL_DOMAIN, ignoreCase = true)
                         Timber.tag(TAG).i(
                             "Migrating API base URL from ${config.apiBaseUrl} to $newUrl for TRMNL device",
                         )
