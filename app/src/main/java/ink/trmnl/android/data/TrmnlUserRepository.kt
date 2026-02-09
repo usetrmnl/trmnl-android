@@ -242,11 +242,6 @@ class TrmnlUserRepository
 
             Timber.d("Reporting battery status: $batteryPercent% for device ID: $deviceId")
 
-            if (repositoryConfigProvider.shouldUseFakeData) {
-                // Skip API call in debug mode
-                Timber.d("Skipping battery status report (fake API mode)")
-                return Result.success(Unit)
-            }
 
             val updateRequest = TrmnlDeviceUpdateRequest(percentCharged = batteryPercent)
             val apiUrl = constructApiUrl(config.apiBaseUrl, DEVICE_API_PATH.replace("{id}", deviceId.toString()))
