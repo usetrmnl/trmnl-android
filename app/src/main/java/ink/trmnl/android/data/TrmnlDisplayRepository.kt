@@ -3,9 +3,6 @@ package ink.trmnl.android.data
 import com.slack.eithernet.ApiResult
 import com.slack.eithernet.exceptionOrNull
 import com.squareup.anvil.annotations.optional.SingleIn
-import ink.trmnl.android.BuildConfig.USE_FAKE_API
-import ink.trmnl.android.data.fake.generateFakeDeviceSetupInfo
-import ink.trmnl.android.data.fake.generateFakeTrmnlDisplayInfo
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.model.SupportedDeviceModel
 import ink.trmnl.android.model.TrmnlDeviceConfig
@@ -27,12 +24,6 @@ import javax.inject.Inject
 
 /**
  * Repository class responsible for fetching and mapping display data.
- *
- * ⚠️ NOTE: [USE_FAKE_API] is set to `true` in debug builds, meaning it will
- * use mock data and avoid network calls. In release builds, it is set to `false`
- * to enable real API calls.
- *
- * You can override this behavior by updating [RepositoryConfigProvider.shouldUseFakeData] for local development.
  */
 @SingleIn(AppScope::class)
 class TrmnlDisplayRepository
@@ -40,23 +31,16 @@ class TrmnlDisplayRepository
     constructor(
         private val apiService: TrmnlApiService,
         private val imageMetadataStore: ImageMetadataStore,
-        private val repositoryConfigProvider: RepositoryConfigProvider,
         private val androidDeviceInfoProvider: AndroidDeviceInfoProvider,
     ) {
         /**
          * Fetches display data for next plugin from the server using the provided access token.
-         * If the app is in debug mode, it uses mock data instead.
          *
          * @param trmnlDeviceConfig Device configuration containing the access token and other settings.
          * @return A [TrmnlDisplayInfo] object containing the display data.
          */
         suspend fun getNextDisplayData(trmnlDeviceConfig: TrmnlDeviceConfig): TrmnlDisplayInfo {
             Timber.i("Fetching next playlist item display data from server for device: ${trmnlDeviceConfig.type}")
-
-            if (repositoryConfigProvider.shouldUseFakeData) {
-                // Avoid using real API in debug mode
-                return generateFakeTrmnlDisplayInfo(imageMetadataStore = imageMetadataStore, apiUsed = "next-image")
-            }
 
             val result =
                 apiService
@@ -126,7 +110,6 @@ class TrmnlDisplayRepository
 
         /**
          * Fetches the current display data from the server using the provided access token.
-         * If the app is in debug mode, it uses mock data instead.
          *
          * ⚠️ NOTE: This API is not available on BYOS servers.
          * See https://discord.com/channels/1281055965508141100/1331360842809348106/1382863253880963124
@@ -139,11 +122,6 @@ class TrmnlDisplayRepository
 
             if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOS) {
                 Timber.w("Current display image data API is not available for BYOS service.")
-            }
-
-            if (repositoryConfigProvider.shouldUseFakeData) {
-                // Avoid using real API in debug mode
-                return generateFakeTrmnlDisplayInfo(imageMetadataStore = imageMetadataStore, apiUsed = "current-image")
             }
 
             val result =
@@ -195,11 +173,6 @@ class TrmnlDisplayRepository
         suspend fun setupNewDevice(trmnlDeviceConfig: TrmnlDeviceConfig): DeviceSetupInfo {
             if (trmnlDeviceConfig.type != TrmnlDeviceType.BYOS) {
                 Timber.w("Device setup is only applicable for BYOS devices.")
-            }
-
-            if (repositoryConfigProvider.shouldUseFakeData) {
-                // Avoid using real API in debug mode
-                return generateFakeDeviceSetupInfo()
             }
 
             val result =

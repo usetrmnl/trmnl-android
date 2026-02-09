@@ -30,7 +30,6 @@ class TrmnlDisplayRepositoryTest {
     private lateinit var repository: TrmnlDisplayRepository
     private lateinit var apiService: TrmnlApiService
     private lateinit var imageMetadataStore: ImageMetadataStore
-    private lateinit var repositoryConfigProvider: RepositoryConfigProvider
     private lateinit var deviceConfigDataStore: TrmnlDeviceConfigDataStore
     private lateinit var androidDeviceInfoProvider: AndroidDeviceInfoProvider
 
@@ -61,18 +60,14 @@ class TrmnlDisplayRepositoryTest {
     @Before
     fun setup() {
         apiService = mockk()
-        repositoryConfigProvider = mockk()
         deviceConfigDataStore = mockk()
         imageMetadataStore = mockk(relaxed = true)
         androidDeviceInfoProvider = mockk(relaxed = true)
-
-        every { repositoryConfigProvider.shouldUseFakeData } returns false
 
         repository =
             TrmnlDisplayRepository(
                 apiService = apiService,
                 imageMetadataStore = imageMetadataStore,
-                repositoryConfigProvider = repositoryConfigProvider,
                 androidDeviceInfoProvider = androidDeviceInfoProvider,
             )
     }
@@ -240,46 +235,6 @@ class TrmnlDisplayRepositoryTest {
 
             // Verify metadata was NOT saved
             coVerify(exactly = 0) { imageMetadataStore.saveImageMetadata(any(), any()) }
-        }
-
-    @Test
-    fun `getNextDisplayData should return fake data when shouldUseFakeData is true`() =
-        runTest {
-            // Arrange
-            every { repositoryConfigProvider.shouldUseFakeData } returns true
-
-            // Act
-            val result = repository.getNextDisplayData(testDeviceConfig)
-
-            // Assert
-            assertThat(result.status).isEqualTo(200)
-            assertThat(result.imageUrl).contains("picsum.photos")
-            assertThat(result.imageFileName).contains("mocked-image-grayscale&time")
-            assertThat(result.refreshIntervalSeconds).isEqualTo(600L)
-            assertThat(result.error).isNull()
-
-            // Verify API was NOT called
-            coVerify(exactly = 0) { apiService.getNextDisplayData(any(), any()) }
-        }
-
-    @Test
-    fun `getCurrentDisplayData should return fake data when shouldUseFakeData is true`() =
-        runTest {
-            // Arrange
-            every { repositoryConfigProvider.shouldUseFakeData } returns true
-
-            // Act
-            val result = repository.getCurrentDisplayData(testDeviceConfig)
-
-            // Assert
-            assertThat(result.status).isEqualTo(200)
-            assertThat(result.imageUrl).contains("picsum.photos")
-            assertThat(result.imageFileName).contains("mocked-image-grayscale&time")
-            assertThat(result.refreshIntervalSeconds).isEqualTo(600L)
-            assertThat(result.error).isNull()
-
-            // Verify API was NOT called
-            coVerify(exactly = 0) { apiService.getCurrentDisplayData(any(), any()) }
         }
 
     @Test

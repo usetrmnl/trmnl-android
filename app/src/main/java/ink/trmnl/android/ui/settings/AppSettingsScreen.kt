@@ -5,7 +5,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,7 +59,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -85,7 +83,6 @@ import ink.trmnl.android.R
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
 import ink.trmnl.android.data.AppConfig.TRMNL_API_SERVER_BASE_URL
 import ink.trmnl.android.data.DeviceSetupInfo
-import ink.trmnl.android.data.RepositoryConfigProvider
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.data.TrmnlDisplayRepository
 import ink.trmnl.android.di.AppScope
@@ -144,7 +141,6 @@ data class AppSettingsScreen(
         val accessToken: String,
         val deviceMacId: String,
         val isByodMasterDevice: Boolean,
-        val usesFakeApiData: Boolean,
         val isLoading: Boolean = false,
         val validationResult: ValidationResult? = null,
         val isDeviceSetupLoading: Boolean = false,
@@ -273,7 +269,6 @@ class AppSettingsPresenter
         private val deviceConfigStore: TrmnlDeviceConfigDataStore,
         private val trmnlWorkScheduler: TrmnlWorkScheduler,
         private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
-        private val repositoryConfigProvider: RepositoryConfigProvider,
     ) : Presenter<AppSettingsScreen.State> {
         @Composable
         override fun present(): AppSettingsScreen.State {
@@ -286,7 +281,6 @@ class AppSettingsPresenter
             var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
             var isDeviceSetupLoading by remember { mutableStateOf(false) }
             var deviceSetupMessage by remember { mutableStateOf<String?>(null) }
-            val usesFakeApiData = repositoryConfigProvider.shouldUseFakeData
             val scope = rememberCoroutineScope()
             val focusManager = LocalFocusManager.current
 
@@ -354,7 +348,6 @@ class AppSettingsPresenter
                 accessToken = accessToken,
                 deviceMacId = deviceMacId,
                 isByodMasterDevice = isByodMasterDevice,
-                usesFakeApiData = usesFakeApiData,
                 isLoading = isLoading,
                 validationResult = validationResult,
                 isDeviceSetupLoading = isDeviceSetupLoading,
@@ -668,15 +661,6 @@ fun AppSettingsContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            if (state.usesFakeApiData) {
-                FakeApiInfoBanner(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 24.dp),
-                )
-            }
-
             Icon(
                 painter = painterResource(R.drawable.trmnl_logo_plain),
                 contentDescription = "TRMNL Logo",
@@ -1298,52 +1282,6 @@ private fun WorkScheduleStatusCard(
  * A composable function that displays a banner indicating that the app is in developer mode
  * and is using mock data instead of real API calls.
  */
-@Composable
-private fun FakeApiInfoBanner(modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary),
-    ) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Warning,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
-            )
-
-            Column {
-                Text(
-                    text = "Developer Mode - Using Fake API",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                )
-
-                Text(
-                    text = "This app is currently using mock data instead of real API calls.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-
-                Text(
-                    text = "Set `BuildConfig.USE_FAKE_API` to `false` using build.gradle to use real API.",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontStyle = FontStyle.Italic,
-                )
-            }
-        }
-    }
-}
-
 @Preview(name = "App Settings Content - Initial State")
 @Composable
 private fun PreviewAppSettingsContentInitial() {
@@ -1356,7 +1294,6 @@ private fun PreviewAppSettingsContentInitial() {
                     accessToken = "",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isByodMasterDevice = true,
-                    usesFakeApiData = true,
                     isLoading = false,
                     validationResult = null,
                     nextRefreshJobInfo = null,
@@ -1378,7 +1315,6 @@ private fun PreviewAppSettingsContentLoading() {
                     accessToken = "some-token",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isByodMasterDevice = true,
-                    usesFakeApiData = false,
                     isLoading = true,
                     validationResult = null,
                     nextRefreshJobInfo = null,
@@ -1400,7 +1336,6 @@ private fun PreviewAppSettingsContentSuccess() {
                     accessToken = "valid-token-123",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isByodMasterDevice = true,
-                    usesFakeApiData = false,
                     isLoading = false,
                     validationResult =
                         ValidationResult.Success(
@@ -1426,7 +1361,6 @@ private fun PreviewAppSettingsContentFailure() {
                     accessToken = "invalid-token",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isByodMasterDevice = true,
-                    usesFakeApiData = false,
                     isLoading = false,
                     validationResult =
                         ValidationResult.Failure(
@@ -1455,7 +1389,6 @@ private fun PreviewAppSettingsContentWithWork() {
                     accessToken = "valid-token-123",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isByodMasterDevice = true,
-                    usesFakeApiData = false,
                     isLoading = false,
                     validationResult = null, // Can also be Success state
                     nextRefreshJobInfo =
@@ -1487,7 +1420,6 @@ private fun PreviewWorkScheduleStatusCardScheduled() {
                     accessToken = "some-token",
                     deviceMacId = "AA:BB:CC:DD:EE:FF",
                     isByodMasterDevice = true,
-                    usesFakeApiData = false,
                     nextRefreshJobInfo =
                         NextImageRefreshDisplayInfo(
                             workerState = WorkInfo.State.ENQUEUED,
@@ -1513,19 +1445,10 @@ private fun PreviewWorkScheduleStatusCardNoWork() {
                     accessToken = "some-token",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isByodMasterDevice = true,
-                    usesFakeApiData = false,
                     nextRefreshJobInfo = null,
                     eventSink = {},
                 ),
         )
-    }
-}
-
-@Preview(name = "Fake API Info Banner")
-@Composable
-private fun PreviewFakeApiInfoBanner() {
-    TrmnlDisplayAppTheme {
-        FakeApiInfoBanner()
     }
 }
 
@@ -1541,7 +1464,6 @@ private fun PreviewAppSettingsContentByod() {
                     accessToken = "byod-access-token-here",
                     deviceMacId = "",
                     isByodMasterDevice = false,
-                    usesFakeApiData = false,
                     isLoading = false,
                     validationResult = null,
                     nextRefreshJobInfo = null,
@@ -1564,7 +1486,6 @@ private fun PreviewAppSettingsContentByos() {
                     accessToken = "byos-access-token-here",
                     deviceMacId = "AA:BB:CC:DD:EE:FF",
                     isByodMasterDevice = true,
-                    usesFakeApiData = false,
                     isLoading = false,
                     validationResult = null,
                     nextRefreshJobInfo = null,
