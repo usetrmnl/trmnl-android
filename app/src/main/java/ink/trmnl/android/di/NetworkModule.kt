@@ -11,6 +11,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
 import dagger.Provides
 import ink.trmnl.android.BuildConfig
+import ink.trmnl.android.network.RateLimitInterceptor
 import ink.trmnl.android.network.TrmnlApiService
 import ink.trmnl.android.network.TrmnlUserApiService
 import okhttp3.Cache
@@ -48,6 +49,9 @@ object NetworkModule {
 
         return OkHttpClient
             .Builder()
+            // Add rate limit interceptor to handle HTTP 429 with exponential backoff
+            // This must be added BEFORE other interceptors to retry at the network layer
+            .addInterceptor(RateLimitInterceptor())
             .addInterceptor { chain ->
                 val request =
                     chain

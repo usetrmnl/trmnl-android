@@ -12,7 +12,6 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkQuery
-import androidx.work.WorkRequest
 import androidx.work.workDataOf
 import com.squareup.anvil.annotations.optional.SingleIn
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
@@ -137,8 +136,10 @@ class TrmnlWorkScheduler
                     .setBackoffCriteria(
                         // Exponential backoff for retrying failed work
                         // To avoid overwhelming the server with requests
+                        // Using 60 seconds initial delay (increased from 30s default)
+                        // to give more breathing room for rate-limited requests
                         BackoffPolicy.EXPONENTIAL,
-                        WorkRequest.DEFAULT_BACKOFF_DELAY_MILLIS,
+                        60_000L, // 60 seconds initial backoff
                         TimeUnit.MILLISECONDS,
                     ).setInputData(
                         workDataOf(
@@ -191,8 +192,10 @@ class TrmnlWorkScheduler
                 OneTimeWorkRequestBuilder<TrmnlImageRefreshWorker>()
                     .setConstraints(constraints)
                     .setBackoffCriteria(
+                        // Exponential backoff for retrying failed work
+                        // Using 60 seconds initial delay (increased from 30s default)
                         BackoffPolicy.EXPONENTIAL,
-                        WorkRequest.DEFAULT_BACKOFF_DELAY_MILLIS,
+                        60_000L, // 60 seconds initial backoff
                         TimeUnit.MILLISECONDS,
                     ).setInputData(
                         workDataOf(
