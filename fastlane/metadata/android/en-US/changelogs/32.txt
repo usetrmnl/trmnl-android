@@ -1,0 +1,6 @@
+- Updated to the latest version (2.8.0)
+- Improved HTTP 429 rate limit handling with exponential backoff and jitter
+- Automatic domain migration from usetrmnl.com to trmnl.com for existing users
+- Only retry safe idempotent methods to prevent duplicate operations
+- Honor server Retry-After headers without capping
+- Enhanced testing infrastructure with 23 new unit tests
