@@ -16,16 +16,11 @@ plugins {
     // Project: https://developer.android.com/kotlin/parcelize
     alias(libs.plugins.kotlin.parcelize) apply false
 
-    // Applies the Kotlin KAPT (Kotlin Annotation Processing Tool) plugin.
-    // Project: https://kotlinlang.org/docs/kapt.html
-    alias(libs.plugins.kotlin.kapt) apply false
-
     // Applies the Kotlin Symbol Processing (KSP) plugin.
     // Project: https://github.com/google/ksp
     alias(libs.plugins.ksp) apply false
 
-    // Applies the Anvil plugin for Dagger dependency injection.
-    // Project: https://github.com/square/anvil
-    // Also see: https://github.com/ZacSweers/anvil/blob/main/FORK.md
-    alias(libs.plugins.anvil) apply false
+    // Applies the Metro dependency injection plugin.
+    // Project: https://github.com/ZacSweers/metro
+    alias(libs.plugins.metro) apply false
 }
