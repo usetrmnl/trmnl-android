@@ -53,7 +53,7 @@ TRMNL Android is a native Android app that displays TRMNL e-ink device content o
 ```
 
 **Notes:**
-- JDK: Minimum JDK 17, but JDK 21+ works (backward compatible)
+- JDK: Minimum JDK 21 (required by Metro gradle plugin)
 - ALWAYS use `./gradlew` wrapper, NEVER system gradle
 - First build: ~1-2 minutes (optimized with G1GC, parallel execution, configuration cache)
 - Subsequent builds: ~2-8 seconds with Gradle cache and configuration cache

@@ -1,6 +1,6 @@
 {
   "name": "TRMNL Android",
-  "image": "mcr.microsoft.com/devcontainers/java:1-17-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/java:1-21-bookworm",
 
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},

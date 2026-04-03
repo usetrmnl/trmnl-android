@@ -55,7 +55,7 @@ This document provides essential information for GitHub Copilot agents working o
 
 ## Environment Requirements
 
-- **JDK Version:** 17 (OpenJDK 17 - Temurin distribution recommended)
+- **JDK Version:** 21 (OpenJDK 21 - Temurin distribution recommended)
 - **Gradle:** 8.13 (via wrapper, do NOT install manually)
 - **Android SDK:** Compile SDK 36
 - **Build Tools:** Managed by Gradle plugin (AGP 8.9.2)
@@ -199,7 +199,7 @@ See `RELEASE_CHECKLIST.md` for complete release process.
 ## Trust These Instructions
 
 These instructions have been validated by running all commands in a clean repository clone. If you encounter issues not documented here:
-1. First verify you're using JDK 17 and the Gradle wrapper (`./gradlew`)
+1. First verify you're using JDK 21 and the Gradle wrapper (`./gradlew`)
 2. Try `./gradlew clean` then retry the command
 3. Check if similar issues exist in closed GitHub issues
 4. Only search the codebase if these instructions prove incomplete or incorrect
