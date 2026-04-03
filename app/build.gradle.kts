@@ -5,10 +5,9 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.parcelize)
-    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.kotlinter)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.anvil)
+    id("dev.zacsweers.metro")
 }
 
 // Load secret.properties file for local development
@@ -99,12 +98,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     buildFeatures {
@@ -119,6 +114,12 @@ android {
         includeInApk = false
         // Disables dependency metadata when building Android App Bundles.
         includeInBundle = false
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
 }
 
@@ -147,13 +148,7 @@ dependencies {
     implementation(libs.core.ktx)
     ksp(libs.circuit.codegen)
 
-    implementation(libs.dagger)
-    // Dagger KSP support is in Alpha, not available yet. Using KAPT for now.
-    // https://dagger.dev/dev-guide/ksp.html
-    kapt(libs.dagger.compiler)
-
-    implementation(libs.anvil.annotations)
-    implementation(libs.anvil.annotations.optional)
+    implementation(libs.metrox.android)
 
     // Timber
     implementation(libs.timber)
@@ -198,10 +193,7 @@ dependencies {
 }
 
 ksp {
-    // Anvil-KSP
-    arg("anvil-ksp-extraContributingAnnotations", "com.slack.circuit.codegen.annotations.CircuitInject")
-    // kotlin-inject-anvil (requires 0.0.3+)
-    arg("kotlin-inject-anvil-contributing-annotations", "com.slack.circuit.codegen.annotations.CircuitInject")
+    arg("circuit.codegen.mode", "metro")
 }
 
 // Enable dynamic agent loading for tests needed by MockK

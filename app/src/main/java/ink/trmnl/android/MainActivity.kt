@@ -19,8 +19,10 @@ import com.slack.circuit.foundation.rememberCircuitNavigator
 import com.slack.circuit.overlay.ContentWithOverlays
 import com.slack.circuit.sharedelements.SharedElementTransitionLayout
 import com.slack.circuitx.gesturenavigation.GestureNavigationDecorationFactory
-import com.squareup.anvil.annotations.ContributesMultibinding
-import ink.trmnl.android.di.ActivityKey
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.android.ActivityKey
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.di.ApplicationContext
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
@@ -30,7 +32,6 @@ import ink.trmnl.android.work.TrmnlImageUpdateManager
 import ink.trmnl.android.work.TrmnlWorkScheduler.Companion.IMAGE_REFRESH_ONETIME_WORK_NAME
 import ink.trmnl.android.work.TrmnlWorkScheduler.Companion.IMAGE_REFRESH_PERIODIC_WORK_NAME
 import timber.log.Timber
-import javax.inject.Inject
 
 /**
  * Main activity for the TRMNL app.
@@ -39,7 +40,7 @@ import javax.inject.Inject
  * It can function as either a mirror for existing TRMNL devices or as a
  * standalone TRMNL display connected directly to BYOS servers.
  */
-@ContributesMultibinding(AppScope::class, boundType = Activity::class)
+@ContributesIntoMap(AppScope::class, binding = binding<Activity>())
 @ActivityKey(MainActivity::class)
 class MainActivity
     @Inject

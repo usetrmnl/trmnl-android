@@ -3,11 +3,11 @@ package ink.trmnl.android.util
 import android.content.Context
 import android.net.wifi.WifiManager
 import android.os.BatteryManager
-import com.squareup.anvil.annotations.optional.SingleIn
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.di.ApplicationContext
 import timber.log.Timber
-import javax.inject.Inject
 
 /**
  * Provider class for accessing Android device information.

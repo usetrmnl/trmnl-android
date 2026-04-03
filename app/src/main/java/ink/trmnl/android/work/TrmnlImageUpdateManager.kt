@@ -1,10 +1,10 @@
 package ink.trmnl.android.work
 
-import com.squareup.anvil.annotations.optional.SingleIn
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import ink.trmnl.android.data.ImageMetadata
 import ink.trmnl.android.data.ImageMetadataStore
 import ink.trmnl.android.di.AppScope
-import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -37,3 +37,4 @@ app/release/
 *.salive
 app*.aab
 secret.properties
+metro-main*

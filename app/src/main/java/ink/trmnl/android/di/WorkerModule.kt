@@ -3,15 +3,13 @@ package ink.trmnl.android.di
 import android.content.Context
 import androidx.work.Configuration
 import androidx.work.WorkManager
-import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.annotations.optional.SingleIn
-import dagger.Module
-import dagger.Provides
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import ink.trmnl.android.work.TrmnlWorkerFactory
 
-@Module
 @ContributesTo(AppScope::class)
-object WorkerModule {
+interface WorkerModule {
     @Provides
     @SingleIn(AppScope::class)
     fun provideWorkManager(

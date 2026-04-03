@@ -2,7 +2,8 @@ package ink.trmnl.android.data.log
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import com.squareup.anvil.annotations.optional.SingleIn
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import ink.trmnl.android.data.AppConfig.MAX_LOG_ENTRIES
 import ink.trmnl.android.data.HttpResponseMetadata
 import ink.trmnl.android.di.AppScope
@@ -12,7 +13,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
-import javax.inject.Inject
 
 /**
  * Manages logs related to terminal refresh operations.

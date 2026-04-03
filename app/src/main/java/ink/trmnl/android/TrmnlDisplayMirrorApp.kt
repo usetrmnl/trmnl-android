@@ -3,23 +3,23 @@ package ink.trmnl.android
 import android.app.Application
 import android.util.Log
 import androidx.work.Configuration
-import ink.trmnl.android.di.AppComponent
-import ink.trmnl.android.work.TrmnlWorkerFactory
+import dev.zacsweers.metro.createGraphFactory
+import dev.zacsweers.metrox.android.MetroAppComponentProviders
+import dev.zacsweers.metrox.android.MetroApplication
+import ink.trmnl.android.di.AppGraph
 import timber.log.Timber
-import javax.inject.Inject
 
 /**
  * Application class for the app with key initializations.
  */
 class TrmnlDisplayMirrorApp :
     Application(),
+    MetroApplication,
     Configuration.Provider {
-    private val appComponent: AppComponent by lazy { AppComponent.create(this) }
+    private val appGraph by lazy { createGraphFactory<AppGraph.Factory>().create(this) }
 
-    fun appComponent(): AppComponent = appComponent
-
-    @Inject
-    lateinit var workerFactory: TrmnlWorkerFactory
+    override val appComponentProviders: MetroAppComponentProviders
+        get() = appGraph
 
     override val workManagerConfiguration: Configuration
         get() {
@@ -27,14 +27,13 @@ class TrmnlDisplayMirrorApp :
             return Configuration
                 .Builder()
                 .setMinimumLoggingLevel(if (BuildConfig.DEBUG) Log.DEBUG else Log.WARN)
-                .setWorkerFactory(workerFactory)
+                .setWorkerFactory(appGraph.workerFactory)
                 .build()
         }
 
     override fun onCreate() {
         super.onCreate()
         installLoggingTree()
-        appComponent.inject(this)
     }
 
     private fun installLoggingTree() {

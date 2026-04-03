@@ -3,11 +3,9 @@ activityCompose = "1.12.1"
 # https://developer.android.com/jetpack/androidx/releases/compose-material3-adaptive
 adaptive = "1.2.0"
 agp = "8.9.2"
-anvil = "0.4.1"
 circuit = "0.31.0"
 composeBom = "2025.12.00"
 coreKtx = "1.17.0"
-dagger = "2.56.2"
 espressoCore = "3.7.0"
 googleFonts = "1.10.0"
 junit = "4.13.2"
@@ -15,9 +13,13 @@ junitVersion = "1.3.0"
 kotlinxCoroutinesTest = "1.10.2"
 
 # Kotlin and KSP versions (must be in sync)
-# ⚠️ Kotlin version can't be higher than `2.1.10` due to known issue with Dagger
-kotlin = "2.1.10"
-ksp = "2.1.10-1.0.31"
+# KSP 2.3.0+ uses independent versioning (no longer tied to Kotlin version)
+kotlin = "2.3.20"
+ksp = "2.3.6"
+
+# Metro - compile-time DI framework powered by a Kotlin compiler plugin
+# https://github.com/ZacSweers/metro
+metro = "0.12.1"
 
 lifecycleRuntimeKtx = "2.10.0"
 
@@ -92,15 +94,9 @@ circuitx-effects = { group = "com.slack.circuit", name = "circuitx-effects", ver
 circuitx-gestureNav = { group = "com.slack.circuit", name = "circuitx-gesture-navigation", version.ref = "circuit" }
 circuitx-overlays = { group = "com.slack.circuit", name = "circuitx-overlays", version.ref = "circuit" }
 
-# https://dagger.dev/
-# https://dagger.dev/dev-guide/ksp
-dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
-dagger = { module = "com.google.dagger:dagger", version.ref = "dagger" }
-
-# https://mvnrepository.com/artifact/com.squareup.anvil/annotations-optional
-# https://github.com/ZacSweers/anvil/blob/main/FORK.md
-anvil-annotations = { group = "dev.zacsweers.anvil", name = "annotations", version.ref = "anvil"}
-anvil-annotations-optional = { group = "dev.zacsweers.anvil", name = "annotations-optional", version.ref = "anvil"}
+# Metro - compile-time DI framework
+# https://github.com/ZacSweers/metro
+metrox-android = { group = "dev.zacsweers.metro", name = "metrox-android", version.ref = "metro" }
 
 # # https://developer.android.com/develop/ui/compose/text/fonts
 # https://mvnrepository.com/artifact/androidx.compose.ui/ui-text-google-fonts
@@ -157,8 +153,6 @@ test-turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
-
 # Add @Parcelize support
 # https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.parcelize
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
@@ -168,9 +162,9 @@ kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref =
 # https://github.com/google/ksp/releases
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp"}
 
-# Forked Anvil
-# https://github.com/ZacSweers/anvil/blob/main/FORK.md
-anvil = { id = "dev.zacsweers.anvil", version.ref = "anvil" }
+# Metro - compile-time DI compiler plugin
+# https://github.com/ZacSweers/metro
+metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
 
 # Kotlin linter with built-in formatter
 # https://github.com/jeremymailen/kotlinter-gradle

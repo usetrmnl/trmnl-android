@@ -4,12 +4,11 @@ import android.content.Context
 import androidx.core.content.pm.PackageInfoCompat
 import com.slack.eithernet.integration.retrofit.ApiResultCallAdapterFactory
 import com.slack.eithernet.integration.retrofit.ApiResultConverterFactory
-import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.annotations.optional.SingleIn
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import dagger.Module
-import dagger.Provides
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import ink.trmnl.android.BuildConfig
 import ink.trmnl.android.network.RateLimitInterceptor
 import ink.trmnl.android.network.TrmnlApiService
@@ -22,12 +21,11 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-@Module
-@ContributesTo(AppScope::class)
-object NetworkModule {
-    // Cache size for OkHttp (10 MB)
-    private const val CACHE_SIZE = 10 * 1024 * 1024L
+// Cache size for OkHttp (10 MB)
+private const val CACHE_SIZE = 10 * 1024 * 1024L
 
+@ContributesTo(AppScope::class)
+interface NetworkModule {
     @Provides
     @SingleIn(AppScope::class)
     fun provideRateLimitInterceptor(): RateLimitInterceptor = RateLimitInterceptor()

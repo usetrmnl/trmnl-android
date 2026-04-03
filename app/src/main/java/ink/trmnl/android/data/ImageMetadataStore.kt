@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import dev.zacsweers.metro.Inject
 import ink.trmnl.android.di.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -15,7 +16,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 import java.time.Instant
-import javax.inject.Inject
 
 private val Context.imageDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "trmnl_image_metadata",

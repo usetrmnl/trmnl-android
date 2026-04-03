@@ -4,7 +4,7 @@ This directory contains the development container configuration for TRMNL Androi
 
 ## Features
 
-- **Base Image**: Java 17 (Bookworm)
+- **Base Image**: Java 21 (Bookworm)
 - **Android SDK**: Manually installed via post-create script
 - **Android Command Line Tools**: Version 11076708
 - **Platform Tools**: Latest version

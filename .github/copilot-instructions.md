@@ -11,7 +11,7 @@ This document provides essential information for GitHub Copilot agents working o
 - Build System: Gradle 8.13
 - Min SDK: 28 (Android 9.0 Pie)
 - Target SDK: 36 (Android 16.0)
-- Architecture: Modern Android with Jetpack Compose, Circuit UDF, Dagger DI
+- Architecture: Modern Android with Jetpack Compose, Circuit UDF, Metro DI
 
 ## Critical Build & Test Commands
 
@@ -55,7 +55,7 @@ This document provides essential information for GitHub Copilot agents working o
 
 ## Environment Requirements
 
-- **JDK Version:** 17 (OpenJDK 17 - Temurin distribution recommended)
+- **JDK Version:** 21 (OpenJDK 21 - Temurin distribution recommended)
 - **Gradle:** 8.13 (via wrapper, do NOT install manually)
 - **Android SDK:** Compile SDK 36
 - **Build Tools:** Managed by Gradle plugin (AGP 8.9.2)
@@ -70,7 +70,7 @@ app/src/main/java/ink/trmnl/android/
 ├── MainActivity.kt               # App entry point (138 lines)
 ├── TrmnlDisplayMirrorApp.kt     # Application class (51 lines)
 ├── data/                         # Repositories, DataStore implementations
-├── di/                          # Dagger dependency injection modules
+├── di/                          # Metro dependency injection modules
 ├── model/                       # Data models (TrmnlDeviceConfig, etc.)
 ├── network/                     # Retrofit API service, response models
 ├── ui/                          # Jetpack Compose screens (Circuit UDF)
@@ -89,7 +89,7 @@ app/src/main/java/ink/trmnl/android/
 
 ### Key Architectural Patterns
 - **UI Framework:** Jetpack Compose with Circuit (Slack's UDF architecture)
-- **DI:** Dagger with Anvil for code generation
+- **DI:** Metro (dev.zacsweers.metro) for compile-time code generation
 - **Background Work:** WorkManager (15 min minimum interval)
 - **Networking:** Retrofit + OkHttp + Moshi for JSON parsing
 - **Data Storage:** DataStore (preferences) for settings/tokens
@@ -134,7 +134,7 @@ All workflows are in `.github/workflows/`:
 **Solution:** This is informational only. The file is optional for local dev (used for release keystores). Debug builds work without it.
 
 ### Issue: First Build Takes 2-3 Minutes
-**Solution:** Expected behavior. Gradle downloads dependencies and builds annotation processors (KSP, KAPT). Subsequent builds are much faster (~1 minute) due to caching.
+**Solution:** Expected behavior. Gradle downloads dependencies and runs Metro compiler plugin + KSP. Subsequent builds are much faster (~1 minute) due to caching.
 
 ### Issue: Test Warning "Sharing is only supported for boot loader classes"
 **Solution:** Harmless warning from Robolectric tests. Can be ignored. Tests still pass.
@@ -199,7 +199,7 @@ See `RELEASE_CHECKLIST.md` for complete release process.
 ## Trust These Instructions
 
 These instructions have been validated by running all commands in a clean repository clone. If you encounter issues not documented here:
-1. First verify you're using JDK 17 and the Gradle wrapper (`./gradlew`)
+1. First verify you're using JDK 21 and the Gradle wrapper (`./gradlew`)
 2. Try `./gradlew clean` then retry the command
 3. Check if similar issues exist in closed GitHub issues
 4. Only search the codebase if these instructions prove incomplete or incorrect
