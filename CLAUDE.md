@@ -11,7 +11,7 @@ TRMNL Android is a native Android app that displays TRMNL e-ink device content o
 - Build: Gradle 8.13 with AGP 8.9.2
 - Min SDK: 28 (Android 9.0 Pie), Target SDK: 36 (Android 16.0)
 - UI: Jetpack Compose with Circuit UDF architecture (Slack's unidirectional data flow)
-- DI: Dagger 2.56.2 with Anvil 0.4.1 for code generation
+- DI: Metro 0.12.1 (dev.zacsweers.metro) with MetroX Android for compile-time DI
 - Background Work: WorkManager 2.10.1 (15-minute minimum interval limitation)
 - Networking: Retrofit 2.11.0 + OkHttp 4.12.0 + Moshi 1.15.2
 - Image Loading: Coil 3.2.0 with OkHttp integration
@@ -25,14 +25,14 @@ TRMNL Android is a native Android app that displays TRMNL e-ink device content o
 **CRITICAL: On a fresh clone, you MUST build first to generate code:**
 
 ```bash
-# 1. Build debug APK (generates Dagger/Circuit code via KSP/KAPT)
+# 1. Build debug APK (generates Metro/Circuit code via compiler plugin + KSP)
 ./gradlew assembleDebug --parallel --daemon
 
 # 2. Now you can run tests
 ./gradlew testDebugUnitTest --parallel --daemon
 ```
 
-**Why?** Running tests before building will fail with Dagger errors about missing generated modules. The build step generates necessary code via KSP (Circuit) and KAPT (Dagger).
+**Why?** Running tests before building will fail with Metro errors about missing generated modules. The build step generates necessary code via Metro compiler plugin (DI) and KSP (Circuit).
 
 ### Regular Development (After Initial Build)
 
@@ -72,8 +72,8 @@ app/src/main/java/ink/trmnl/android/
 │   ├── TrmnlDeviceConfigDataStore.kt     # Device config (token, server)
 │   ├── ImageMetadataStore.kt             # Image state management
 │   ├── log/                              # Refresh log management
-├── di/                          # Dagger modules
-│   ├── AppComponent.kt                   # Main app component
+├── di/                          # Metro DI modules
+│   ├── AppGraph.kt                       # Main app dependency graph
 │   ├── NetworkModule.kt                  # Retrofit, OkHttp, Moshi
 │   ├── CircuitModule.kt                  # Circuit UI setup
 ├── model/                       # Data models
@@ -98,15 +98,16 @@ app/src/main/java/ink/trmnl/android/
 ### Key Architectural Patterns
 
 **Circuit UDF (Unidirectional Data Flow):**
-- All screens use `@CircuitInject` annotation for DI with Anvil
+- All screens use `@CircuitInject` annotation for DI with Metro
 - Presenter pattern: State + Event → Presenter → Updated State
 - Example: `TrmnlMirrorDisplayScreen` with presenter handling events
 
 **Dependency Injection:**
-- Dagger with Anvil for compile-time code generation
+- Metro for compile-time code generation via Kotlin compiler plugin (no KAPT)
 - `@ContributesTo(AppScope::class)` for module contribution
 - `@SingleIn(AppScope::class)` for app-scoped singletons
-- Circuit integration: `arg("anvil-ksp-extraContributingAnnotations", "com.slack.circuit.codegen.annotations.CircuitInject")`
+- `@DependencyGraph(AppScope::class)` on `AppGraph` as the root component
+- Circuit integration: `arg("circuit.codegen.mode", "metro")`
 
 **Background Work:**
 - WorkManager with 15-minute minimum interval (Android OS limitation)
@@ -198,13 +199,13 @@ The project uses optimized Gradle settings based on best practices from the [Now
 
 ## Common Issues
 
-- **Tests fail on fresh checkout**: Must run `./gradlew assembleDebug` first to generate Dagger/Circuit code
+- **Tests fail on fresh checkout**: Must run `./gradlew assembleDebug` first to generate Metro/Circuit code
 - **"secret.properties not found"**: Informational only, debug builds work without it
 - **First build slow**: Expected for clean builds, ~1-2 minutes with optimized Gradle settings
 - **"Sharing is only supported for boot loader classes"**: Harmless Robolectric warning, tests still pass
 - **"INVISIBLE_REFERENCE" in NetworkingTools.kt:56**: Expected, uses internal Kotlin API (documented warning)
 - **WorkManager 15-min minimum**: Android OS limitation, not a bug
-- **Dagger KAPT errors about missing modules**: Run `assembleDebug` first to generate code
+- **Metro codegen errors about missing modules**: Run `assembleDebug` first to generate code
 
 ## Code Style
 
@@ -243,7 +244,7 @@ The project uses optimized Gradle settings based on best practices from the [Now
 - **Authentication**: Token-based auth required (TRMNL access token or device ID/MAC address)
 - **BYOS Support**: Supports custom server URLs for BYOS installations
 - **Screen Wake Lock**: `FLAG_KEEP_SCREEN_ON` doesn't work reliably on e-Ink tablets due to aggressive battery optimization
-- **Kotlin Version**: Capped at 2.1.10 due to Dagger 2.56.2 compatibility (see libs.versions.toml comment)
+- **Kotlin Version**: 2.3.20+ (Metro removed the Dagger/KAPT compatibility constraint)
 - **No Product Flavors**: Only debug/release build types exist
 
 ## Copilot Instructions Context
@@ -253,5 +254,5 @@ From `.github/copilot-instructions.md`:
 - Use Circuit's `@CircuitInject` for UI components
 - WorkManager periodic work has 15-min minimum interval
 - Image loading handles HTTP 403 auto-refresh for expired URLs
-- Dagger KSP support is in Alpha - using KAPT for now
+- Metro uses a Kotlin compiler plugin — no KAPT, no KSP for DI itself
 - Trust the documented build commands - they're CI-validated

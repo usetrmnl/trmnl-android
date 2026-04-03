@@ -190,7 +190,7 @@ This document outlines the requirements for the TRMNL Android application.
 | ARCH-01 | UI Framework                                                          | Jetpack Compose with Circuit UDF architecture                     |
 | ARCH-02 | Background Processing                                                 | WorkManager for scheduled image refreshes                         |
 | ARCH-03 | Networking                                                            | Retrofit and OkHttp with EitherNet for API communication          |
-| ARCH-04 | Dependency Injection                                                  | Dagger with Anvil                                                 |
+| ARCH-04 | Dependency Injection                                                  | Metro (dev.zacsweers.metro)                                       |
 | ARCH-05 | Data Storage                                                          | DataStore for preferences and token storage                       |
 | ARCH-06 | Image Loading                                                         | Coil for image loading and caching                                |
 | ARCH-07 | Logging                                                               | Timber for debug logging                                          |

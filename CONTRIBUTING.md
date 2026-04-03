@@ -17,7 +17,7 @@ The app uses a modern Android architecture with the following components:
 - **UI**: Jetpack Compose with Circuit UDF architecture
 - **Background Processing**: WorkManager for scheduled image (re)loading
 - **Networking**: Retrofit and OkHttp for API communication
-- **DI**: Dagger with Anvil for dependency injection
+- **DI**: Metro for dependency injection
 - **Data Storage**: DataStore for preferences and token storage
 
 #### Key Features/Screens
