@@ -15,6 +15,7 @@ import org.junit.Test
 /**
  * Unit tests for [AndroidDeviceInfoProvider].
  */
+@Suppress("DEPRECATION")
 class AndroidDeviceInfoProviderTest {
     private lateinit var context: Context
     private lateinit var provider: AndroidDeviceInfoProvider
