@@ -1,0 +1,4 @@
+- Updated to the latest version (2.9.0)
+- Migrated DI from Dagger/Anvil to Metro for improved build performance
+- Fixed access token trim to prevent illegal header characters
+- Bumped JVM target to 21
