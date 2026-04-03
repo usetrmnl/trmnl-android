@@ -28,76 +28,75 @@ import timber.log.Timber
  * - https://github.com/usetrmnl/trmnl-android/pull/253
  * - https://discord.com/channels/1281055965508141100/1466030731770855434/1469103763846463620
  */
+@Inject
 @SingleIn(AppScope::class)
-class TrmnlUserRepository
-    @Inject
-    constructor(
-        private val userApiService: TrmnlUserApiService,
-        private val androidDeviceInfoProvider: AndroidDeviceInfoProvider,
-    ) {
-        /**
-         * Validates a user API token by calling the /api/me endpoint.
-         *
-         * This method is used to verify user-level (account) API tokens before saving them.
-         * On success, returns the user's information.
-         *
-         * @param apiBaseUrl The base URL of the TRMNL API server
-         * @param userApiToken The user API token to validate (should start with "user_")
-         * @return A Result containing TrmnlUser on success or an exception on failure
-         */
-        suspend fun validateUserApiToken(
-            apiBaseUrl: String,
-            userApiToken: String,
-        ): Result<TrmnlUser> {
-            Timber.i("Validating user API token")
+class TrmnlUserRepository(
+    private val userApiService: TrmnlUserApiService,
+    private val androidDeviceInfoProvider: AndroidDeviceInfoProvider,
+) {
+    /**
+     * Validates a user API token by calling the /api/me endpoint.
+     *
+     * This method is used to verify user-level (account) API tokens before saving them.
+     * On success, returns the user's information.
+     *
+     * @param apiBaseUrl The base URL of the TRMNL API server
+     * @param userApiToken The user API token to validate (should start with "user_")
+     * @return A Result containing TrmnlUser on success or an exception on failure
+     */
+    suspend fun validateUserApiToken(
+        apiBaseUrl: String,
+        userApiToken: String,
+    ): Result<TrmnlUser> {
+        Timber.i("Validating user API token")
 
-            val result =
-                userApiService.getUserInfo(
-                    fullApiUrl = constructApiUrl(apiBaseUrl, USER_INFO_API_PATH),
-                    accessToken = "Bearer $userApiToken",
-                )
+        val result =
+            userApiService.getUserInfo(
+                fullApiUrl = constructApiUrl(apiBaseUrl, USER_INFO_API_PATH),
+                accessToken = "Bearer $userApiToken",
+            )
 
-            return when (result) {
-                is ApiResult.Failure -> {
-                    val exception = result.exceptionOrNull()
-                    Timber.e(exception, "User API token validation failed")
-                    Result.failure(exception ?: Exception("Failed to validate user token"))
-                }
-                is ApiResult.Success -> {
-                    Timber.i("User API token validated successfully: ${result.value.data.email}")
-                    Result.success(result.value.data)
-                }
+        return when (result) {
+            is ApiResult.Failure -> {
+                val exception = result.exceptionOrNull()
+                Timber.e(exception, "User API token validation failed")
+                Result.failure(exception ?: Exception("Failed to validate user token"))
+            }
+            is ApiResult.Success -> {
+                Timber.i("User API token validated successfully: ${result.value.data.email}")
+                Result.success(result.value.data)
             }
         }
+    }
 
-        /**
-         * Fetches the device ID from the TRMNL API using the device API token.
-         *
-         * **DEPRECATED:** Device ID fetching is no longer needed. Battery reporting now uses
-         * the Percent-Charged header in /api/display call, which only requires device-level
-         * authentication (Access-Token), not user-level authentication or device ID.
-         *
-         * This method will be removed in a future version.
-         *
-         * This method calls the /api/devices/me endpoint with device-level authentication
-         * to retrieve device information including the device ID, which is needed for
-         * user-level API calls to /api/devices/{id}.
-         *
-         * **Note:** This endpoint doesn't exist on the server yet, so this method
-         * returns a mocked response until the server endpoint is implemented.
-         *
-         * @param config Device configuration containing the device API token
-         * @return A Result containing the device ID on success or an exception on failure
-         */
-        @Deprecated("Device ID no longer needed for battery reporting. Use Percent-Charged header instead.")
-        suspend fun getDeviceIdFromApi(config: TrmnlDeviceConfig): Result<Int> {
-            Timber.w("getDeviceIdFromApi is deprecated. Device ID is no longer needed for battery reporting.")
-            return Result.failure(
-                UnsupportedOperationException(
-                    "Device ID fetching is deprecated. Battery reporting now uses Percent-Charged header " +
-                        "in /api/display, which doesn't require device ID or user API token.",
-                ),
-            )
+    /**
+     * Fetches the device ID from the TRMNL API using the device API token.
+     *
+     * **DEPRECATED:** Device ID fetching is no longer needed. Battery reporting now uses
+     * the Percent-Charged header in /api/display call, which only requires device-level
+     * authentication (Access-Token), not user-level authentication or device ID.
+     *
+     * This method will be removed in a future version.
+     *
+     * This method calls the /api/devices/me endpoint with device-level authentication
+     * to retrieve device information including the device ID, which is needed for
+     * user-level API calls to /api/devices/{id}.
+     *
+     * **Note:** This endpoint doesn't exist on the server yet, so this method
+     * returns a mocked response until the server endpoint is implemented.
+     *
+     * @param config Device configuration containing the device API token
+     * @return A Result containing the device ID on success or an exception on failure
+     */
+    @Deprecated("Device ID no longer needed for battery reporting. Use Percent-Charged header instead.")
+    suspend fun getDeviceIdFromApi(config: TrmnlDeviceConfig): Result<Int> {
+        Timber.w("getDeviceIdFromApi is deprecated. Device ID is no longer needed for battery reporting.")
+        return Result.failure(
+            UnsupportedOperationException(
+                "Device ID fetching is deprecated. Battery reporting now uses Percent-Charged header " +
+                    "in /api/display, which doesn't require device ID or user API token.",
+            ),
+        )
 
             /* DISABLED - Device ID no longer needed for battery reporting
             Timber.i("Fetching device ID from API for device type: ${config.type}")
@@ -144,26 +143,26 @@ class TrmnlUserRepository
              * }
              */
              */
-        }
+    }
 
-        /**
-         * Reports the device's battery status to the TRMNL API for BYOD devices.
-         *
-         * **DEPRECATED:** Battery reporting now uses the Percent-Charged header in /api/display call.
-         * This method is disabled and will be removed in a future version.
-         *
-         * Battery percentage is now automatically sent via the Percent-Charged header parameter
-         * when calling getNextDisplayData() for BYOD devices, eliminating the need for a separate
-         * API call and user-level authentication.
-         *
-         * @param config Device configuration containing device type, device ID, and user API token
-         * @see TrmnlDisplayRepository.getNextDisplayData
-         */
-        @Deprecated("Battery reporting now uses Percent-Charged header. This method is no longer needed.")
-        suspend fun reportDeviceBatteryStatus(config: TrmnlDeviceConfig) {
-            // DEPRECATED: Battery reporting now happens via Percent-Charged header in /api/display
-            Timber.d("Battery reporting via separate API call is deprecated. Battery is now sent via Percent-Charged header.")
-            return
+    /**
+     * Reports the device's battery status to the TRMNL API for BYOD devices.
+     *
+     * **DEPRECATED:** Battery reporting now uses the Percent-Charged header in /api/display call.
+     * This method is disabled and will be removed in a future version.
+     *
+     * Battery percentage is now automatically sent via the Percent-Charged header parameter
+     * when calling getNextDisplayData() for BYOD devices, eliminating the need for a separate
+     * API call and user-level authentication.
+     *
+     * @param config Device configuration containing device type, device ID, and user API token
+     * @see TrmnlDisplayRepository.getNextDisplayData
+     */
+    @Deprecated("Battery reporting now uses Percent-Charged header. This method is no longer needed.")
+    suspend fun reportDeviceBatteryStatus(config: TrmnlDeviceConfig) {
+        // DEPRECATED: Battery reporting now happens via Percent-Charged header in /api/display
+        Timber.d("Battery reporting via separate API call is deprecated. Battery is now sent via Percent-Charged header.")
+        return
 
             /* DISABLED - Battery now reported via Percent-Charged header
             // Only report battery for BYOD devices with required configuration
@@ -199,32 +198,32 @@ class TrmnlUserRepository
                 Timber.e(e, "Unexpected error during battery reporting")
             }
              */
-        }
+    }
 
-        /**
-         * Reports the device's battery status to the TRMNL API.
-         *
-         * **DEPRECATED:** This method is no longer used. Battery reporting now uses the
-         * Percent-Charged header in /api/display call instead of PATCH /api/devices/{id}.
-         *
-         * This method will be removed in a future version.
-         *
-         * @param config Device configuration containing the device ID and user API token
-         * @param batteryPercent The current battery percentage (0-100)
-         * @return A Result containing Unit on success or an exception on failure
-         */
-        @Deprecated("Battery reporting now uses Percent-Charged header. This method is no longer needed.")
-        private suspend fun reportBatteryStatus(
-            config: TrmnlDeviceConfig,
-            batteryPercent: Int,
-        ): Result<Unit> {
-            // DEPRECATED: This method is no longer used
-            Timber.d("reportBatteryStatus is deprecated and disabled")
-            return Result.failure(
-                UnsupportedOperationException(
-                    "Battery reporting via PATCH /api/devices/{id} is deprecated. Use Percent-Charged header instead.",
-                ),
-            )
+    /**
+     * Reports the device's battery status to the TRMNL API.
+     *
+     * **DEPRECATED:** This method is no longer used. Battery reporting now uses the
+     * Percent-Charged header in /api/display call instead of PATCH /api/devices/{id}.
+     *
+     * This method will be removed in a future version.
+     *
+     * @param config Device configuration containing the device ID and user API token
+     * @param batteryPercent The current battery percentage (0-100)
+     * @return A Result containing Unit on success or an exception on failure
+     */
+    @Deprecated("Battery reporting now uses Percent-Charged header. This method is no longer needed.")
+    private suspend fun reportBatteryStatus(
+        config: TrmnlDeviceConfig,
+        batteryPercent: Int,
+    ): Result<Unit> {
+        // DEPRECATED: This method is no longer used
+        Timber.d("reportBatteryStatus is deprecated and disabled")
+        return Result.failure(
+            UnsupportedOperationException(
+                "Battery reporting via PATCH /api/devices/{id} is deprecated. Use Percent-Charged header instead.",
+            ),
+        )
 
             /* DISABLED - Battery now reported via Percent-Charged header
             val deviceId = config.deviceId
@@ -265,5 +264,5 @@ class TrmnlUserRepository
                 }
             }
              */
-        }
     }
+}

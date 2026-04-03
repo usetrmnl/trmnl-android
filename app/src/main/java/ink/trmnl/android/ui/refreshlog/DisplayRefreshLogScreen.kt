@@ -139,82 +139,81 @@ data object DisplayRefreshLogScreen : Screen {
  * Presenter for the DisplayRefreshLogScreen.
  * Manages the screen's state and handles events from the UI.
  */
-class DisplayRefreshLogPresenter
-    @AssistedInject
-    constructor(
-        @Assisted private val navigator: Navigator,
-        private val refreshLogManager: TrmnlRefreshLogManager,
-        private val refreshLogExporter: RefreshLogExporter,
-        private val trmnlWorkScheduler: TrmnlWorkScheduler,
-    ) : Presenter<DisplayRefreshLogScreen.State> {
-        /**
-         * Creates and returns the state for the DisplayRefreshLogScreen.
-         * Collects logs from the log manager and sets up event handling.
-         *
-         * @return The current UI state.
-         */
-        @Composable
-        override fun present(): DisplayRefreshLogScreen.State {
-            val logs by refreshLogManager.logsFlow.collectAsState(initial = emptyList())
-            val scope = rememberCoroutineScope()
+@AssistedInject
+class DisplayRefreshLogPresenter(
+    @Assisted private val navigator: Navigator,
+    private val refreshLogManager: TrmnlRefreshLogManager,
+    private val refreshLogExporter: RefreshLogExporter,
+    private val trmnlWorkScheduler: TrmnlWorkScheduler,
+) : Presenter<DisplayRefreshLogScreen.State> {
+    /**
+     * Creates and returns the state for the DisplayRefreshLogScreen.
+     * Collects logs from the log manager and sets up event handling.
+     *
+     * @return The current UI state.
+     */
+    @Composable
+    override fun present(): DisplayRefreshLogScreen.State {
+        val logs by refreshLogManager.logsFlow.collectAsState(initial = emptyList())
+        val scope = rememberCoroutineScope()
 
-            return DisplayRefreshLogScreen.State(
-                logs = logs,
-                eventSink = { event ->
-                    when (event) {
-                        DisplayRefreshLogScreen.Event.BackPressed -> navigator.pop()
-                        DisplayRefreshLogScreen.Event.ClearLogs -> {
-                            scope.launch {
-                                refreshLogManager.clearLogs()
-                            }
-                        }
-
-                        DisplayRefreshLogScreen.Event.AddFailLog -> {
-                            scope.launch {
-                                refreshLogManager.addLog(
-                                    TrmnlRefreshLog.createFailure(
-                                        error = "Test failure",
-                                        HttpResponseMetadata.empty(),
-                                    ),
-                                )
-                            }
-                        }
-                        DisplayRefreshLogScreen.Event.AddSuccessLog -> {
-                            scope.launch {
-                                refreshLogManager.addLog(
-                                    TrmnlRefreshLog.createSuccess(
-                                        trmnlDeviceType = TrmnlDeviceType.TRMNL,
-                                        imageUrl = "https://debug.example.com/image.png",
-                                        imageName = "test-image.png",
-                                        refreshIntervalSeconds = 300L,
-                                        imageRefreshWorkType = RefreshWorkType.ONE_TIME.name,
-                                    ),
-                                )
-                            }
-                        }
-
-                        DisplayRefreshLogScreen.Event.StartRefreshWorker -> {
-                            trmnlWorkScheduler.startOneTimeImageRefreshWork()
-                        }
-                        DisplayRefreshLogScreen.Event.ExportLogs -> {
-                            scope.launch {
-                                refreshLogExporter.exportLogsAndShare(logs)
-                            }
+        return DisplayRefreshLogScreen.State(
+            logs = logs,
+            eventSink = { event ->
+                when (event) {
+                    DisplayRefreshLogScreen.Event.BackPressed -> navigator.pop()
+                    DisplayRefreshLogScreen.Event.ClearLogs -> {
+                        scope.launch {
+                            refreshLogManager.clearLogs()
                         }
                     }
-                },
-            )
-        }
 
-        /**
-         * Factory interface for creating DisplayRefreshLogPresenter instances.
-         */
-        @CircuitInject(DisplayRefreshLogScreen::class, AppScope::class)
-        @AssistedFactory
-        fun interface Factory {
-            fun create(navigator: Navigator): DisplayRefreshLogPresenter
-        }
+                    DisplayRefreshLogScreen.Event.AddFailLog -> {
+                        scope.launch {
+                            refreshLogManager.addLog(
+                                TrmnlRefreshLog.createFailure(
+                                    error = "Test failure",
+                                    HttpResponseMetadata.empty(),
+                                ),
+                            )
+                        }
+                    }
+                    DisplayRefreshLogScreen.Event.AddSuccessLog -> {
+                        scope.launch {
+                            refreshLogManager.addLog(
+                                TrmnlRefreshLog.createSuccess(
+                                    trmnlDeviceType = TrmnlDeviceType.TRMNL,
+                                    imageUrl = "https://debug.example.com/image.png",
+                                    imageName = "test-image.png",
+                                    refreshIntervalSeconds = 300L,
+                                    imageRefreshWorkType = RefreshWorkType.ONE_TIME.name,
+                                ),
+                            )
+                        }
+                    }
+
+                    DisplayRefreshLogScreen.Event.StartRefreshWorker -> {
+                        trmnlWorkScheduler.startOneTimeImageRefreshWork()
+                    }
+                    DisplayRefreshLogScreen.Event.ExportLogs -> {
+                        scope.launch {
+                            refreshLogExporter.exportLogsAndShare(logs)
+                        }
+                    }
+                }
+            },
+        )
     }
+
+    /**
+     * Factory interface for creating DisplayRefreshLogPresenter instances.
+     */
+    @CircuitInject(DisplayRefreshLogScreen::class, AppScope::class)
+    @AssistedFactory
+    fun interface Factory {
+        fun create(navigator: Navigator): DisplayRefreshLogPresenter
+    }
+}
 
 /**
  * Main composable function for rendering the DisplayRefreshLogScreen.

@@ -20,45 +20,44 @@ import timber.log.Timber
  * 📚 See following sequence diagram for flow:
  * - https://github.com/usetrmnl/trmnl-android/blob/main/CONTRIBUTING.md#trmnl-app-image-loading-flow
  */
+@Inject
 @SingleIn(AppScope::class)
-class TrmnlImageUpdateManager
-    @Inject
-    constructor(
-        private val imageMetadataStore: ImageMetadataStore,
+class TrmnlImageUpdateManager(
+    private val imageMetadataStore: ImageMetadataStore,
+) {
+    private val _imageUpdateFlow = MutableStateFlow<ImageMetadata?>(null)
+    val imageUpdateFlow: StateFlow<ImageMetadata?> = _imageUpdateFlow.asStateFlow()
+
+    /**
+     * Updates the image URL and notifies observers through the flow.
+     * Only accepts updates with newer timestamps than the current image.
+     */
+    fun updateImage(
+        imageUrl: String,
+        refreshIntervalSecs: Long? = null,
+        errorMessage: String? = null,
     ) {
-        private val _imageUpdateFlow = MutableStateFlow<ImageMetadata?>(null)
-        val imageUpdateFlow: StateFlow<ImageMetadata?> = _imageUpdateFlow.asStateFlow()
+        val imageMetadata =
+            ImageMetadata(
+                url = imageUrl,
+                refreshIntervalSecs = refreshIntervalSecs,
+                errorMessage = errorMessage,
+            )
 
-        /**
-         * Updates the image URL and notifies observers through the flow.
-         * Only accepts updates with newer timestamps than the current image.
-         */
-        fun updateImage(
-            imageUrl: String,
-            refreshIntervalSecs: Long? = null,
-            errorMessage: String? = null,
-        ) {
-            val imageMetadata =
-                ImageMetadata(
-                    url = imageUrl,
-                    refreshIntervalSecs = refreshIntervalSecs,
-                    errorMessage = errorMessage,
-                )
+        Timber.d("Updating image URL from TrmnlImageUpdateManager: $imageMetadata")
 
-            Timber.d("Updating image URL from TrmnlImageUpdateManager: $imageMetadata")
+        _imageUpdateFlow.value = imageMetadata
+    }
 
-            _imageUpdateFlow.value = imageMetadata
-        }
-
-        /**
-         * Initialize the manager with the last cached image URL if available
-         */
-        suspend fun initialize() {
-            imageMetadataStore.imageMetadataFlow.collect { metadata ->
-                if (metadata != null && _imageUpdateFlow.value == null) {
-                    Timber.d("Initializing image URL from ImageMetadataStore cache: ${metadata.url}")
-                    _imageUpdateFlow.value = metadata
-                }
+    /**
+     * Initialize the manager with the last cached image URL if available
+     */
+    suspend fun initialize() {
+        imageMetadataStore.imageMetadataFlow.collect { metadata ->
+            if (metadata != null && _imageUpdateFlow.value == null) {
+                Timber.d("Initializing image URL from ImageMetadataStore cache: ${metadata.url}")
+                _imageUpdateFlow.value = metadata
             }
         }
     }
+}

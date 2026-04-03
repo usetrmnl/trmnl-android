@@ -221,29 +221,28 @@ class TrmnlImageRefreshWorker(
      * @see TrmnlWorkerFactory
      * @see WorkerModule
      */
-    class Factory
-        @Inject
-        constructor(
-            private val displayRepository: TrmnlDisplayRepository,
-            private val trmnlDeviceConfigDataStore: TrmnlDeviceConfigDataStore,
-            private val refreshLogManager: TrmnlRefreshLogManager,
-            private val trmnlWorkScheduler: TrmnlWorkScheduler,
-            private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
-            private val imageMetadataStore: ImageMetadataStore,
-        ) {
-            fun create(
-                appContext: Context,
-                params: WorkerParameters,
-            ): TrmnlImageRefreshWorker =
-                TrmnlImageRefreshWorker(
-                    appContext = appContext,
-                    params = params,
-                    displayRepository = displayRepository,
-                    trmnlDeviceConfigDataStore = trmnlDeviceConfigDataStore,
-                    refreshLogManager = refreshLogManager,
-                    trmnlWorkScheduler = trmnlWorkScheduler,
-                    trmnlImageUpdateManager = trmnlImageUpdateManager,
-                    imageMetadataStore = imageMetadataStore,
-                )
-        }
+    @Inject
+    class Factory(
+        private val displayRepository: TrmnlDisplayRepository,
+        private val trmnlDeviceConfigDataStore: TrmnlDeviceConfigDataStore,
+        private val refreshLogManager: TrmnlRefreshLogManager,
+        private val trmnlWorkScheduler: TrmnlWorkScheduler,
+        private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
+        private val imageMetadataStore: ImageMetadataStore,
+    ) {
+        fun create(
+            appContext: Context,
+            params: WorkerParameters,
+        ): TrmnlImageRefreshWorker =
+            TrmnlImageRefreshWorker(
+                appContext = appContext,
+                params = params,
+                displayRepository = displayRepository,
+                trmnlDeviceConfigDataStore = trmnlDeviceConfigDataStore,
+                refreshLogManager = refreshLogManager,
+                trmnlWorkScheduler = trmnlWorkScheduler,
+                trmnlImageUpdateManager = trmnlImageUpdateManager,
+                imageMetadataStore = imageMetadataStore,
+            )
+    }
 }

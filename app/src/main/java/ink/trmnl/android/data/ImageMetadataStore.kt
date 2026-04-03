@@ -27,113 +27,112 @@ private val Context.imageDataStore: DataStore<Preferences> by preferencesDataSto
  *
  * @see ImageMetadata
  */
-class ImageMetadataStore
-    @Inject
-    constructor(
-        @ApplicationContext private val context: Context,
+@Inject
+class ImageMetadataStore(
+    @ApplicationContext private val context: Context,
+) {
+    companion object {
+        private val IMAGE_URL_KEY = stringPreferencesKey("last_image_url")
+        private val TIMESTAMP_KEY = longPreferencesKey("last_image_timestamp")
+        private val REFRESH_RATE_KEY = longPreferencesKey("last_refresh_rate")
+        private val HTTP_STATUS_CODE_KEY = intPreferencesKey("last_http_status_code")
+    }
+
+    /**
+     * Get the image metadata as a Flow
+     */
+    val imageMetadataFlow: Flow<ImageMetadata?> =
+        context.imageDataStore.data.map { preferences ->
+            val imageUrl = preferences[IMAGE_URL_KEY] ?: return@map null
+            val timestamp = preferences[TIMESTAMP_KEY] ?: Instant.now().toEpochMilli()
+            val refreshRate = preferences[REFRESH_RATE_KEY]
+            val httpStatusCode = preferences[HTTP_STATUS_CODE_KEY]
+
+            ImageMetadata(
+                url = imageUrl,
+                refreshIntervalSecs = refreshRate,
+                errorMessage = null,
+                httpStatusCode = httpStatusCode,
+                timestamp = timestamp,
+            )
+        }
+
+    /**
+     * Save new image metadata
+     */
+    suspend fun saveImageMetadata(
+        imageUrl: String,
+        refreshIntervalSec: Long? = null,
+        httpStatusCode: Int? = null,
     ) {
-        companion object {
-            private val IMAGE_URL_KEY = stringPreferencesKey("last_image_url")
-            private val TIMESTAMP_KEY = longPreferencesKey("last_image_timestamp")
-            private val REFRESH_RATE_KEY = longPreferencesKey("last_refresh_rate")
-            private val HTTP_STATUS_CODE_KEY = intPreferencesKey("last_http_status_code")
-        }
+        Timber.d("Saving image metadata: url=$imageUrl, refreshIntervalSec=$refreshIntervalSec, httpStatusCode=$httpStatusCode")
+        context.imageDataStore.edit { preferences ->
+            preferences[IMAGE_URL_KEY] = imageUrl
+            preferences[TIMESTAMP_KEY] = Instant.now().toEpochMilli()
+            refreshIntervalSec?.let { preferences[REFRESH_RATE_KEY] = it }
 
-        /**
-         * Get the image metadata as a Flow
-         */
-        val imageMetadataFlow: Flow<ImageMetadata?> =
-            context.imageDataStore.data.map { preferences ->
-                val imageUrl = preferences[IMAGE_URL_KEY] ?: return@map null
-                val timestamp = preferences[TIMESTAMP_KEY] ?: Instant.now().toEpochMilli()
-                val refreshRate = preferences[REFRESH_RATE_KEY]
-                val httpStatusCode = preferences[HTTP_STATUS_CODE_KEY]
-
-                ImageMetadata(
-                    url = imageUrl,
-                    refreshIntervalSecs = refreshRate,
-                    errorMessage = null,
-                    httpStatusCode = httpStatusCode,
-                    timestamp = timestamp,
-                )
-            }
-
-        /**
-         * Save new image metadata
-         */
-        suspend fun saveImageMetadata(
-            imageUrl: String,
-            refreshIntervalSec: Long? = null,
-            httpStatusCode: Int? = null,
-        ) {
-            Timber.d("Saving image metadata: url=$imageUrl, refreshIntervalSec=$refreshIntervalSec, httpStatusCode=$httpStatusCode")
-            context.imageDataStore.edit { preferences ->
-                preferences[IMAGE_URL_KEY] = imageUrl
-                preferences[TIMESTAMP_KEY] = Instant.now().toEpochMilli()
-                refreshIntervalSec?.let { preferences[REFRESH_RATE_KEY] = it }
-
-                // Save or clear HTTP status code
-                if (httpStatusCode != null) {
-                    preferences[HTTP_STATUS_CODE_KEY] = httpStatusCode
-                } else {
-                    preferences.remove(HTTP_STATUS_CODE_KEY)
-                }
-            }
-        }
-
-        /**
-         * Checks if the stored image URL is still valid based on refresh rate
-         * @return Flow of Boolean indicating if a valid, non-expired image URL exists
-         */
-        val hasValidImageUrlFlow: Flow<Boolean> =
-            context.imageDataStore.data.map { preferences ->
-                val url = preferences[IMAGE_URL_KEY] ?: return@map false
-                val timestamp = preferences[TIMESTAMP_KEY] ?: return@map false
-                val refreshRate = preferences[REFRESH_RATE_KEY] ?: return@map false
-
-                // Calculate if the image is expired based on timestamp + refresh rate
-                val expirationTime = timestamp + (refreshRate * 1000) // Convert seconds to milliseconds
-                val currentTime = Instant.now().toEpochMilli()
-
-                // Image is valid if current time is before expiration
-                url.isNotEmpty() && currentTime < expirationTime
-            }
-
-        /**
-         * Checks synchronously if a valid, non-expired image URL exists
-         * @return true if valid image URL exists and is not expired
-         */
-        fun hasValidImageUrlSync(): Boolean {
-            return runBlocking {
-                return@runBlocking hasValidImageUrlFlow.first()
-            }
-        }
-
-        /**
-         * Returns the amount of time in milliseconds until the current image expires
-         * @return Positive value if image is still valid, negative if already expired, null if no valid image
-         */
-        val timeUntilExpirationFlow: Flow<Long?> =
-            context.imageDataStore.data.map { preferences ->
-                val timestamp = preferences[TIMESTAMP_KEY] ?: return@map null
-                val refreshRate = preferences[REFRESH_RATE_KEY] ?: return@map null
-
-                // Calculate time until expiration
-                val expirationTime = timestamp + (refreshRate * 1000) // Convert seconds to milliseconds
-                val currentTime = Instant.now().toEpochMilli()
-
-                expirationTime - currentTime
-            }
-
-        /**
-         * Clear stored image metadata
-         */
-        suspend fun clearImageMetadata() {
-            context.imageDataStore.edit { preferences ->
-                preferences.remove(IMAGE_URL_KEY)
-                preferences.remove(TIMESTAMP_KEY)
-                preferences.remove(REFRESH_RATE_KEY)
+            // Save or clear HTTP status code
+            if (httpStatusCode != null) {
+                preferences[HTTP_STATUS_CODE_KEY] = httpStatusCode
+            } else {
                 preferences.remove(HTTP_STATUS_CODE_KEY)
             }
         }
     }
+
+    /**
+     * Checks if the stored image URL is still valid based on refresh rate
+     * @return Flow of Boolean indicating if a valid, non-expired image URL exists
+     */
+    val hasValidImageUrlFlow: Flow<Boolean> =
+        context.imageDataStore.data.map { preferences ->
+            val url = preferences[IMAGE_URL_KEY] ?: return@map false
+            val timestamp = preferences[TIMESTAMP_KEY] ?: return@map false
+            val refreshRate = preferences[REFRESH_RATE_KEY] ?: return@map false
+
+            // Calculate if the image is expired based on timestamp + refresh rate
+            val expirationTime = timestamp + (refreshRate * 1000) // Convert seconds to milliseconds
+            val currentTime = Instant.now().toEpochMilli()
+
+            // Image is valid if current time is before expiration
+            url.isNotEmpty() && currentTime < expirationTime
+        }
+
+    /**
+     * Checks synchronously if a valid, non-expired image URL exists
+     * @return true if valid image URL exists and is not expired
+     */
+    fun hasValidImageUrlSync(): Boolean {
+        return runBlocking {
+            return@runBlocking hasValidImageUrlFlow.first()
+        }
+    }
+
+    /**
+     * Returns the amount of time in milliseconds until the current image expires
+     * @return Positive value if image is still valid, negative if already expired, null if no valid image
+     */
+    val timeUntilExpirationFlow: Flow<Long?> =
+        context.imageDataStore.data.map { preferences ->
+            val timestamp = preferences[TIMESTAMP_KEY] ?: return@map null
+            val refreshRate = preferences[REFRESH_RATE_KEY] ?: return@map null
+
+            // Calculate time until expiration
+            val expirationTime = timestamp + (refreshRate * 1000) // Convert seconds to milliseconds
+            val currentTime = Instant.now().toEpochMilli()
+
+            expirationTime - currentTime
+        }
+
+    /**
+     * Clear stored image metadata
+     */
+    suspend fun clearImageMetadata() {
+        context.imageDataStore.edit { preferences ->
+            preferences.remove(IMAGE_URL_KEY)
+            preferences.remove(TIMESTAMP_KEY)
+            preferences.remove(REFRESH_RATE_KEY)
+            preferences.remove(HTTP_STATUS_CODE_KEY)
+        }
+    }
+}

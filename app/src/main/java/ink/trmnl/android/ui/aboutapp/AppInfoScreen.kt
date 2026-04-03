@@ -72,40 +72,39 @@ data object AppInfoScreen : Screen {
     }
 }
 
-class AppInfoPresenter
-    @AssistedInject
-    constructor(
-        @Assisted private val navigator: Navigator,
-    ) : Presenter<AppInfoScreen.State> {
-        @Composable
-        override fun present(): AppInfoScreen.State {
-            val uriHandler = LocalUriHandler.current
-            val appVersion = BuildConfig.VERSION_NAME
-            val buildType = BuildConfig.BUILD_TYPE
+@AssistedInject
+class AppInfoPresenter(
+    @Assisted private val navigator: Navigator,
+) : Presenter<AppInfoScreen.State> {
+    @Composable
+    override fun present(): AppInfoScreen.State {
+        val uriHandler = LocalUriHandler.current
+        val appVersion = BuildConfig.VERSION_NAME
+        val buildType = BuildConfig.BUILD_TYPE
 
-            return State(
-                appVersion = appVersion,
-                buildType = buildType,
-                eventSink = { event ->
-                    when (event) {
-                        Event.BackPressed -> navigator.pop()
-                        Event.OpenGithub -> {
-                            uriHandler.openUri(TRMNL_ANDROID_APP_GITHUB_URL)
-                        }
-                        Event.OpenTrmnlSite -> {
-                            uriHandler.openUri(TRMNL_SITE_URL)
-                        }
+        return State(
+            appVersion = appVersion,
+            buildType = buildType,
+            eventSink = { event ->
+                when (event) {
+                    Event.BackPressed -> navigator.pop()
+                    Event.OpenGithub -> {
+                        uriHandler.openUri(TRMNL_ANDROID_APP_GITHUB_URL)
                     }
-                },
-            )
-        }
-
-        @CircuitInject(AppInfoScreen::class, AppScope::class)
-        @AssistedFactory
-        fun interface Factory {
-            fun create(navigator: Navigator): AppInfoPresenter
-        }
+                    Event.OpenTrmnlSite -> {
+                        uriHandler.openUri(TRMNL_SITE_URL)
+                    }
+                }
+            },
+        )
     }
+
+    @CircuitInject(AppInfoScreen::class, AppScope::class)
+    @AssistedFactory
+    fun interface Factory {
+        fun create(navigator: Navigator): AppInfoPresenter
+    }
+}
 
 @CircuitInject(AppInfoScreen::class, AppScope::class)
 @OptIn(ExperimentalMaterial3Api::class)

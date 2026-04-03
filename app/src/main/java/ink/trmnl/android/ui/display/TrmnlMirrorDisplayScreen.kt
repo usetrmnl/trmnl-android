@@ -133,216 +133,215 @@ data object TrmnlMirrorDisplayScreen : Screen {
     }
 }
 
-class TrmnlMirrorDisplayPresenter
-    @AssistedInject
-    constructor(
-        @Assisted private val navigator: Navigator,
-        private val trmnlDeviceConfigDataStore: TrmnlDeviceConfigDataStore,
-        private val trmnlWorkScheduler: TrmnlWorkScheduler,
-        private val imageMetadataStore: ImageMetadataStore,
-        private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
-        private val rateLimitInterceptor: RateLimitInterceptor,
-    ) : Presenter<TrmnlMirrorDisplayScreen.State> {
-        @Composable
-        override fun present(): TrmnlMirrorDisplayScreen.State {
-            var imageUrl by remember { mutableStateOf<String?>(null) }
-            var overlayControlsVisible by remember { mutableStateOf(false) }
-            var isLoading by remember { mutableStateOf(true) }
-            var nextRefreshTime by remember { mutableStateOf("No scheduled work found. Please set API token.") }
-            var error by remember { mutableStateOf<String?>(null) }
-            var saveImageResult by remember { mutableStateOf<TrmnlMirrorDisplayScreen.SaveImageResult?>(null) }
-            var rateLimitMessage by remember { mutableStateOf<String?>(null) }
-            var retryInfo by remember { mutableStateOf<TrmnlMirrorDisplayScreen.RetryInfo?>(null) }
-            val scope = rememberCoroutineScope()
-            val context = LocalContext.current
+@AssistedInject
+class TrmnlMirrorDisplayPresenter(
+    @Assisted private val navigator: Navigator,
+    private val trmnlDeviceConfigDataStore: TrmnlDeviceConfigDataStore,
+    private val trmnlWorkScheduler: TrmnlWorkScheduler,
+    private val imageMetadataStore: ImageMetadataStore,
+    private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
+    private val rateLimitInterceptor: RateLimitInterceptor,
+) : Presenter<TrmnlMirrorDisplayScreen.State> {
+    @Composable
+    override fun present(): TrmnlMirrorDisplayScreen.State {
+        var imageUrl by remember { mutableStateOf<String?>(null) }
+        var overlayControlsVisible by remember { mutableStateOf(false) }
+        var isLoading by remember { mutableStateOf(true) }
+        var nextRefreshTime by remember { mutableStateOf("No scheduled work found. Please set API token.") }
+        var error by remember { mutableStateOf<String?>(null) }
+        var saveImageResult by remember { mutableStateOf<TrmnlMirrorDisplayScreen.SaveImageResult?>(null) }
+        var rateLimitMessage by remember { mutableStateOf<String?>(null) }
+        var retryInfo by remember { mutableStateOf<TrmnlMirrorDisplayScreen.RetryInfo?>(null) }
+        val scope = rememberCoroutineScope()
+        val context = LocalContext.current
 
-            // Collect retry events from RateLimitInterceptor for UI feedback
-            LaunchedEffect(Unit) {
-                rateLimitInterceptor.retryEvents.collect { event ->
-                    val reasonText =
-                        if (event.reason == ink.trmnl.android.network.RateLimitInterceptor.REASON_RETRY_AFTER_HEADER) {
-                            "Server requested"
-                        } else {
-                            "Rate limited"
-                        }
-                    retryInfo =
-                        TrmnlMirrorDisplayScreen.RetryInfo(
-                            attempt = event.attempt,
-                            maxRetries = event.maxRetries,
-                            delaySeconds = (event.delayMs / 1000).toInt(),
-                            reason = reasonText,
-                        )
-                    Timber.d("Retry info updated: attempt ${event.attempt}/${event.maxRetries}, delay ${event.delayMs}ms")
-                }
-            }
-
-            // Monitor image metadata for rate limit status (HTTP 429)
-            // Note: With the new RateLimitInterceptor, this flow may not receive HTTP 429
-            // since retries are handled transparently at the network layer
-            LaunchedEffect(Unit) {
-                imageMetadataStore.imageMetadataFlow.collect { metadata ->
-                    if (metadata?.httpStatusCode == HTTP_429) {
-                        rateLimitMessage = "Showing cached image - rate limited by API server. Retrying in background..."
-                        Timber.d("Rate limit detected (HTTP 429), showing cached image with notification")
+        // Collect retry events from RateLimitInterceptor for UI feedback
+        LaunchedEffect(Unit) {
+            rateLimitInterceptor.retryEvents.collect { event ->
+                val reasonText =
+                    if (event.reason == ink.trmnl.android.network.RateLimitInterceptor.REASON_RETRY_AFTER_HEADER) {
+                        "Server requested"
                     } else {
-                        rateLimitMessage = null
+                        "Rate limited"
                     }
-                }
+                retryInfo =
+                    TrmnlMirrorDisplayScreen.RetryInfo(
+                        attempt = event.attempt,
+                        maxRetries = event.maxRetries,
+                        delaySeconds = (event.delayMs / 1000).toInt(),
+                        reason = reasonText,
+                    )
+                Timber.d("Retry info updated: attempt ${event.attempt}/${event.maxRetries}, delay ${event.delayMs}ms")
             }
+        }
 
-            // Collect updates from the image update manager to get the latest image URL
-            // Latest image URL is received from WorkManager work requests.
-            LaunchedEffect(Unit) {
-                trmnlImageUpdateManager.imageUpdateFlow.collect { imageMetadata ->
-                    Timber.d("Received new image URL from TRMNL Image Update Manager: $imageMetadata")
-                    if (imageMetadata != null && imageMetadata.errorMessage == null) {
-                        imageUrl = imageMetadata.url
-                        isLoading = false
-                        error = null
-                        retryInfo = null // Clear retry info on successful load
-                    } else {
-                        Timber.w("Failed to get cached image URL from TRMNL Image Update Manager `imageUpdateFlow`")
-                        // Keep showing loading state until we have a valid response from the server
-                        // Only set error state if we have a non-null imageMetadata with an error
-                        if (imageMetadata != null) {
-                            isLoading = false
-                            error = imageMetadata.errorMessage ?: "An unknown error occurred."
-                        }
-                    }
-                }
-            }
-
-            // Auto-hide timer for overlay controls
-            LaunchedEffect(overlayControlsVisible) {
-                if (overlayControlsVisible) {
-                    delay(AUTO_HIDE_APP_CONFIG_WINDOW_MS)
-                    overlayControlsVisible = false
-                }
-            }
-
-            LaunchedEffect(overlayControlsVisible) {
-                trmnlWorkScheduler.getScheduledWorkInfo().collect { workInfo ->
-                    workInfo?.nextRunTime()?.let {
-                        nextRefreshTime = it.timeUntilNextRefresh
-                    } ?: "No scheduled work found. Please set API token."
-                }
-            }
-
-            // Initialize by checking token and starting one-time work if needed
-            LaunchedEffect(Unit) {
-                val token = trmnlDeviceConfigDataStore.accessTokenFlow.firstOrNull()
-                if (token.isNullOrBlank()) {
-                    Timber.d("No access token found, navigating to configuration screen")
-                    navigator.goTo(AppSettingsScreen(returnToMirrorAfterSave = true))
-                    return@LaunchedEffect
-                }
-
-                // Check if we have a cached image
-                val hasValidImage = imageMetadataStore.hasValidImageUrlFlow.firstOrNull() ?: false
-                if (hasValidImage) {
-                    // Initial loading state will be updated when imageUpdateFlow emits
-                    Timber.d("Valid cached image URL exists in ImageMetadataStore")
-                    trmnlImageUpdateManager.initialize()
+        // Monitor image metadata for rate limit status (HTTP 429)
+        // Note: With the new RateLimitInterceptor, this flow may not receive HTTP 429
+        // since retries are handled transparently at the network layer
+        LaunchedEffect(Unit) {
+            imageMetadataStore.imageMetadataFlow.collect { metadata ->
+                if (metadata?.httpStatusCode == HTTP_429) {
+                    rateLimitMessage = "Showing cached image - rate limited by API server. Retrying in background..."
+                    Timber.d("Rate limit detected (HTTP 429), showing cached image with notification")
                 } else {
-                    Timber.d("No valid cached image, starting one-time refresh work")
-                    // Always keep in loading state until we get a valid result
-                    isLoading = true
-                    error = null
-                    // No valid image, start a refresh work
-                    trmnlWorkScheduler.startOneTimeImageRefreshWork()
+                    rateLimitMessage = null
                 }
             }
+        }
 
-            return TrmnlMirrorDisplayScreen.State(
-                imageUrl = imageUrl,
-                overlayControlsVisible = overlayControlsVisible,
-                nextImageRefreshIn = nextRefreshTime,
-                isLoading = isLoading,
-                errorMessage = error,
-                saveImageResult = saveImageResult,
-                rateLimitMessage = rateLimitMessage,
-                retryInfo = retryInfo,
-                eventSink = { event ->
-                    when (event) {
-                        TrmnlMirrorDisplayScreen.Event.RefreshCurrentPlaylistItemRequested -> {
-                            overlayControlsVisible = false
-                            // Simply trigger the worker for refresh
-                            scope.launch {
-                                // Clear the image URL so that when the image is refreshed
-                                // with old image URL it will load the image.
-                                imageUrl = null
-                                isLoading = true
-                                error = null
+        // Collect updates from the image update manager to get the latest image URL
+        // Latest image URL is received from WorkManager work requests.
+        LaunchedEffect(Unit) {
+            trmnlImageUpdateManager.imageUpdateFlow.collect { imageMetadata ->
+                Timber.d("Received new image URL from TRMNL Image Update Manager: $imageMetadata")
+                if (imageMetadata != null && imageMetadata.errorMessage == null) {
+                    imageUrl = imageMetadata.url
+                    isLoading = false
+                    error = null
+                    retryInfo = null // Clear retry info on successful load
+                } else {
+                    Timber.w("Failed to get cached image URL from TRMNL Image Update Manager `imageUpdateFlow`")
+                    // Keep showing loading state until we have a valid response from the server
+                    // Only set error state if we have a non-null imageMetadata with an error
+                    if (imageMetadata != null) {
+                        isLoading = false
+                        error = imageMetadata.errorMessage ?: "An unknown error occurred."
+                    }
+                }
+            }
+        }
 
-                                if (trmnlDeviceConfigDataStore.hasTokenSync()) {
-                                    Timber.d("Manually refreshing current image via WorkManager")
-                                    trmnlWorkScheduler.startOneTimeImageRefreshWork()
-                                } else {
-                                    error = "No access token found"
-                                    isLoading = false
-                                    Timber.w("Refresh failed: No access token found")
-                                }
-                            }
-                        }
-                        TrmnlMirrorDisplayScreen.Event.ConfigureRequested -> {
-                            navigator.goTo(AppSettingsScreen(returnToMirrorAfterSave = true))
-                        }
-                        TrmnlMirrorDisplayScreen.Event.BackPressed -> {
-                            navigator.pop()
-                        }
-                        TrmnlMirrorDisplayScreen.Event.ViewLogsRequested -> {
-                            navigator.goTo(DisplayRefreshLogScreen)
-                        }
+        // Auto-hide timer for overlay controls
+        LaunchedEffect(overlayControlsVisible) {
+            if (overlayControlsVisible) {
+                delay(AUTO_HIDE_APP_CONFIG_WINDOW_MS)
+                overlayControlsVisible = false
+            }
+        }
 
-                        TrmnlMirrorDisplayScreen.Event.ToggleOverlayControls -> {
-                            overlayControlsVisible = !overlayControlsVisible
-                        }
+        LaunchedEffect(overlayControlsVisible) {
+            trmnlWorkScheduler.getScheduledWorkInfo().collect { workInfo ->
+                workInfo?.nextRunTime()?.let {
+                    nextRefreshTime = it.timeUntilNextRefresh
+                } ?: "No scheduled work found. Please set API token."
+            }
+        }
 
-                        TrmnlMirrorDisplayScreen.Event.LoadNextPlaylistItemImage -> {
+        // Initialize by checking token and starting one-time work if needed
+        LaunchedEffect(Unit) {
+            val token = trmnlDeviceConfigDataStore.accessTokenFlow.firstOrNull()
+            if (token.isNullOrBlank()) {
+                Timber.d("No access token found, navigating to configuration screen")
+                navigator.goTo(AppSettingsScreen(returnToMirrorAfterSave = true))
+                return@LaunchedEffect
+            }
+
+            // Check if we have a cached image
+            val hasValidImage = imageMetadataStore.hasValidImageUrlFlow.firstOrNull() ?: false
+            if (hasValidImage) {
+                // Initial loading state will be updated when imageUpdateFlow emits
+                Timber.d("Valid cached image URL exists in ImageMetadataStore")
+                trmnlImageUpdateManager.initialize()
+            } else {
+                Timber.d("No valid cached image, starting one-time refresh work")
+                // Always keep in loading state until we get a valid result
+                isLoading = true
+                error = null
+                // No valid image, start a refresh work
+                trmnlWorkScheduler.startOneTimeImageRefreshWork()
+            }
+        }
+
+        return TrmnlMirrorDisplayScreen.State(
+            imageUrl = imageUrl,
+            overlayControlsVisible = overlayControlsVisible,
+            nextImageRefreshIn = nextRefreshTime,
+            isLoading = isLoading,
+            errorMessage = error,
+            saveImageResult = saveImageResult,
+            rateLimitMessage = rateLimitMessage,
+            retryInfo = retryInfo,
+            eventSink = { event ->
+                when (event) {
+                    TrmnlMirrorDisplayScreen.Event.RefreshCurrentPlaylistItemRequested -> {
+                        overlayControlsVisible = false
+                        // Simply trigger the worker for refresh
+                        scope.launch {
+                            // Clear the image URL so that when the image is refreshed
+                            // with old image URL it will load the image.
                             imageUrl = null
                             isLoading = true
                             error = null
 
                             if (trmnlDeviceConfigDataStore.hasTokenSync()) {
-                                Timber.d("Manually refreshing next playlist item image via WorkManager")
-                                trmnlWorkScheduler.startOneTimeImageRefreshWork(loadNextPlaylistImage = true)
+                                Timber.d("Manually refreshing current image via WorkManager")
+                                trmnlWorkScheduler.startOneTimeImageRefreshWork()
                             } else {
                                 error = "No access token found"
                                 isLoading = false
                                 Timber.w("Refresh failed: No access token found")
                             }
                         }
+                    }
+                    TrmnlMirrorDisplayScreen.Event.ConfigureRequested -> {
+                        navigator.goTo(AppSettingsScreen(returnToMirrorAfterSave = true))
+                    }
+                    TrmnlMirrorDisplayScreen.Event.BackPressed -> {
+                        navigator.pop()
+                    }
+                    TrmnlMirrorDisplayScreen.Event.ViewLogsRequested -> {
+                        navigator.goTo(DisplayRefreshLogScreen)
+                    }
 
-                        is TrmnlMirrorDisplayScreen.Event.ImageLoadingError -> {
-                            error = event.message
+                    TrmnlMirrorDisplayScreen.Event.ToggleOverlayControls -> {
+                        overlayControlsVisible = !overlayControlsVisible
+                    }
+
+                    TrmnlMirrorDisplayScreen.Event.LoadNextPlaylistItemImage -> {
+                        imageUrl = null
+                        isLoading = true
+                        error = null
+
+                        if (trmnlDeviceConfigDataStore.hasTokenSync()) {
+                            Timber.d("Manually refreshing next playlist item image via WorkManager")
+                            trmnlWorkScheduler.startOneTimeImageRefreshWork(loadNextPlaylistImage = true)
+                        } else {
+                            error = "No access token found"
                             isLoading = false
-                        }
-
-                        TrmnlMirrorDisplayScreen.Event.SaveImageRequested -> {
-                            scope.launch {
-                                saveImageResult = null
-                                val savedUri = ImageSaver.saveImageToDownloads(context, imageUrl)
-                                saveImageResult =
-                                    if (savedUri != null) {
-                                        Timber.d("Image saved successfully to: $savedUri")
-                                        TrmnlMirrorDisplayScreen.SaveImageResult.Success
-                                    } else {
-                                        Timber.w("Failed to save image")
-                                        TrmnlMirrorDisplayScreen.SaveImageResult.Error("Failed to save image")
-                                    }
-                            }
+                            Timber.w("Refresh failed: No access token found")
                         }
                     }
-                },
-            )
-        }
 
-        @CircuitInject(TrmnlMirrorDisplayScreen::class, AppScope::class)
-        @AssistedFactory
-        fun interface Factory {
-            fun create(navigator: Navigator): TrmnlMirrorDisplayPresenter
-        }
+                    is TrmnlMirrorDisplayScreen.Event.ImageLoadingError -> {
+                        error = event.message
+                        isLoading = false
+                    }
+
+                    TrmnlMirrorDisplayScreen.Event.SaveImageRequested -> {
+                        scope.launch {
+                            saveImageResult = null
+                            val savedUri = ImageSaver.saveImageToDownloads(context, imageUrl)
+                            saveImageResult =
+                                if (savedUri != null) {
+                                    Timber.d("Image saved successfully to: $savedUri")
+                                    TrmnlMirrorDisplayScreen.SaveImageResult.Success
+                                } else {
+                                    Timber.w("Failed to save image")
+                                    TrmnlMirrorDisplayScreen.SaveImageResult.Error("Failed to save image")
+                                }
+                        }
+                    }
+                }
+            },
+        )
     }
+
+    @CircuitInject(TrmnlMirrorDisplayScreen::class, AppScope::class)
+    @AssistedFactory
+    fun interface Factory {
+        fun create(navigator: Navigator): TrmnlMirrorDisplayPresenter
+    }
+}
 
 @CircuitInject(TrmnlMirrorDisplayScreen::class, AppScope::class)
 @Composable
