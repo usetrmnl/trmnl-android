@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.squareup.anvil.annotations.optional.SingleIn
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import ink.trmnl.android.di.AppScope
-import javax.inject.Inject
 
 @SingleIn(AppScope::class)
 class TrmnlWorkerFactory

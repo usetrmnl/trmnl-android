@@ -2,7 +2,8 @@ package ink.trmnl.android.data
 
 import com.slack.eithernet.ApiResult
 import com.slack.eithernet.exceptionOrNull
-import com.squareup.anvil.annotations.optional.SingleIn
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.network.TrmnlUserApiService
@@ -11,7 +12,6 @@ import ink.trmnl.android.network.model.TrmnlUser
 import ink.trmnl.android.network.util.constructApiUrl
 import ink.trmnl.android.util.AndroidDeviceInfoProvider
 import timber.log.Timber
-import javax.inject.Inject
 
 /**
  * Repository class for user-level TRMNL API operations.

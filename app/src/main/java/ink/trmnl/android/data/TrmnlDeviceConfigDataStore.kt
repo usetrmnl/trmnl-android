@@ -8,9 +8,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.squareup.anvil.annotations.optional.SingleIn
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
 import ink.trmnl.android.data.AppConfig.TRMNL_API_SERVER_BASE_URL
 import ink.trmnl.android.di.AppScope
@@ -24,7 +25,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import timber.log.Timber
-import javax.inject.Inject
 
 /**
  * DataStore for managing TRMNL device configuration.

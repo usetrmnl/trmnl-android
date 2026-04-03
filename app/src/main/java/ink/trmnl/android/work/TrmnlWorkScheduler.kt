@@ -13,7 +13,8 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkQuery
 import androidx.work.workDataOf
-import com.squareup.anvil.annotations.optional.SingleIn
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.di.ApplicationContext
@@ -23,7 +24,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 
 /**
  * Manages the scheduling and execution of background work using WorkManager.
