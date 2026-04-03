@@ -26,6 +26,7 @@ Here are some of the known ways you can get access to the `access-token`.
 1. You must own a [TRMNL](https://trmnl.com/) device with "developer edition" add-on purchased
 2. You have purchased their [BYOD](https://docs.trmnl.com/go/diy/byod) product.
 3. You have self-serve installation of TRMNL service using [BYOS](https://docs.trmnl.com/go/diy/byos)
+4. Your Android device OS version is `9.0` or higher (_for older devices try [trmnl-android-legacy-lite](https://github.com/layuso/trmnl-android-legacy-lite)_)
 
 
 ### 📱 Google Play Store
@@ -46,6 +47,7 @@ Download the app from Google Play Store:
 2. Currently the app uses Android WorkManager to schedule refresh job and it has minimum interval of ⏰ `15 min` between jobs. So, if your TRMNL is setup to refresh every `5 min`, you will not see it refresh until `15 min` is elapsed.
     * This can be overcome by using some clever logic or not using `WorkManager`. However, this is a OS optimized and reliable way to refresh image periodically.
     * Imagine a user running the app on an Android phone or tablet. When the app is in the background (e.g., the screen is off), it avoids unnecessary image refresh calls, conserving the user's battery. These optimizations are built into `WorkManager`.
+3. App has minimum version requirement of **`9.0`**, see [discussion](https://github.com/usetrmnl/trmnl-android/issues/101#issuecomment-4182812396) for more info.
 
 
 
