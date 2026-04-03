@@ -5,6 +5,7 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.squareup.moshi.Moshi
+import dev.zacsweers.metro.Inject
 import ink.trmnl.android.di.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -13,7 +14,6 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.util.Locale
-import javax.inject.Inject
 
 /**
  * Handles exporting refresh logs to a JSON file and sharing it via Android's share intent.

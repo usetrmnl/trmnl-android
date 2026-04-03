@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import dev.zacsweers.metro.Inject
 import ink.trmnl.android.MainActivity
 import ink.trmnl.android.data.ImageMetadataStore
 import ink.trmnl.android.data.TrmnlDeviceConfigDataStore
@@ -21,7 +22,6 @@ import ink.trmnl.android.work.RefreshWorkResult.SUCCESS
 import ink.trmnl.android.work.TrmnlWorkScheduler.Companion.IMAGE_REFRESH_PERIODIC_WORK_TAG
 import kotlinx.coroutines.flow.firstOrNull
 import timber.log.Timber
-import javax.inject.Inject
 
 /**
  * Worker to refresh the image displayed on the TRMNL display.

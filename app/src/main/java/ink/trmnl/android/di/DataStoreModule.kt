@@ -4,19 +4,17 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.dataStoreFile
-import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.annotations.optional.SingleIn
-import dagger.Module
-import dagger.Provides
+import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import ink.trmnl.android.data.log.TrmnlRefreshLogSerializer
 import ink.trmnl.android.data.log.TrmnlRefreshLogs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
-@Module
 @ContributesTo(AppScope::class)
-object DataStoreModule {
+interface DataStoreModule {
     @Provides
     @SingleIn(AppScope::class)
     fun provideActivityLogDataStore(

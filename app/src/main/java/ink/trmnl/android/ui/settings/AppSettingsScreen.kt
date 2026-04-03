@@ -76,9 +76,9 @@ import com.slack.circuit.runtime.CircuitUiState
 import com.slack.circuit.runtime.Navigator
 import com.slack.circuit.runtime.presenter.Presenter
 import com.slack.circuit.runtime.screen.Screen
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedFactory
-import dagger.assisted.AssistedInject
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
 import ink.trmnl.android.R
 import ink.trmnl.android.data.AppConfig.DEFAULT_REFRESH_INTERVAL_SEC
 import ink.trmnl.android.data.AppConfig.TRMNL_API_SERVER_BASE_URL
