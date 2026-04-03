@@ -377,7 +377,7 @@ class TrmnlDeviceConfigDataStore
          */
         suspend fun saveAccessToken(token: String) {
             context.deviceConfigStore.edit { preferences ->
-                preferences[ACCESS_TOKEN_KEY] = token
+                preferences[ACCESS_TOKEN_KEY] = token.trim()
             }
         }
 
