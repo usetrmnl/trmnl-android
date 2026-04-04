@@ -41,8 +41,8 @@ android {
         // ⚠️ App versioning update is required in multiple places.
         // 👇🏽 Use the following workflow to update versions everywhere automatically ♻️
         // https://github.com/usetrmnl/trmnl-android/actions/workflows/version-management.yml
-        versionCode = 34
-        versionName = "2.9.0"
+        versionCode = 35
+        versionName = "2.10.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
