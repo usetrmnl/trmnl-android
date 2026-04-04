@@ -260,330 +260,329 @@ data class AppSettingsScreen(
  * Presenter for the [AppSettingsScreen].
  * Manages the screen's state and handles events from the UI.
  */
-class AppSettingsPresenter
-    @AssistedInject
-    constructor(
-        @Assisted private val navigator: Navigator,
-        @Assisted private val screen: AppSettingsScreen,
-        private val displayRepository: TrmnlDisplayRepository,
-        private val deviceConfigStore: TrmnlDeviceConfigDataStore,
-        private val trmnlWorkScheduler: TrmnlWorkScheduler,
-        private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
-    ) : Presenter<AppSettingsScreen.State> {
-        @Composable
-        override fun present(): AppSettingsScreen.State {
-            var deviceType by remember { mutableStateOf(TrmnlDeviceType.TRMNL) }
-            var serverBaseUrl by remember { mutableStateOf("") }
-            var accessToken by remember { mutableStateOf("") }
-            var deviceMacId by remember { mutableStateOf("") }
-            var isByodMasterDevice by remember { mutableStateOf(true) }
-            var isLoading by remember { mutableStateOf(false) }
-            var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
-            var isDeviceSetupLoading by remember { mutableStateOf(false) }
-            var deviceSetupMessage by remember { mutableStateOf<String?>(null) }
-            val scope = rememberCoroutineScope()
-            val focusManager = LocalFocusManager.current
+@AssistedInject
+class AppSettingsPresenter(
+    @Assisted private val navigator: Navigator,
+    @Assisted private val screen: AppSettingsScreen,
+    private val displayRepository: TrmnlDisplayRepository,
+    private val deviceConfigStore: TrmnlDeviceConfigDataStore,
+    private val trmnlWorkScheduler: TrmnlWorkScheduler,
+    private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
+) : Presenter<AppSettingsScreen.State> {
+    @Composable
+    override fun present(): AppSettingsScreen.State {
+        var deviceType by remember { mutableStateOf(TrmnlDeviceType.TRMNL) }
+        var serverBaseUrl by remember { mutableStateOf("") }
+        var accessToken by remember { mutableStateOf("") }
+        var deviceMacId by remember { mutableStateOf("") }
+        var isByodMasterDevice by remember { mutableStateOf(true) }
+        var isLoading by remember { mutableStateOf(false) }
+        var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
+        var isDeviceSetupLoading by remember { mutableStateOf(false) }
+        var deviceSetupMessage by remember { mutableStateOf<String?>(null) }
+        val scope = rememberCoroutineScope()
+        val focusManager = LocalFocusManager.current
 
-            val nextRefreshInfo by produceState<NextImageRefreshDisplayInfo?>(null) {
-                trmnlWorkScheduler.getScheduledWorkInfo().collect { workInfo ->
-                    value = workInfo?.nextRunTime()
+        val nextRefreshInfo by produceState<NextImageRefreshDisplayInfo?>(null) {
+            trmnlWorkScheduler.getScheduledWorkInfo().collect { workInfo ->
+                value = workInfo?.nextRunTime()
+            }
+        }
+
+        // Load saved device model preference based on current device type
+        // Flow automatically updates when preferences change in DataStore
+        // Use a single collector that filters by current deviceType value instead of restarting on deviceType change
+        val savedDeviceModel by produceState<DeviceModelSelection?>(initialValue = null) {
+            deviceConfigStore.deviceModelPreferencesFlow.collect { preferences ->
+                // Update value based on current deviceType (captured from closure)
+                val newValue = preferences[deviceType.name]
+                if (value != newValue) {
+                    value = newValue
+                }
+            }
+        }
+
+        // Create answering navigator for DeviceModelSelectorScreen
+        val deviceModelNavigator =
+            rememberAnsweringNavigator<DeviceModelSelectorScreen.Result>(navigator) { result ->
+                // Save the selected device model using the device type from the result
+                // This ensures we save to the correct device type even if the user
+                // switched device types while on the selector screen
+                scope.launch {
+                    deviceConfigStore.saveDeviceModelForType(
+                        deviceType = result.deviceType,
+                        modelName = result.selectedModel.name,
+                        modelLabel = result.selectedModel.label,
+                    )
+                    Timber.d(
+                        "Saved device model preference: ${result.deviceType.name} -> ${result.selectedModel.name}",
+                    )
                 }
             }
 
-            // Load saved device model preference based on current device type
-            // Flow automatically updates when preferences change in DataStore
-            // Use a single collector that filters by current deviceType value instead of restarting on deviceType change
-            val savedDeviceModel by produceState<DeviceModelSelection?>(initialValue = null) {
-                deviceConfigStore.deviceModelPreferencesFlow.collect { preferences ->
-                    // Update value based on current deviceType (captured from closure)
-                    val newValue = preferences[deviceType.name]
-                    if (value != newValue) {
-                        value = newValue
+        // Load saved token if available
+        LaunchedEffect(Unit) {
+            deviceConfigStore.deviceConfigFlow.filterNotNull().collect {
+                deviceType = it.type
+                accessToken = it.apiAccessToken
+
+                if (it.type == TrmnlDeviceType.BYOS) {
+                    // On initial load, prefill only if the device type is BYOS
+                    serverBaseUrl = it.apiBaseUrl
+                    it.deviceMacId?.let { savedDeviceId ->
+                        deviceMacId = savedDeviceId
                     }
+                }
+
+                // Load BYOD-specific settings
+                if (it.type == TrmnlDeviceType.BYOD) {
+                    isByodMasterDevice = it.isMasterDevice ?: true
                 }
             }
+        }
 
-            // Create answering navigator for DeviceModelSelectorScreen
-            val deviceModelNavigator =
-                rememberAnsweringNavigator<DeviceModelSelectorScreen.Result>(navigator) { result ->
-                    // Save the selected device model using the device type from the result
-                    // This ensures we save to the correct device type even if the user
-                    // switched device types while on the selector screen
-                    scope.launch {
-                        deviceConfigStore.saveDeviceModelForType(
-                            deviceType = result.deviceType,
-                            modelName = result.selectedModel.name,
-                            modelLabel = result.selectedModel.label,
-                        )
-                        Timber.d(
-                            "Saved device model preference: ${result.deviceType.name} -> ${result.selectedModel.name}",
-                        )
-                    }
-                }
-
-            // Load saved token if available
-            LaunchedEffect(Unit) {
-                deviceConfigStore.deviceConfigFlow.filterNotNull().collect {
-                    deviceType = it.type
-                    accessToken = it.apiAccessToken
-
-                    if (it.type == TrmnlDeviceType.BYOS) {
-                        // On initial load, prefill only if the device type is BYOS
-                        serverBaseUrl = it.apiBaseUrl
-                        it.deviceMacId?.let { savedDeviceId ->
-                            deviceMacId = savedDeviceId
-                        }
+        return AppSettingsScreen.State(
+            deviceType = deviceType,
+            serverBaseUrl = serverBaseUrl,
+            accessToken = accessToken,
+            deviceMacId = deviceMacId,
+            isByodMasterDevice = isByodMasterDevice,
+            isLoading = isLoading,
+            validationResult = validationResult,
+            isDeviceSetupLoading = isDeviceSetupLoading,
+            deviceSetupMessage = deviceSetupMessage,
+            nextRefreshJobInfo = nextRefreshInfo,
+            savedDeviceModel = savedDeviceModel,
+            eventSink = { event ->
+                when (event) {
+                    is AppSettingsScreen.Event.AccessTokenChanged -> {
+                        accessToken = event.token
+                        // Clear previous validation when token changes
+                        validationResult = null
+                        deviceSetupMessage = null
                     }
 
-                    // Load BYOD-specific settings
-                    if (it.type == TrmnlDeviceType.BYOD) {
-                        isByodMasterDevice = it.isMasterDevice ?: true
-                    }
-                }
-            }
-
-            return AppSettingsScreen.State(
-                deviceType = deviceType,
-                serverBaseUrl = serverBaseUrl,
-                accessToken = accessToken,
-                deviceMacId = deviceMacId,
-                isByodMasterDevice = isByodMasterDevice,
-                isLoading = isLoading,
-                validationResult = validationResult,
-                isDeviceSetupLoading = isDeviceSetupLoading,
-                deviceSetupMessage = deviceSetupMessage,
-                nextRefreshJobInfo = nextRefreshInfo,
-                savedDeviceModel = savedDeviceModel,
-                eventSink = { event ->
-                    when (event) {
-                        is AppSettingsScreen.Event.AccessTokenChanged -> {
-                            accessToken = event.token
-                            // Clear previous validation when token changes
+                    AppSettingsScreen.Event.ValidateToken -> {
+                        scope.launch {
+                            focusManager.clearFocus()
+                            isLoading = true
                             validationResult = null
                             deviceSetupMessage = null
-                        }
 
-                        AppSettingsScreen.Event.ValidateToken -> {
-                            scope.launch {
-                                focusManager.clearFocus()
-                                isLoading = true
-                                validationResult = null
-                                deviceSetupMessage = null
+                            // First validate server URL if device type is BYOS
+                            if (deviceType == TrmnlDeviceType.BYOS) {
+                                if (!isValidUrl(serverBaseUrl)) {
+                                    isLoading = false
+                                    validationResult = InvalidServerUrl("Please enter a valid HTTPS URL (e.g. https://my-terminus.com)")
+                                    return@launch
+                                }
 
-                                // First validate server URL if device type is BYOS
-                                if (deviceType == TrmnlDeviceType.BYOS) {
-                                    if (!isValidUrl(serverBaseUrl)) {
-                                        isLoading = false
-                                        validationResult = InvalidServerUrl("Please enter a valid HTTPS URL (e.g. https://my-terminus.com)")
-                                        return@launch
+                                // If device ID is provided, validate MAC address format (only for BYOS)
+                                if (deviceMacId.isNotBlank() && !isValidMacAddress(deviceMacId)) {
+                                    isLoading = false
+                                    validationResult =
+                                        ValidationResult.InvalidDeviceMacId(
+                                            "Please enter a valid MAC address format:\n" +
+                                                "• XX:XX:XX:XX:XX:XX\n" +
+                                                "• XX-XX-XX-XX-XX-XX\n" +
+                                                "• XXXXXXXXXXXX\n" +
+                                                "where X is a hexadecimal digit (0-9, A-F)",
+                                        )
+                                    return@launch
+                                }
+                            }
+
+                            // Device configuration for API calls
+                            val deviceConfig =
+                                TrmnlDeviceConfig(
+                                    type = deviceType,
+                                    apiBaseUrl = serverBaseUrl.forDevice(deviceType),
+                                    apiAccessToken = accessToken,
+                                    deviceMacId = deviceMacId.ifBlank { null },
+                                )
+                            // For TRMNL device type, use getCurrentDisplayData
+                            // For all other device types, use getNextDisplayData
+                            // See https://discord.com/channels/1281055965508141100/1331360842809348106/1382865608236077086
+                            val response =
+                                when (deviceType) {
+                                    TrmnlDeviceType.TRMNL -> {
+                                        displayRepository.getCurrentDisplayData(deviceConfig)
                                     }
-
-                                    // If device ID is provided, validate MAC address format (only for BYOS)
-                                    if (deviceMacId.isNotBlank() && !isValidMacAddress(deviceMacId)) {
-                                        isLoading = false
-                                        validationResult =
-                                            ValidationResult.InvalidDeviceMacId(
-                                                "Please enter a valid MAC address format:\n" +
-                                                    "• XX:XX:XX:XX:XX:XX\n" +
-                                                    "• XX-XX-XX-XX-XX-XX\n" +
-                                                    "• XXXXXXXXXXXX\n" +
-                                                    "where X is a hexadecimal digit (0-9, A-F)",
-                                            )
-                                        return@launch
+                                    else -> {
+                                        displayRepository.getNextDisplayData(deviceConfig)
                                     }
                                 }
 
-                                // Device configuration for API calls
-                                val deviceConfig =
+                            if (response.status.isHttpError()) {
+                                if (response.imageFileName == ERROR_TYPE_DEVICE_SETUP_REQUIRED) {
+                                    // Special case for device setup required
+                                    validationResult =
+                                        ValidationResult.DeviceSetupRequired(
+                                            response.error ?: "Device setup required. Please follow the setup instructions.",
+                                        )
+                                } else {
+                                    // Handle explicit error response
+                                    val errorMessage = response.error ?: "Unexpected error occurred. Please check required inputs."
+                                    validationResult = Failure(errorMessage)
+                                }
+                            } else if (response.imageUrl.isNotBlank()) {
+                                // Success case - we have an image URL
+                                trmnlImageUpdateManager.updateImage(response.imageUrl, response.refreshIntervalSeconds)
+                                validationResult =
+                                    Success(
+                                        response.imageUrl,
+                                        response.refreshIntervalSeconds ?: DEFAULT_REFRESH_INTERVAL_SEC,
+                                    )
+                            } else {
+                                // No error but also no image URL
+                                val errorMessage = response.error ?: ""
+                                validationResult = Failure("$errorMessage No image URL received.")
+                            }
+                            isLoading = false
+                        }
+                    }
+
+                    AppSettingsScreen.Event.SaveAndContinue -> {
+                        // Only save if validation was successful
+                        val result = validationResult
+                        if (result is Success) {
+                            scope.launch {
+                                // Determine isMasterDevice based on device type
+                                val isMaster =
+                                    when (deviceType) {
+                                        TrmnlDeviceType.BYOD -> isByodMasterDevice
+                                        TrmnlDeviceType.BYOS -> true
+                                        TrmnlDeviceType.TRMNL -> false
+                                    }
+
+                                deviceConfigStore.saveDeviceConfig(
                                     TrmnlDeviceConfig(
                                         type = deviceType,
                                         apiBaseUrl = serverBaseUrl.forDevice(deviceType),
                                         apiAccessToken = accessToken,
-                                        deviceMacId = deviceMacId.ifBlank { null },
-                                    )
-                                // For TRMNL device type, use getCurrentDisplayData
-                                // For all other device types, use getNextDisplayData
-                                // See https://discord.com/channels/1281055965508141100/1331360842809348106/1382865608236077086
-                                val response =
-                                    when (deviceType) {
-                                        TrmnlDeviceType.TRMNL -> {
-                                            displayRepository.getCurrentDisplayData(deviceConfig)
-                                        }
-                                        else -> {
-                                            displayRepository.getNextDisplayData(deviceConfig)
-                                        }
-                                    }
+                                        refreshRateSecs = result.refreshRateSecs,
+                                        // Normalize the MAC address to standard format if provided in different format
+                                        deviceMacId = normalizeMacAddress(deviceMacId)?.ifBlank { null },
+                                        isMasterDevice = isMaster,
+                                    ),
+                                )
+                                trmnlWorkScheduler.updateRefreshInterval(result.refreshRateSecs)
 
-                                if (response.status.isHttpError()) {
-                                    if (response.imageFileName == ERROR_TYPE_DEVICE_SETUP_REQUIRED) {
-                                        // Special case for device setup required
-                                        validationResult =
-                                            ValidationResult.DeviceSetupRequired(
-                                                response.error ?: "Device setup required. Please follow the setup instructions.",
-                                            )
-                                    } else {
-                                        // Handle explicit error response
-                                        val errorMessage = response.error ?: "Unexpected error occurred. Please check required inputs."
-                                        validationResult = Failure(errorMessage)
-                                    }
-                                } else if (response.imageUrl.isNotBlank()) {
-                                    // Success case - we have an image URL
-                                    trmnlImageUpdateManager.updateImage(response.imageUrl, response.refreshIntervalSeconds)
-                                    validationResult =
-                                        Success(
-                                            response.imageUrl,
-                                            response.refreshIntervalSeconds ?: DEFAULT_REFRESH_INTERVAL_SEC,
-                                        )
+                                if (screen.returnToMirrorAfterSave) {
+                                    navigator.goTo(TrmnlMirrorDisplayScreen)
                                 } else {
-                                    // No error but also no image URL
-                                    val errorMessage = response.error ?: ""
-                                    validationResult = Failure("$errorMessage No image URL received.")
-                                }
-                                isLoading = false
-                            }
-                        }
-
-                        AppSettingsScreen.Event.SaveAndContinue -> {
-                            // Only save if validation was successful
-                            val result = validationResult
-                            if (result is Success) {
-                                scope.launch {
-                                    // Determine isMasterDevice based on device type
-                                    val isMaster =
-                                        when (deviceType) {
-                                            TrmnlDeviceType.BYOD -> isByodMasterDevice
-                                            TrmnlDeviceType.BYOS -> true
-                                            TrmnlDeviceType.TRMNL -> false
-                                        }
-
-                                    deviceConfigStore.saveDeviceConfig(
-                                        TrmnlDeviceConfig(
-                                            type = deviceType,
-                                            apiBaseUrl = serverBaseUrl.forDevice(deviceType),
-                                            apiAccessToken = accessToken,
-                                            refreshRateSecs = result.refreshRateSecs,
-                                            // Normalize the MAC address to standard format if provided in different format
-                                            deviceMacId = normalizeMacAddress(deviceMacId)?.ifBlank { null },
-                                            isMasterDevice = isMaster,
-                                        ),
-                                    )
-                                    trmnlWorkScheduler.updateRefreshInterval(result.refreshRateSecs)
-
-                                    if (screen.returnToMirrorAfterSave) {
-                                        navigator.goTo(TrmnlMirrorDisplayScreen)
-                                    } else {
-                                        navigator.pop()
-                                    }
-                                }
-                            }
-                        }
-
-                        AppSettingsScreen.Event.BackPressed -> {
-                            navigator.pop()
-                        }
-
-                        AppSettingsScreen.Event.CancelScheduledWork -> {
-                            trmnlWorkScheduler.cancelPeriodicImageRefreshWork()
-                        }
-
-                        is AppSettingsScreen.Event.DeviceTypeChanged -> {
-                            deviceType = event.type
-                            // Clear validation result when device type changes
-                            validationResult = null
-                            deviceSetupMessage = null
-                        }
-
-                        is AppSettingsScreen.Event.ServerUrlChanged -> {
-                            serverBaseUrl = event.url
-                            // Clear validation result when server URL changes
-                            if (validationResult is InvalidServerUrl) {
-                                validationResult = null
-                                deviceSetupMessage = null
-                            }
-                        }
-
-                        is AppSettingsScreen.Event.DeviceMacIdChanged -> {
-                            deviceMacId = event.deviceMacId
-                            // Clear previous validation when device ID changes
-                            validationResult = null
-                            deviceSetupMessage = null
-                        }
-
-                        is AppSettingsScreen.Event.ByodMasterDeviceChanged -> {
-                            isByodMasterDevice = event.isMaster
-                        }
-
-                        AppSettingsScreen.Event.AppInfoPressed -> {
-                            // Navigate to AppInfoScreen
-                            navigator.goTo(AppInfoScreen)
-                        }
-
-                        AppSettingsScreen.Event.ViewLogsRequested -> {
-                            // Navigate to DisplayRefreshLogScreen
-                            navigator.goTo(DisplayRefreshLogScreen)
-                        }
-
-                        AppSettingsScreen.Event.OverrideDisplayModelPressed -> {
-                            // Navigate to DeviceModelSelectorScreen using answering navigator
-                            // Pass the current device type so the screen knows which type this selection is for
-                            Timber.d("Navigating to DeviceModelSelectorScreen for device type: ${deviceType.name}")
-                            deviceModelNavigator.goTo(DeviceModelSelectorScreen(deviceType))
-                        }
-
-                        is AppSettingsScreen.Event.SetupDevice -> {
-                            isDeviceSetupLoading = true
-                            deviceSetupMessage = null
-
-                            scope.launch {
-                                // Call the setup API with the provided device ID
-                                val setupResult: DeviceSetupInfo =
-                                    displayRepository.setupNewDevice(
-                                        TrmnlDeviceConfig(
-                                            type = deviceType,
-                                            apiBaseUrl = serverBaseUrl.forDevice(deviceType),
-                                            apiAccessToken = accessToken,
-                                            deviceMacId = event.deviceMacId,
-                                        ),
-                                    )
-
-                                isDeviceSetupLoading = false
-
-                                if (!setupResult.success) {
-                                    // Handle error response
-                                    deviceSetupMessage = setupResult.message
-                                } else {
-                                    deviceSetupMessage = "Device setup successful! Re-validate ID/Token to continue."
-                                    // Also prepopulate the access token
-                                    accessToken = setupResult.apiKey
+                                    navigator.pop()
                                 }
                             }
                         }
                     }
-                },
-            )
-        }
 
-        /**
-         * Returns the server base URL for the [deviceType] (custom or TRMNL server).
-         */
-        private fun String.forDevice(deviceType: TrmnlDeviceType): String =
-            if (deviceType == TrmnlDeviceType.BYOS) {
-                // For BYOS, use the provided custom server URL
-                this
-            } else {
-                // For any other device type, use the default TRMNL API server URL
-                TRMNL_API_SERVER_BASE_URL
-            }
+                    AppSettingsScreen.Event.BackPressed -> {
+                        navigator.pop()
+                    }
 
-        @CircuitInject(AppSettingsScreen::class, AppScope::class)
-        @AssistedFactory
-        fun interface Factory {
-            fun create(
-                navigator: Navigator,
-                screen: AppSettingsScreen,
-            ): AppSettingsPresenter
-        }
+                    AppSettingsScreen.Event.CancelScheduledWork -> {
+                        trmnlWorkScheduler.cancelPeriodicImageRefreshWork()
+                    }
+
+                    is AppSettingsScreen.Event.DeviceTypeChanged -> {
+                        deviceType = event.type
+                        // Clear validation result when device type changes
+                        validationResult = null
+                        deviceSetupMessage = null
+                    }
+
+                    is AppSettingsScreen.Event.ServerUrlChanged -> {
+                        serverBaseUrl = event.url
+                        // Clear validation result when server URL changes
+                        if (validationResult is InvalidServerUrl) {
+                            validationResult = null
+                            deviceSetupMessage = null
+                        }
+                    }
+
+                    is AppSettingsScreen.Event.DeviceMacIdChanged -> {
+                        deviceMacId = event.deviceMacId
+                        // Clear previous validation when device ID changes
+                        validationResult = null
+                        deviceSetupMessage = null
+                    }
+
+                    is AppSettingsScreen.Event.ByodMasterDeviceChanged -> {
+                        isByodMasterDevice = event.isMaster
+                    }
+
+                    AppSettingsScreen.Event.AppInfoPressed -> {
+                        // Navigate to AppInfoScreen
+                        navigator.goTo(AppInfoScreen)
+                    }
+
+                    AppSettingsScreen.Event.ViewLogsRequested -> {
+                        // Navigate to DisplayRefreshLogScreen
+                        navigator.goTo(DisplayRefreshLogScreen)
+                    }
+
+                    AppSettingsScreen.Event.OverrideDisplayModelPressed -> {
+                        // Navigate to DeviceModelSelectorScreen using answering navigator
+                        // Pass the current device type so the screen knows which type this selection is for
+                        Timber.d("Navigating to DeviceModelSelectorScreen for device type: ${deviceType.name}")
+                        deviceModelNavigator.goTo(DeviceModelSelectorScreen(deviceType))
+                    }
+
+                    is AppSettingsScreen.Event.SetupDevice -> {
+                        isDeviceSetupLoading = true
+                        deviceSetupMessage = null
+
+                        scope.launch {
+                            // Call the setup API with the provided device ID
+                            val setupResult: DeviceSetupInfo =
+                                displayRepository.setupNewDevice(
+                                    TrmnlDeviceConfig(
+                                        type = deviceType,
+                                        apiBaseUrl = serverBaseUrl.forDevice(deviceType),
+                                        apiAccessToken = accessToken,
+                                        deviceMacId = event.deviceMacId,
+                                    ),
+                                )
+
+                            isDeviceSetupLoading = false
+
+                            if (!setupResult.success) {
+                                // Handle error response
+                                deviceSetupMessage = setupResult.message
+                            } else {
+                                deviceSetupMessage = "Device setup successful! Re-validate ID/Token to continue."
+                                // Also prepopulate the access token
+                                accessToken = setupResult.apiKey
+                            }
+                        }
+                    }
+                }
+            },
+        )
     }
+
+    /**
+     * Returns the server base URL for the [deviceType] (custom or TRMNL server).
+     */
+    private fun String.forDevice(deviceType: TrmnlDeviceType): String =
+        if (deviceType == TrmnlDeviceType.BYOS) {
+            // For BYOS, use the provided custom server URL
+            this
+        } else {
+            // For any other device type, use the default TRMNL API server URL
+            TRMNL_API_SERVER_BASE_URL
+        }
+
+    @CircuitInject(AppSettingsScreen::class, AppScope::class)
+    @AssistedFactory
+    fun interface Factory {
+        fun create(
+            navigator: Navigator,
+            screen: AppSettingsScreen,
+        ): AppSettingsPresenter
+    }
+}
 
 /**
  * Main Composable function for rendering the AppSettingsScreen.

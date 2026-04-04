@@ -141,108 +141,107 @@ data class DeviceModelSelectorScreen(
  * Presenter for the DeviceModelSelectorScreen.
  * Manages the screen's state and handles events from the UI.
  */
-class DeviceModelSelectorPresenter
-    @AssistedInject
-    constructor(
-        @Assisted private val navigator: Navigator,
-        @Assisted private val screen: DeviceModelSelectorScreen,
-        private val repository: TrmnlDisplayRepository,
-    ) : Presenter<DeviceModelSelectorScreen.State> {
-        /**
-         * Creates and returns the state for the DeviceModelSelectorScreen.
-         * Fetches device models from the repository and handles user interactions.
-         *
-         * @return The current UI state.
-         */
-        @Composable
-        override fun present(): DeviceModelSelectorScreen.State {
-            var models by remember { mutableStateOf<List<SupportedDeviceModel>>(emptyList()) }
-            var isLoading by remember { mutableStateOf(true) }
-            var errorMessage by remember { mutableStateOf<String?>(null) }
-            val scope = rememberCoroutineScope()
+@AssistedInject
+class DeviceModelSelectorPresenter(
+    @Assisted private val navigator: Navigator,
+    @Assisted private val screen: DeviceModelSelectorScreen,
+    private val repository: TrmnlDisplayRepository,
+) : Presenter<DeviceModelSelectorScreen.State> {
+    /**
+     * Creates and returns the state for the DeviceModelSelectorScreen.
+     * Fetches device models from the repository and handles user interactions.
+     *
+     * @return The current UI state.
+     */
+    @Composable
+    override fun present(): DeviceModelSelectorScreen.State {
+        var models by remember { mutableStateOf<List<SupportedDeviceModel>>(emptyList()) }
+        var isLoading by remember { mutableStateOf(true) }
+        var errorMessage by remember { mutableStateOf<String?>(null) }
+        val scope = rememberCoroutineScope()
 
-            // Load models on first composition
-            LaunchedEffect(Unit) {
-                loadModels(
-                    onModelsLoaded = { loadedModels ->
-                        models = loadedModels
-                        isLoading = false
-                        errorMessage = null
-                    },
-                    onError = { error ->
-                        models = emptyList()
-                        isLoading = false
-                        errorMessage = error
-                    },
-                )
-            }
-
-            return DeviceModelSelectorScreen.State(
-                models = models,
-                isLoading = isLoading,
-                errorMessage = errorMessage,
-                eventSink = { event ->
-                    when (event) {
-                        is DeviceModelSelectorScreen.Event.BackPressed -> {
-                            navigator.pop()
-                        }
-                        is DeviceModelSelectorScreen.Event.ModelSelected -> {
-                            // Pop with result to return the selected model to the previous screen
-                            navigator.pop(
-                                result =
-                                    DeviceModelSelectorScreen.Result(
-                                        selectedModel = event.model,
-                                        deviceType = screen.deviceType,
-                                    ),
-                            )
-                        }
-                        is DeviceModelSelectorScreen.Event.RetryLoad -> {
-                            scope.launch {
-                                isLoading = true
-                                errorMessage = null
-                                loadModels(
-                                    onModelsLoaded = { loadedModels ->
-                                        models = loadedModels
-                                        isLoading = false
-                                        errorMessage = null
-                                    },
-                                    onError = { error ->
-                                        models = emptyList()
-                                        isLoading = false
-                                        errorMessage = error
-                                    },
-                                )
-                            }
-                        }
-                    }
+        // Load models on first composition
+        LaunchedEffect(Unit) {
+            loadModels(
+                onModelsLoaded = { loadedModels ->
+                    models = loadedModels
+                    isLoading = false
+                    errorMessage = null
+                },
+                onError = { error ->
+                    models = emptyList()
+                    isLoading = false
+                    errorMessage = error
                 },
             )
         }
 
-        private suspend fun loadModels(
-            onModelsLoaded: (List<SupportedDeviceModel>) -> Unit,
-            onError: (String) -> Unit,
-        ) {
-            val loadedModels = repository.getDeviceModels(TRMNL_API_SERVER_BASE_URL)
-            if (loadedModels.isEmpty()) {
-                onError("Failed to load device models. Please try again.")
-            } else {
-                onModelsLoaded(loadedModels)
-            }
-        }
+        return DeviceModelSelectorScreen.State(
+            models = models,
+            isLoading = isLoading,
+            errorMessage = errorMessage,
+            eventSink = { event ->
+                when (event) {
+                    is DeviceModelSelectorScreen.Event.BackPressed -> {
+                        navigator.pop()
+                    }
+                    is DeviceModelSelectorScreen.Event.ModelSelected -> {
+                        // Pop with result to return the selected model to the previous screen
+                        navigator.pop(
+                            result =
+                                DeviceModelSelectorScreen.Result(
+                                    selectedModel = event.model,
+                                    deviceType = screen.deviceType,
+                                ),
+                        )
+                    }
+                    is DeviceModelSelectorScreen.Event.RetryLoad -> {
+                        scope.launch {
+                            isLoading = true
+                            errorMessage = null
+                            loadModels(
+                                onModelsLoaded = { loadedModels ->
+                                    models = loadedModels
+                                    isLoading = false
+                                    errorMessage = null
+                                },
+                                onError = { error ->
+                                    models = emptyList()
+                                    isLoading = false
+                                    errorMessage = error
+                                },
+                            )
+                        }
+                    }
+                }
+            },
+        )
+    }
 
-        /**
-         * Factory interface for creating DeviceModelSelectorPresenter instances.
-         */
-        @CircuitInject(DeviceModelSelectorScreen::class, AppScope::class)
-        @AssistedFactory
-        fun interface Factory {
-            fun create(
-                navigator: Navigator,
-                screen: DeviceModelSelectorScreen,
-            ): DeviceModelSelectorPresenter
+    private suspend fun loadModels(
+        onModelsLoaded: (List<SupportedDeviceModel>) -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        val loadedModels = repository.getDeviceModels(TRMNL_API_SERVER_BASE_URL)
+        if (loadedModels.isEmpty()) {
+            onError("Failed to load device models. Please try again.")
+        } else {
+            onModelsLoaded(loadedModels)
         }
     }
+
+    /**
+     * Factory interface for creating DeviceModelSelectorPresenter instances.
+     */
+    @CircuitInject(DeviceModelSelectorScreen::class, AppScope::class)
+    @AssistedFactory
+    fun interface Factory {
+        fun create(
+            navigator: Navigator,
+            screen: DeviceModelSelectorScreen,
+        ): DeviceModelSelectorPresenter
+    }
+}
 
 /**
  * Main composable function for rendering the DeviceModelSelectorScreen.

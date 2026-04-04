@@ -30,12 +30,12 @@ object TrmnlRefreshLogSerializer : Serializer<TrmnlRefreshLogs> {
         }
 
     override suspend fun writeTo(
-        refreshLogs: TrmnlRefreshLogs,
+        t: TrmnlRefreshLogs,
         output: OutputStream,
     ) {
         withContext(Dispatchers.IO) {
             try {
-                val jsonString = adapter.toJson(refreshLogs)
+                val jsonString = adapter.toJson(t)
                 output.write(jsonString.toByteArray())
             } catch (e: Exception) {
                 Timber.e(e, "Error writing activity logs")
