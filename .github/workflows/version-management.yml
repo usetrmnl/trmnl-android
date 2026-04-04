@@ -140,21 +140,27 @@ jobs:
             - Updated app/build.gradle.kts
             - Created changelog file
             
-            ## ⚡ Trigger CI Workflows (Do This First):
+            ### ⚡ Trigger CI Workflows (Do This First):
             
             Since this PR was created by a bot, CI workflows won't trigger automatically. To trigger them:
             
             ```sh
             git fetch && git checkout ${{ env.BRANCH_NAME }}
+            ```
+            
+            ```sh
             git commit --allow-empty -m "chore: empty commit for triggering workflows" && git push
             ```
             
-            ## 🏷️ After Merging This PR:
+            ### 🏷️ After Merging This PR:
             
             After merging this PR, create and push the release tag:
             
             ```sh
             git checkout main && git pull origin main
+            ```
+            
+            ```sh
             git tag v${{ inputs.version_name }} && git push origin v${{ inputs.version_name }}
             ```
           branch: ${{ env.BRANCH_NAME }}
