@@ -109,6 +109,7 @@ interface NetworkModule {
     @SingleIn(AppScope::class)
     fun provideTrmnlApiService(retrofit: Retrofit): TrmnlApiService = retrofit.create(TrmnlApiService::class.java)
 
+    @Suppress("DEPRECATION")
     @Provides
     @SingleIn(AppScope::class)
     fun provideTrmnlUserApiService(retrofit: Retrofit): TrmnlUserApiService = retrofit.create(TrmnlUserApiService::class.java)

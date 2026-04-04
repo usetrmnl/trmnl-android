@@ -118,11 +118,13 @@ class MainActivity(
                                 trmnlImageUpdateManager.updateImage(newImageUrl)
                             }
                         }
+
                         WorkInfo.State.FAILED -> {
                             val error = workInfo.outputData.getString(TrmnlImageRefreshWorker.KEY_ERROR_MESSAGE)
                             Timber.e("${workInfo.tags} work failed: $error")
                             trmnlImageUpdateManager.updateImage(imageUrl = "", errorMessage = error)
                         }
+
                         else -> {
                             Timber.d("${workInfo.tags} work state updated: ${workInfo.state}")
                         }

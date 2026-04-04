@@ -161,7 +161,10 @@ class DisplayRefreshLogPresenter(
             logs = logs,
             eventSink = { event ->
                 when (event) {
-                    DisplayRefreshLogScreen.Event.BackPressed -> navigator.pop()
+                    DisplayRefreshLogScreen.Event.BackPressed -> {
+                        navigator.pop()
+                    }
+
                     DisplayRefreshLogScreen.Event.ClearLogs -> {
                         scope.launch {
                             refreshLogManager.clearLogs()
@@ -178,6 +181,7 @@ class DisplayRefreshLogPresenter(
                             )
                         }
                     }
+
                     DisplayRefreshLogScreen.Event.AddSuccessLog -> {
                         scope.launch {
                             refreshLogManager.addLog(
@@ -195,6 +199,7 @@ class DisplayRefreshLogPresenter(
                     DisplayRefreshLogScreen.Event.StartRefreshWorker -> {
                         trmnlWorkScheduler.startOneTimeImageRefreshWork()
                     }
+
                     DisplayRefreshLogScreen.Event.ExportLogs -> {
                         scope.launch {
                             refreshLogExporter.exportLogsAndShare(logs)

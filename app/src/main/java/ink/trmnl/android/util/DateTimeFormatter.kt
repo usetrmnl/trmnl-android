@@ -20,14 +20,20 @@ internal fun getTimeElapsedString(timestamp: Long): String {
             val remainingMinutes = minutes % 60
 
             when {
-                remainingHours > 0 && remainingMinutes > 0 ->
+                remainingHours > 0 && remainingMinutes > 0 -> {
                     "$days ${if (days == 1L) "day" else "days"} $remainingHours ${if (remainingHours == 1L) "hour" else "hours"} and $remainingMinutes ${if (remainingMinutes == 1L) "minute" else "minutes"} ago"
-                remainingHours > 0 ->
+                }
+
+                remainingHours > 0 -> {
                     "$days ${if (days == 1L) "day" else "days"} and $remainingHours ${if (remainingHours == 1L) "hour" else "hours"} ago"
-                else ->
+                }
+
+                else -> {
                     "$days ${if (days == 1L) "day" else "days"} ago"
+                }
             }
         }
+
         hours > 0 -> {
             val remainingMinutes = minutes % 60
             if (remainingMinutes > 0) {
@@ -36,7 +42,13 @@ internal fun getTimeElapsedString(timestamp: Long): String {
                 "$hours ${if (hours == 1L) "hour" else "hours"} ago"
             }
         }
-        minutes > 0 -> "$minutes ${if (minutes == 1L) "minute" else "minutes"} ago"
-        else -> "Just now"
+
+        minutes > 0 -> {
+            "$minutes ${if (minutes == 1L) "minute" else "minutes"} ago"
+        }
+
+        else -> {
+            "Just now"
+        }
     }
 }

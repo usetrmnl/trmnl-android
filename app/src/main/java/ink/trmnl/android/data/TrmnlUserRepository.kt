@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package ink.trmnl.android.data
 
 import com.slack.eithernet.ApiResult
@@ -62,6 +64,7 @@ class TrmnlUserRepository(
                 Timber.e(exception, "User API token validation failed")
                 Result.failure(exception ?: Exception("Failed to validate user token"))
             }
+
             is ApiResult.Success -> {
                 Timber.i("User API token validated successfully: ${result.value.data.email}")
                 Result.success(result.value.data)

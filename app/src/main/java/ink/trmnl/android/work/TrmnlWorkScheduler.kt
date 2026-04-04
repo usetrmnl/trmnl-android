@@ -111,9 +111,15 @@ class TrmnlWorkScheduler(
         val deviceConfig = trmnlDeviceConfigDataStore.getDeviceConfigSync()
         val shouldAdvancePlaylist =
             when (deviceConfig?.type) {
-                ink.trmnl.android.model.TrmnlDeviceType.BYOS -> true // Always auto-advance
-                ink.trmnl.android.model.TrmnlDeviceType.BYOD -> deviceConfig.isMasterDevice ?: true // Default to master if not set
-                ink.trmnl.android.model.TrmnlDeviceType.TRMNL -> false // Always mirror
+                ink.trmnl.android.model.TrmnlDeviceType.BYOS -> true
+
+                // Always auto-advance
+                ink.trmnl.android.model.TrmnlDeviceType.BYOD -> deviceConfig.isMasterDevice ?: true
+
+                // Default to master if not set
+                ink.trmnl.android.model.TrmnlDeviceType.TRMNL -> false
+
+                // Always mirror
                 null -> false
             }
 

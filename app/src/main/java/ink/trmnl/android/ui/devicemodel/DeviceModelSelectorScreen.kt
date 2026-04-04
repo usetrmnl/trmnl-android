@@ -185,6 +185,7 @@ class DeviceModelSelectorPresenter(
                     is DeviceModelSelectorScreen.Event.BackPressed -> {
                         navigator.pop()
                     }
+
                     is DeviceModelSelectorScreen.Event.ModelSelected -> {
                         // Pop with result to return the selected model to the previous screen
                         navigator.pop(
@@ -195,6 +196,7 @@ class DeviceModelSelectorPresenter(
                                 ),
                         )
                     }
+
                     is DeviceModelSelectorScreen.Event.RetryLoad -> {
                         scope.launch {
                             isLoading = true
@@ -298,6 +300,7 @@ fun DeviceModelSelectorContent(
                         }
                     }
                 }
+
                 state.errorMessage != null -> {
                     // Error state
                     Box(
@@ -323,6 +326,7 @@ fun DeviceModelSelectorContent(
                         }
                     }
                 }
+
                 state.models.isEmpty() -> {
                     // Empty state
                     Box(
@@ -335,6 +339,7 @@ fun DeviceModelSelectorContent(
                         )
                     }
                 }
+
                 else -> {
                     // Success state - show list of models
                     LazyColumn(

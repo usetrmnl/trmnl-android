@@ -75,6 +75,7 @@ class TrmnlDisplayRepository(
             is ApiResult.Failure -> {
                 return failedTrmnlDisplayInfo(trmnlDeviceConfig, result)
             }
+
             is ApiResult.Success -> {
                 // Map the response to the display info
                 val response: TrmnlDisplayResponse = result.value
@@ -134,6 +135,7 @@ class TrmnlDisplayRepository(
             is ApiResult.Failure -> {
                 return failedTrmnlDisplayInfo(trmnlDeviceConfig, result)
             }
+
             is ApiResult.Success -> {
                 // Map the response to the display info
                 val response = result.value
@@ -189,6 +191,7 @@ class TrmnlDisplayRepository(
                     message = "Failed to setup device with ID (${trmnlDeviceConfig.deviceMacId}). Reason: $result",
                 )
             }
+
             is ApiResult.Success -> {
                 Timber.i("Device setup successful: ${result.value}")
                 return DeviceSetupInfo(
@@ -276,6 +279,7 @@ class TrmnlDisplayRepository(
                 Timber.e("Failed to fetch device models: ${result.exceptionOrNull()}")
                 emptyList()
             }
+
             is ApiResult.Success -> {
                 Timber.i("Successfully fetched ${result.value.data.size} device models")
                 // Convert API models to simplified SupportedDeviceModel DTOs
