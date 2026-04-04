@@ -12,7 +12,6 @@ import dev.zacsweers.metro.SingleIn
 import ink.trmnl.android.BuildConfig
 import ink.trmnl.android.network.RateLimitInterceptor
 import ink.trmnl.android.network.TrmnlApiService
-import ink.trmnl.android.network.TrmnlUserApiService
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -109,8 +108,8 @@ interface NetworkModule {
     @SingleIn(AppScope::class)
     fun provideTrmnlApiService(retrofit: Retrofit): TrmnlApiService = retrofit.create(TrmnlApiService::class.java)
 
-    @Suppress("DEPRECATION")
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideTrmnlUserApiService(retrofit: Retrofit): TrmnlUserApiService = retrofit.create(TrmnlUserApiService::class.java)
+//    @Suppress("DEPRECATION")
+//    @Provides
+//    @SingleIn(AppScope::class)
+//    fun provideTrmnlUserApiService(retrofit: Retrofit): TrmnlUserApiService = retrofit.create(TrmnlUserApiService::class.java)
 }

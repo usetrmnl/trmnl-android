@@ -356,7 +356,7 @@ class AppSettingsPresenter(
             eventSink = { event ->
                 when (event) {
                     is AppSettingsScreen.Event.AccessTokenChanged -> {
-                        accessToken = event.token
+                        accessToken = event.token.trim()
                         // Clear previous validation when token changes
                         validationResult = null
                         deviceSetupMessage = null
