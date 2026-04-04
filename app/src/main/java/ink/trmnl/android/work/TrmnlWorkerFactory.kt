@@ -19,8 +19,12 @@ class TrmnlWorkerFactory(
         workerParameters: WorkerParameters,
     ): ListenableWorker? =
         when (workerClassName) {
-            TrmnlImageRefreshWorker::class.java.name ->
+            TrmnlImageRefreshWorker::class.java.name -> {
                 imageRefreshWorkerFactory.create(appContext, workerParameters)
-            else -> null
+            }
+
+            else -> {
+                null
+            }
         }
 }

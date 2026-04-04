@@ -2,7 +2,7 @@
 activityCompose = "1.12.1"
 # https://developer.android.com/jetpack/androidx/releases/compose-material3-adaptive
 adaptive = "1.2.0"
-agp = "8.9.2"
+agp = "8.13.2"
 circuit = "0.31.0"
 composeBom = "2025.12.00"
 coreKtx = "1.17.0"
@@ -26,7 +26,7 @@ lifecycleRuntimeKtx = "2.10.0"
 # Kotlin linter with built-in formatter
 # https://github.com/jeremymailen/kotlinter-gradle
 # https://github.com/pinterest/ktlint
-kotlinter = "5.0.2"
+kotlinter = "5.4.2"
 
 # Http client for Android
 # https://square.github.io/okhttp/

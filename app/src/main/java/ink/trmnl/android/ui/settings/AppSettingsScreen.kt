@@ -408,6 +408,7 @@ class AppSettingsPresenter(
                                     TrmnlDeviceType.TRMNL -> {
                                         displayRepository.getCurrentDisplayData(deviceConfig)
                                     }
+
                                     else -> {
                                         displayRepository.getNextDisplayData(deviceConfig)
                                     }
@@ -785,6 +786,7 @@ fun AppSettingsContent(
                                 }
                             }
                         }
+
                         is InvalidServerUrl -> {
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -803,6 +805,7 @@ fun AppSettingsContent(
                                 )
                             }
                         }
+
                         is ValidationResult.InvalidDeviceMacId -> {
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -821,6 +824,7 @@ fun AppSettingsContent(
                                 )
                             }
                         }
+
                         is Failure -> {
                             // Error state remains the same
                             Column(
@@ -840,6 +844,7 @@ fun AppSettingsContent(
                                 )
                             }
                         }
+
                         is ValidationResult.UserTokenSuccess -> {
                             Column(
                                 modifier = Modifier.padding(16.dp),
@@ -863,6 +868,7 @@ fun AppSettingsContent(
                                 )
                             }
                         }
+
                         is ValidationResult.InvalidUserToken -> {
                             Column(
                                 modifier = Modifier.padding(16.dp),

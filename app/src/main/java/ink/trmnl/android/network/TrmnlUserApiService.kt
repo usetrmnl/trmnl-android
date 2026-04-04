@@ -107,6 +107,7 @@ interface TrmnlUserApiService {
      * @param updateRequest The device update request containing the fields to update
      * @return An [ApiResult] containing [TrmnlDeviceResponse] with the updated device data
      */
+    @Suppress("DEPRECATION")
     @Headers("Content-Type: application/json")
     @PATCH
     suspend fun updateDevice(

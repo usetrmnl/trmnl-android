@@ -283,12 +283,15 @@ class TrmnlMirrorDisplayPresenter(
                             }
                         }
                     }
+
                     TrmnlMirrorDisplayScreen.Event.ConfigureRequested -> {
                         navigator.goTo(AppSettingsScreen(returnToMirrorAfterSave = true))
                     }
+
                     TrmnlMirrorDisplayScreen.Event.BackPressed -> {
                         navigator.pop()
                     }
+
                     TrmnlMirrorDisplayScreen.Event.ViewLogsRequested -> {
                         navigator.goTo(DisplayRefreshLogScreen)
                     }
@@ -361,16 +364,19 @@ fun TrmnlMirrorDisplayContent(
     LaunchedEffect(state.saveImageResult) {
         state.saveImageResult?.let { result ->
             when (result) {
-                is TrmnlMirrorDisplayScreen.SaveImageResult.Success ->
+                is TrmnlMirrorDisplayScreen.SaveImageResult.Success -> {
                     snackbarHostState.showSnackbar(
                         message = "Image saved to Pictures/TRMNL",
                         duration = SnackbarDuration.Short,
                     )
-                is TrmnlMirrorDisplayScreen.SaveImageResult.Error ->
+                }
+
+                is TrmnlMirrorDisplayScreen.SaveImageResult.Error -> {
                     snackbarHostState.showSnackbar(
                         message = result.message,
                         duration = SnackbarDuration.Short,
                     )
+                }
             }
         }
     }

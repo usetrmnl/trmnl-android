@@ -87,10 +87,14 @@ class AppInfoPresenter(
             buildType = buildType,
             eventSink = { event ->
                 when (event) {
-                    Event.BackPressed -> navigator.pop()
+                    Event.BackPressed -> {
+                        navigator.pop()
+                    }
+
                     Event.OpenGithub -> {
                         uriHandler.openUri(TRMNL_ANDROID_APP_GITHUB_URL)
                     }
+
                     Event.OpenTrmnlSite -> {
                         uriHandler.openUri(TRMNL_SITE_URL)
                     }
