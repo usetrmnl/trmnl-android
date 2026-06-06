@@ -12,20 +12,44 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - name: set up JDK
+
+      - name: Check for Android-related changes
+        id: check
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            android-related:
+              - 'app/**'
+              - 'build.gradle.kts'
+              - 'settings.gradle.kts'
+              - 'gradle.properties'
+              - 'gradle/**'
+              - 'gradlew'
+              - 'gradlew.bat'
+              - 'keystore/**'
+              - 'scripts/**'
+              - '.github/workflows/**'
+
+      - if: steps.check.outputs.android-related == 'true' || github.event_name == 'push'
+        name: set up JDK
         uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: gradle
 
-      # Automatic gradle caching using `actions/cache@v4`
-      # https://github.com/gradle/actions/tree/main/setup-gradle
-      - name: Setup Gradle
+      - if: steps.check.outputs.android-related == 'true' || github.event_name == 'push'
+        name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Run test and lint
+      - if: steps.check.outputs.android-related == 'true' || github.event_name == 'push'
+        name: Run test and lint
         run: ./gradlew lintKotlin testDebugUnitTest --parallel --daemon
 
-      - name: Build with Gradle
+      - if: steps.check.outputs.android-related == 'true' || github.event_name == 'push'
+        name: Build with Gradle
         run: ./gradlew assembleDebug --parallel --daemon
+
+      - if: steps.check.outputs.android-related != 'true' && github.event_name != 'push'
+        name: Skip build
+        run: echo "No Android-related changes detected — build skipped."
