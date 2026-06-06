@@ -2,7 +2,10 @@
 activityCompose = "1.13.0"
 # https://developer.android.com/jetpack/androidx/releases/compose-material3-adaptive
 adaptive = "1.2.0"
-agp = "8.13.2"
+
+# Android Gradle plugin
+# https://developer.android.com/build/releases/about-agp
+agp = "8.13.2" # ⚠️ REQUIRES MIGRATION - CoreKtx
 
 # Circuit - ⚡️ A Compose-driven architecture for Kotlin and Android applications.
 # https://github.com/slackhq/circuit
@@ -11,17 +14,18 @@ circuit = "0.33.1"
 # Compose Bill of Materials (BOM) lets you manage all of your
 # Compose library versions by specifying only the BOM's version.
 # https://developer.android.com/develop/ui/compose/bom
-composeBom = "2026.03.01"
+composeBom = "2026.03.01" # ⚠️ REQUIRES MIGRATION
 
 # AndroidX Core KTX - Kotlin extensions for Android core libraries.
 # https://developer.android.com/jetpack/androidx/releases/core
+# ⚠️ REQUIRES MIGRATION: Dependency 'androidx.core:core-ktx:1.19.0' requires Android Gradle plugin 9.1.0 or higher.
 androidXCoreKtx = "1.18.0"
 
 espressoCore = "3.7.0"
-googleFonts = "1.10.6"
+googleFonts = "1.11.2"
 junit = "4.13.2"
 junitVersion = "1.3.0"
-kotlinxCoroutinesTest = "1.10.2"
+kotlinxCoroutinesTest = "1.11.0"
 
 # Kotlin and KSP versions (must be in sync)
 # KSP 2.3.0+ uses independent versioning (no longer tied to Kotlin version)
@@ -30,6 +34,7 @@ ksp = "2.3.6"
 
 # Metro - compile-time DI framework powered by a Kotlin compiler plugin
 # https://github.com/ZacSweers/metro
+# ⚠️ REQUIRES MIGRATION
 metro = "0.12.1"
 
 lifecycleRuntimeKtx = "2.10.0"
@@ -37,7 +42,7 @@ lifecycleRuntimeKtx = "2.10.0"
 # Kotlin linter with built-in formatter
 # https://github.com/jeremymailen/kotlinter-gradle
 # https://github.com/pinterest/ktlint
-kotlinter = "5.4.2"
+kotlinter = "5.5.0"
 
 # Http client for Android
 # https://square.github.io/okhttp/
@@ -62,7 +67,7 @@ workManager = "2.11.2"
 # https://github.com/coil-kt/coil
 coil = "3.4.0"
 
-mockk = "1.14.9"
+mockk = "1.14.11"
 truth = "1.4.5"
 robolectric = "4.16.1"
 turbine = "1.2.1"
