@@ -702,7 +702,7 @@ fun AppSettingsContent(
             OutlinedTextField(
                 value = state.accessToken,
                 onValueChange = { state.eventSink(AppSettingsScreen.Event.AccessTokenChanged(it)) },
-                label = { Text("Device Access Token") },
+                label = { Text("Device API Key") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),

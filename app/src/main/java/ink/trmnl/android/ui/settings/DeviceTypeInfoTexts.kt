@@ -124,7 +124,7 @@ internal fun ByodDeviceTypeInfoText() {
                 }
             }
 
-            append(".")
+            append(". Your device API Key found in Device Settings.")
         }
 
     Row(

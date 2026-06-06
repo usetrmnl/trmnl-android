@@ -1,4 +1,5 @@
 package ink.trmnl.android.ui.theme
+import android.annotation.SuppressLint
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +24,7 @@ private val LightColorScheme =
         tertiary = Grey40,
     )
 
+@SuppressLint("NewApi") // We already have `SDK_INT` check below
 @Composable
 fun TrmnlDisplayAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
