@@ -75,7 +75,7 @@ To build a debug APK:
 The app uses standard Android build types (debug and release). There are no product flavors.
 
 **Build Types:**
-- **Debug**: Development builds with fake API support and debug keystore
+- **Debug**: Development builds with debug keystore and no code shrinking
 - **Release**: Production builds with code shrinking, ProGuard, and production keystore
 
 To build the release APK:
