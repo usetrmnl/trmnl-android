@@ -25,17 +25,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: gradle
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Identify build context
         run: |
@@ -73,7 +73,7 @@ jobs:
           cp app/build/outputs/bundle/release/app-release.aab artifact/trmnl-v${{ steps.version.outputs.VERSION }}.aab
 
       - name: Upload Release APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: trmnl-app-apk
           path: artifact/trmnl-v${{ steps.version.outputs.VERSION }}.apk
@@ -82,7 +82,7 @@ jobs:
           retention-days: 30
 
       - name: Upload Release AAB
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: trmnl-app-aab
           path: artifact/trmnl-v${{ steps.version.outputs.VERSION }}.aab
