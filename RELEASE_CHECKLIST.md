@@ -47,7 +47,6 @@ To update version, run the GitHub Actions workflow 'Version Management' with:
   - **Version code**: Integer value, must increase with each release
   - **Git tag** (optional): Defaults to v + version name
   - **Release notes**: Comma-separated release notes
-  - **Create PR**: Whether to create a pull request or commit directly
  
 <img width="357" height="719" alt="Screenshot 2025-08-15 at 1 01 32 PM" src="https://github.com/user-attachments/assets/8f0b308b-dc1f-406b-82bc-6d0d9b216426" />
 
@@ -64,17 +63,21 @@ This automated process ensures consistency across all version-related files with
 
 After the version management workflow has completed:
 
-1. **Review the PR** (if you ran the workflow with direct commits):
+1. **Review and merge the PR**:
 
 <img width="938" height="895" alt="Screenshot 2025-12-06 at 4 44 12 PM" src="https://github.com/user-attachments/assets/86c8af4e-b1df-4d4f-916d-1eaa33225d9a" />
 
 
-2. **Follow pre and post merge command guidelinse**: Merge the PR. See PR description with guides.
-3. **Publish new release**: Publish release for the new tag at https://github.com/usetrmnl/trmnl-android/releases
+2. **Follow pre and post merge command guidelines**: Merge the PR. See PR description with guides.
+3. **Create and push the release tag** (the PR body instructs with the exact command):
+   ```bash
+   git tag v{VERSION_NAME} && git push origin v{VERSION_NAME}
+   ```
+4. **Publish new release**: Go to https://github.com/usetrmnl/trmnl-android/releases
 
 **Create a GitHub release**:
-   - Go to GitHub → Releases → Draft new release
-   - Select the tag created by the workflow
+   - Click "Draft a new release"
+   - Select the tag you just pushed
    - Title: "Release v{VERSION_NAME}"
    - Description: Copy content from the changelog file
 

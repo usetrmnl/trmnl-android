@@ -58,7 +58,7 @@ This document provides essential information for GitHub Copilot agents working o
 - **JDK Version:** 21 (OpenJDK 21 - Temurin distribution recommended)
 - **Gradle:** 8.13 (via wrapper, do NOT install manually)
 - **Android SDK:** Compile SDK 36
-- **Build Tools:** Managed by Gradle plugin (AGP 8.9.2)
+- **Build Tools:** Managed by Gradle plugin (AGP 8.13.2)
 
 **IMPORTANT:** Always use `./gradlew` (Gradle wrapper) - NEVER use a system-installed gradle.
 
@@ -67,8 +67,8 @@ This document provides essential information for GitHub Copilot agents working o
 ### Main Source Structure
 ```
 app/src/main/java/ink/trmnl/android/
-├── MainActivity.kt               # App entry point (138 lines)
-├── TrmnlDisplayMirrorApp.kt     # Application class (51 lines)
+├── MainActivity.kt               # App entry point (140 lines)
+├── TrmnlDisplayMirrorApp.kt     # Application class (50 lines)
 ├── data/                         # Repositories, DataStore implementations
 ├── di/                          # Metro dependency injection modules
 ├── model/                       # Data models (TrmnlDeviceConfig, etc.)
@@ -82,7 +82,7 @@ app/src/main/java/ink/trmnl/android/
 - `app/build.gradle.kts` - Main build configuration, versioning (versionCode, versionName)
 - `build.gradle.kts` - Root project plugins
 - `settings.gradle.kts` - Project settings
-- `gradle.properties` - Gradle JVM settings (2GB heap)
+- `gradle.properties` - Gradle JVM settings (4GB heap)
 - `gradle/libs.versions.toml` - Centralized dependency versions
 - `app/proguard-rules.pro` - ProGuard rules (mostly default)
 - `app/src/main/AndroidManifest.xml` - App manifest, permissions
@@ -186,7 +186,7 @@ See `RELEASE_CHECKLIST.md` for complete release process.
 - **Unit Tests:** `app/src/test/` (Robolectric, MockK, Truth assertions)
 - **Run Tests:** `./gradlew testDebugUnitTest`
 - **Test Configuration:** Tests use JVM args `-XX:+EnableDynamicAgentLoading` (required for MockK)
-- **Current Status:** 89 tests, 3 skipped (as of last run)
+- **Current Status:** 216 tests, 3 skipped (as of last run)
 
 ## Making Code Changes
 
@@ -226,7 +226,7 @@ README.md              # Project overview and features
 RELEASE_CHECKLIST.md   # Release process documentation
 build.gradle.kts       # Root build configuration
 settings.gradle.kts    # Project settings
-gradle.properties      # Gradle configuration (JVM heap: 2GB)
+gradle.properties      # Gradle configuration (JVM heap: 4GB)
 gradlew / gradlew.bat  # Gradle wrapper scripts
 app/                   # Main application module
 gradle/                # Gradle wrapper JARs and version catalogs

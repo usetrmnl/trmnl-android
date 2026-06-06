@@ -8,15 +8,15 @@ TRMNL Android is a native Android app that displays TRMNL e-ink device content o
 
 **Tech Stack:**
 - Language: Kotlin (100%)
-- Build: Gradle 8.13 with AGP 8.9.2
+- Build: Gradle 8.13 with AGP 8.13.2
 - Min SDK: 28 (Android 9.0 Pie), Target SDK: 36 (Android 16.0)
 - UI: Jetpack Compose with Circuit UDF architecture (Slack's unidirectional data flow)
 - DI: Metro 0.12.1 (dev.zacsweers.metro) with MetroX Android for compile-time DI
-- Background Work: WorkManager 2.10.1 (15-minute minimum interval limitation)
+- Background Work: WorkManager 2.11.2 (15-minute minimum interval limitation)
 - Networking: Retrofit 2.11.0 + OkHttp 4.12.0 + Moshi 1.15.2
-- Image Loading: Coil 3.2.0 with OkHttp integration
+- Image Loading: Coil 3.4.0 with OkHttp integration
 - API Result Modeling: EitherNet 2.0.0 from Slack
-- Data Storage: DataStore 1.1.7 for preferences/tokens
+- Data Storage: DataStore 1.2.1 for preferences/tokens
 - Logging: Timber 5.0.1
 
 ## Essential Build Commands
@@ -68,31 +68,60 @@ app/src/main/java/ink/trmnl/android/
 ├── MainActivity.kt               # Entry point, WorkInfo observer
 ├── TrmnlDisplayMirrorApp.kt     # Application class
 ├── data/                         # Repos, DataStore, ImageMetadata
-│   ├── TrmnlDisplayRepository.kt         # Main API data repository
-│   ├── TrmnlDeviceConfigDataStore.kt     # Device config (token, server)
+│   ├── AppConfig.kt                      # App configuration defaults
+│   ├── DeviceSetupInfo.kt                # BYOS device setup info
+│   ├── HttpResponseMetadata.kt           # HTTP response metadata
+│   ├── ImageMetadata.kt                  # Image state data class
 │   ├── ImageMetadataStore.kt             # Image state management
+│   ├── TrmnlDeviceConfigDataStore.kt     # Device config (token, server)
+│   ├── TrmnlDisplayInfo.kt               # Display info from API
+│   ├── TrmnlDisplayRepository.kt         # Main API data repository
+│   ├── TrmnlUserRepository.kt            # User info repository
 │   ├── log/                              # Refresh log management
 ├── di/                          # Metro DI modules
 │   ├── AppGraph.kt                       # Main app dependency graph
-│   ├── NetworkModule.kt                  # Retrofit, OkHttp, Moshi
+│   ├── AppScope.kt                       # App-scoped annotation
+│   ├── ApplicationContext.kt             # Context provider module
 │   ├── CircuitModule.kt                  # Circuit UI setup
+│   ├── DataStoreModule.kt                # DataStore provider
+│   ├── NetworkModule.kt                  # Retrofit, OkHttp, Moshi
+│   ├── WorkerModule.kt                   # WorkManager worker factory
 ├── model/                       # Data models
+│   ├── DeviceModelSelection.kt           # Device model selection state
+│   ├── SupportedDeviceModel.kt           # Supported device model list
 │   ├── TrmnlDeviceConfig.kt             # Device configuration
 │   ├── TrmnlDeviceType.kt               # Device type enum
 ├── network/                     # API layer
+│   ├── RateLimitInterceptor.kt           # API rate limit handling
+│   ├── Sleeper.kt                        # Delay/sleep utility
 │   ├── TrmnlApiService.kt               # Retrofit service
+│   ├── TrmnlUserApiService.kt           # User API endpoints
 │   ├── model/                           # API response models
+│   ├── util/                            # Networking utilities
 ├── ui/                          # Jetpack Compose screens
+│   ├── aboutapp/AppAboutScreen.kt              # About app screen
+│   ├── devicemodel/DeviceModelSelectorScreen.kt # Device model picker
 │   ├── display/TrmnlMirrorDisplayScreen.kt    # Main display
-│   ├── settings/AppSettingsScreen.kt           # Settings UI
+│   ├── icons/Icons.kt                         # Custom vector icons
 │   ├── refreshlog/DisplayRefreshLogScreen.kt  # Refresh history
+│   ├── settings/AppSettingsScreen.kt           # Settings UI
+│   ├── theme/                                  # Compose theme
+│   ├── FullScreenMode.kt                      # Immersive fullscreen
 ├── util/                        # Utilities
-│   ├── InputValidator.kt                # Token/URL validation
-│   ├── ImageSaver.kt                    # Save images to gallery
+│   ├── AndroidDeviceInfoProvider.kt   # Device info helper
+│   ├── CoilRequestUtils.kt            # Coil image request builder
+│   ├── DateTimeFormatter.kt           # Date/time formatting
+│   ├── ImageSaver.kt                  # Save images to gallery
+│   ├── InputValidator.kt              # Token/URL validation
+│   ├── NetworkExtensions.kt           # Network response extensions
+│   ├── WorkInfoExtensions.kt          # WorkInfo observation helpers
 ├── work/                        # Background work
-│   ├── TrmnlImageRefreshWorker.kt       # Worker implementation
-│   ├── TrmnlWorkScheduler.kt            # WorkManager scheduling
-│   ├── TrmnlImageUpdateManager.kt       # Image update flow
+│   ├── RefreshWorkResult.kt           # Worker result types
+│   ├── RefreshWorkType.kt             # Periodic vs one-time enum
+│   ├── TrmnlImageRefreshWorker.kt     # Worker implementation
+│   ├── TrmnlImageUpdateManager.kt     # Image update flow
+│   ├── TrmnlWorkScheduler.kt          # WorkManager scheduling
+│   ├── TrmnlWorkerFactory.kt          # Hilt-free worker factory
 ```
 
 ### Key Architectural Patterns
@@ -137,7 +166,7 @@ app/src/main/java/ink/trmnl/android/
 
 ## Configuration Files
 
-- `app/build.gradle.kts` - Version: versionCode=28, versionName="2.4.2"
+- `app/build.gradle.kts` - Version: versionCode=36, versionName="2.11.0"
 - `gradle/libs.versions.toml` - Centralized dependency versions
 - `.editorconfig` - ktlint rule: `ktlint_function_naming_ignore_when_annotated_with = Composable`
 - `secret.properties` (optional) - Local keystore secrets (not in repo)
@@ -209,7 +238,7 @@ The project uses optimized Gradle settings based on best practices from the [Now
 
 ## Code Style
 
-- Linter: ktlint via kotlinter-gradle 5.0.2
+- Linter: ktlint via kotlinter-gradle 5.5.0
 - Format: `./gradlew formatKotlin` (auto-fixes)
 - Check: `./gradlew lintKotlin` (no modifications)
 - Only customization: Allow PascalCase for `@Composable` functions
@@ -235,9 +264,9 @@ The project uses optimized Gradle settings based on best practices from the [Now
 
 ## Testing
 
-- Unit tests: `app/src/test/` (Robolectric 4.14.1, MockK 1.14.2, Truth 1.4.4)
+- Unit tests: `app/src/test/` (Robolectric 4.16.1, MockK 1.14.11, Truth 1.4.5)
 - Run: `./gradlew testDebugUnitTest`
-- Current status: 89 tests, 3 skipped
+- Current status: 216 tests, 3 skipped
 
 ## Important Notes
 

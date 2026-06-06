@@ -24,7 +24,7 @@ You must have a **valid** `access-token` or `ID` _(MAC Address)_ to access the [
 Here are some of the known ways you can get access to the `access-token`.
 
 1. You must own a [TRMNL](https://trmnl.com/) device with "developer edition" add-on purchased
-2. You have purchased their [BYOD](https://docs.trmnl.com/go/diy/byod) product.
+2. You have purchased their [BYOD](https://docs.trmnl.com/go/diy/byod-s) product.
 3. You have self-serve installation of TRMNL service using [BYOS](https://docs.trmnl.com/go/diy/byos)
 4. Your Android device OS version is `9.0` or higher (_for older devices try [trmnl-android-legacy-lite](https://github.com/layuso/trmnl-android-legacy-lite)_)
 
