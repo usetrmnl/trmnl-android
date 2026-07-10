@@ -12,7 +12,7 @@ TRMNL Android is a native Android app that displays TRMNL e-ink device content o
 - Min SDK: 28 (Android 9.0 Pie), Target SDK: 36 (Android 16.0)
 - UI: Jetpack Compose with Circuit UDF architecture (Slack's unidirectional data flow)
 - DI: Metro 0.12.1 (dev.zacsweers.metro) with MetroX Android for compile-time DI
-- Background Work: WorkManager 2.11.2 (15-minute minimum interval limitation)
+- Background Work: WorkManager 2.11.2 (15-minute minimum interval plus a 60-second scheduling buffer)
 - Networking: Retrofit 2.11.0 + OkHttp 4.12.0 + Moshi 1.15.2
 - Image Loading: Coil 3.4.0 with OkHttp integration
 - API Result Modeling: EitherNet 2.0.0 from Slack
@@ -99,7 +99,7 @@ app/src/main/java/ink/trmnl/android/
 │   ├── model/                           # API response models
 │   ├── util/                            # Networking utilities
 ├── ui/                          # Jetpack Compose screens
-│   ├── aboutapp/AppAboutScreen.kt              # About app screen
+│   ├── aboutapp/AppInfoScreen.kt               # About app screen
 │   ├── devicemodel/DeviceModelSelectorScreen.kt # Device model picker
 │   ├── display/TrmnlMirrorDisplayScreen.kt    # Main display
 │   ├── icons/Icons.kt                         # Custom vector icons
@@ -139,7 +139,7 @@ app/src/main/java/ink/trmnl/android/
 - Circuit integration: `arg("circuit.codegen.mode", "metro")`
 
 **Background Work:**
-- WorkManager with 15-minute minimum interval (Android OS limitation)
+- WorkManager with 15-minute minimum interval plus a 60-second scheduling buffer (Android OS limitation)
 - Periodic work: `IMAGE_REFRESH_PERIODIC_WORK_NAME` for scheduled refreshes
 - One-time work: `IMAGE_REFRESH_ONETIME_WORK_NAME` for manual refreshes
 - `TrmnlImageRefreshWorker` fetches image, logs results, returns URL
@@ -206,7 +206,7 @@ The project uses optimized Gradle settings based on best practices from the [Now
 - HttpLoggingInterceptor enabled with BODY level
 
 **Release:**
-- Requires production keystore from CI secrets or `secret.properties`
+- Requires production keystore file plus `KEYSTORE_PASSWORD` and `KEY_ALIAS` from CI secrets or `secret.properties`
 - Keystore env vars: `KEYSTORE_PASSWORD`, `KEY_ALIAS`
 - Code shrinking: `isMinifyEnabled = true`, `isShrinkResources = true`
 - ProGuard: `proguard-android-optimize.txt` + `proguard-rules.pro`
@@ -233,7 +233,7 @@ The project uses optimized Gradle settings based on best practices from the [Now
 - **First build slow**: Expected for clean builds, ~1-2 minutes with optimized Gradle settings
 - **"Sharing is only supported for boot loader classes"**: Harmless Robolectric warning, tests still pass
 - **"INVISIBLE_REFERENCE" in NetworkingTools.kt:56**: Expected, uses internal Kotlin API (documented warning)
-- **WorkManager 15-min minimum**: Android OS limitation, not a bug
+- **WorkManager 15-min minimum**: Android OS limitation, plus a 60-second scheduling buffer, not a bug
 - **Metro codegen errors about missing modules**: Run `assembleDebug` first to generate code
 
 ## Code Style
@@ -281,7 +281,7 @@ The project uses optimized Gradle settings based on best practices from the [Now
 From `.github/copilot-instructions.md`:
 - Always run format + lint + test before committing
 - Use Circuit's `@CircuitInject` for UI components
-- WorkManager periodic work has 15-min minimum interval
+- WorkManager periodic work has a 15-min minimum interval plus a 60-second scheduling buffer
 - Image loading handles HTTP 403 auto-refresh for expired URLs
 - Metro uses a Kotlin compiler plugin — no KAPT, no KSP for DI itself
 - Trust the documented build commands - they're CI-validated

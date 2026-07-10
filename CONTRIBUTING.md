@@ -16,7 +16,7 @@ The app uses a modern Android architecture with the following components:
 
 - **UI**: Jetpack Compose with Circuit UDF architecture
 - **Background Processing**: WorkManager for scheduled image (re)loading
-- **Networking**: Retrofit and OkHttp for API communication
+- **Networking**: Retrofit, OkHttp, Moshi, and EitherNet for API communication
 - **DI**: Metro for dependency injection
 - **Data Storage**: DataStore for preferences and token storage
 
@@ -84,7 +84,7 @@ To build the release APK:
 ./gradlew assembleRelease
 ```
 
-This command builds a single, signed APK that works both locally (with debug keystore fallback) and in CI (with production keystore).
+This command builds a single, signed APK. Local release builds still require a decoded production keystore file plus `KEYSTORE_PASSWORD` and `KEY_ALIAS`; CI provides those values through secrets.
 
 ### Release Process
 
@@ -92,7 +92,7 @@ For instructions on creating new releases and managing versions across the proje
 
 
 ### Snapshot Builds
-Automatic snapshot release builds are available in the [release workflow](https://github.com/usetrmnl/trmnl-android/actions/workflows/android-release.yml) artifacts.
+Automatic snapshot release builds are available in the [release workflow](https://github.com/usetrmnl/trmnl-android/actions/workflows/android-release.yml) artifacts as both APK and AAB files.
 
 <img width="823" alt="trmnl-artifacts-light" src="https://github.com/user-attachments/assets/da6a4171-7e6a-41c7-915e-de4cf5c18e65#gh-light-mode-only" />
 <img width="819" alt="trmnl-artifacts-dark" src="https://github.com/user-attachments/assets/3740917c-a42f-402e-938a-408c0940391b#gh-dark-mode-only" />

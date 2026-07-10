@@ -44,8 +44,8 @@ Download the app from Google Play Store:
 ### Limitations 🚧
 1. Right now, screen lock using Google's [recommended](https://developer.android.com/develop/background-work/background-tasks/awake/screen-on) **`FLAG_KEEP_SCREEN_ON`** is not working on e-Ink tablet due to strict battery optimization. So, if you plan to keep the screen on indefinitely, you should set that in the device settings.
     * On normal Android tablet or device, screen wake lock should work. However it's not recommended to use it without device being always plugged-in 🔌.
-2. Currently the app uses Android WorkManager to schedule refresh job and it has minimum interval of ⏰ `15 min` between jobs. So, if your TRMNL is setup to refresh every `5 min`, you will not see it refresh until `15 min` is elapsed.
-    * This can be overcome by using some clever logic or not using `WorkManager`. However, this is a OS optimized and reliable way to refresh image periodically.
+2. The app uses Android WorkManager to schedule refresh jobs. Periodic work is rounded up to a minimum of ⏰ `15 min`, and the scheduler adds a `60 s` buffer before enqueuing the job. So if your TRMNL is configured to refresh every `5 min`, the Android app will still wait for the WorkManager minimum.
+    * This can be overcome by using custom scheduling logic or by not using `WorkManager`. However, this is an OS-optimized and reliable way to refresh images periodically.
     * Imagine a user running the app on an Android phone or tablet. When the app is in the background (e.g., the screen is off), it avoids unnecessary image refresh calls, conserving the user's battery. These optimizations are built into `WorkManager`.
 3. App has minimum version requirement of **`9.0`**, see [discussion](https://github.com/usetrmnl/trmnl-android/issues/101#issuecomment-4182812396) for more info.
 
