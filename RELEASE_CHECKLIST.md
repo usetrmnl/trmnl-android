@@ -90,7 +90,7 @@ This will trigger another workflow to automatically build the release APK and up
 
 
 <details><summary>In case APK is not attached automatically, follow this 👇</summary>
-**Download signed release build**: Use the workflow that automatically signs and builds release APK.
+**Download signed release build**: Use the workflow that automatically signs and builds the release APK and AAB.
 
 Example PR with instructions:  
 <img width="1315" height="321" alt="Screenshot 2025-08-15 at 1 29 48 PM" src="https://github.com/user-attachments/assets/f600cb63-09f1-4731-bde5-afb54210bb5f" />

@@ -11,6 +11,8 @@ synchronized with the TRMNL content.
 
 This document outlines the requirements for the TRMNL Android application.
 
+> Note: This is a requirements snapshot, not a full implementation audit. When a requirement conflicts with the current source code, the source code is the source of truth for shipped behavior.
+
 ## 2. User Requirements
 
 ### Authentication

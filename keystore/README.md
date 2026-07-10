@@ -14,7 +14,7 @@ signing the app during development.
 
 ## Production Keystore
 
-The production keystore (`trmnl-app-release.keystore`) is used for all release builds and is stored as a base64-encoded secret in GitHub Actions. The keystore is decoded during CI/CD builds. 📚 See [`RELEASE_CHECKLIST.md`](../RELEASE_CHECKLIST.md) for release process.
+The production keystore (`trmnl-app-release.keystore`) is used for all release builds and is stored as a base64-encoded secret in GitHub Actions. The keystore is decoded during CI/CD builds, and local release builds must provide the decoded keystore file plus `KEYSTORE_PASSWORD` and `KEY_ALIAS`. 📚 See [`RELEASE_CHECKLIST.md`](../RELEASE_CHECKLIST.md) for release process.
 
 **Note:** This project uses only build types (debug/release), not product flavors.
 
@@ -41,7 +41,7 @@ The following GitHub Actions secrets are required:
 
 ### CI/CD Workflows Using Production Keystore
 
-- **`android-release.yml`**: Builds and signs release APKs using the production keystore in CI, with debug keystore fallback for local builds
+- **`android-release.yml`**: Builds and signs release APKs and AABs using the production keystore in CI
 
 The workflow decodes the keystore from the base64 secret and provides the necessary environment variables for signing.
 

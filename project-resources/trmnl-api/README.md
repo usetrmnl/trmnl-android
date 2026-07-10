@@ -22,4 +22,5 @@ The TRMNL API uses two authentication methods:
 
 2. **User-level authentication** - Uses `Authorization: Bearer` header with account API key
    - Implemented in `TrmnlUserApiService.kt`
-   - Used for account operations (device management, plugin settings, etc.)
+   - Kept for backward compatibility and account operations such as device management
+   - The service is currently deprecated in code because battery reporting now uses the device-level `Percent-Charged` header

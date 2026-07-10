@@ -99,6 +99,7 @@ app/src/main/java/ink/trmnl/android/
 ### Main Features & Screens
 - `TrmnlMirrorDisplayScreen` - Main display showing TRMNL image
 - `AppSettingsScreen` - Configuration (API token, server URL)
+- `AppInfoScreen` - App info and external links
 - `DisplayRefreshLogScreen` - Refresh history/logs
 - `TrmnlImageRefreshWorker` - Background image refresh job
 - `TrmnlWorkScheduler` - Manages WorkManager scheduling
@@ -121,7 +122,7 @@ All workflows are in `.github/workflows/`:
    - Triggers: Pushes to main, manual, GitHub releases
    - Builds signed release APK and AAB
    - Requires: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` secrets
-   - Attaches APK to GitHub releases automatically
+   - Attaches APK and AAB to GitHub releases automatically
 
 4. **version-management.yml** (Version Bumping)
    - Manual workflow for updating app version
@@ -149,7 +150,7 @@ All workflows are in `.github/workflows/`:
 - Local release builds will fail without `secret.properties` file
 
 ### Issue: WorkManager Minimum 15 Minute Interval
-**Solution:** Android OS limitation, not a bug. WorkManager enforces 15-min minimum between periodic jobs for battery optimization.
+**Solution:** Android OS limitation, not a bug. WorkManager enforces a 15-min minimum between periodic jobs for battery optimization, and the app adds a 60-second scheduling buffer before enqueueing periodic work.
 
 ## Version Management
 
@@ -186,7 +187,7 @@ See `RELEASE_CHECKLIST.md` for complete release process.
 - **Unit Tests:** `app/src/test/` (Robolectric, MockK, Truth assertions)
 - **Run Tests:** `./gradlew testDebugUnitTest`
 - **Test Configuration:** Tests use JVM args `-XX:+EnableDynamicAgentLoading` (required for MockK)
-- **Current Status:** 216 tests, 3 skipped (as of last run)
+- **Current Status:** Run `./gradlew testDebugUnitTest` to verify the current test suite state.
 
 ## Making Code Changes
 
