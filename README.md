@@ -18,7 +18,7 @@ The TRMNL app serves as a digital display for TRMNL e-ink devices and BYOS insta
 - [x] Support for custom server URLs for your BYOS installations
 - [x] Refresh history logging for tracking & validation
 
-## 📜 Preconditions
+## 📜 Requirements/Preconditions
 You must have a **valid** `access-token` or `ID` _(MAC Address)_ to access the [screen content](https://docs.trmnl.com/go/private-api/fetch-screen-content) using TRMNL server API.
 
 Here are some of the known ways you can get access to the `access-token`.
