@@ -121,8 +121,9 @@ private fun HttpResponseMetadataDisplay(httpResponseMetadata: HttpResponseMetada
         }
 
         // Timestamp
+        val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
         val dateFormat =
-            remember { SimpleDateFormat("MMM dd, yyyy hh:mm:ss.SSS a", Locale.getDefault()) }
+            remember(locale) { SimpleDateFormat("MMM dd, yyyy hh:mm:ss.SSS a", locale) }
         val formattedTimestamp = dateFormat.format(Date(httpResponseMetadata.timestamp))
         DetailItem(label = "Response Time", value = formattedTimestamp)
 

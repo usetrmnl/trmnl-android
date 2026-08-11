@@ -398,7 +398,8 @@ private fun LogItemView(
             modifier = Modifier.padding(16.dp),
         ) {
             // Format timestamp
-            val dateFormat = SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.getDefault())
+            val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+            val dateFormat = remember(locale) { SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", locale) }
             val formattedDate = dateFormat.format(Date(log.timestamp))
 
             // Calculate time elapsed
