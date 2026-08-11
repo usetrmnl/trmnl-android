@@ -26,6 +26,7 @@ import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.text.intl.Locale as ComposeLocale
 
 /**
  * Bottom sheet that displays detailed HTTP response metadata
@@ -121,7 +122,7 @@ private fun HttpResponseMetadataDisplay(httpResponseMetadata: HttpResponseMetada
         }
 
         // Timestamp
-        val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+        val locale = ComposeLocale.current.platformLocale
         val dateFormat =
             remember(locale) { SimpleDateFormat("MMM dd, yyyy hh:mm:ss.SSS a", locale) }
         val formattedTimestamp = dateFormat.format(Date(httpResponseMetadata.timestamp))

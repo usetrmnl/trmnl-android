@@ -78,6 +78,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import androidx.compose.ui.text.intl.Locale as ComposeLocale
 
 /**
  * A screen that displays the refresh logs of the TRMNL display.
@@ -398,7 +399,7 @@ private fun LogItemView(
             modifier = Modifier.padding(16.dp),
         ) {
             // Format timestamp
-            val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+            val locale = ComposeLocale.current.platformLocale
             val dateFormat = remember(locale) { SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", locale) }
             val formattedDate = dateFormat.format(Date(log.timestamp))
 
