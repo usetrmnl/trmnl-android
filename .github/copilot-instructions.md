@@ -8,7 +8,7 @@ This document provides essential information for GitHub Copilot agents working o
 
 **Key Statistics:**
 - Language: Kotlin (100%)
-- Build System: Gradle 9.3.1 (AGP 9.1.0)
+- Build System: Gradle 9.4.1 (AGP 9.2.0)
 - Min SDK: 28 (Android 9.0 Pie)
 - Target SDK: 37 (Android 17.0)
 - Architecture: Modern Android with Jetpack Compose, Circuit UDF, Metro DI
@@ -56,9 +56,9 @@ This document provides essential information for GitHub Copilot agents working o
 ## Environment Requirements
 
 - **JDK Version:** 21 (OpenJDK 21 - Temurin distribution recommended)
-- **Gradle:** 9.3.1 (via wrapper, do NOT install manually)
+- **Gradle:** 9.4.1 (via wrapper, do NOT install manually)
 - **Android SDK:** Compile SDK 37
-- **Build Tools:** Managed by Gradle plugin (AGP 9.1.0)
+- **Build Tools:** Managed by Gradle plugin (AGP 9.2.0)
 
 **IMPORTANT:** Always use `./gradlew` (Gradle wrapper) - NEVER use a system-installed gradle.
 

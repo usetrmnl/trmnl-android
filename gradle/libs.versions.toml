@@ -5,7 +5,7 @@ adaptive = "1.2.0"
 
 # Android Gradle plugin
 # https://developer.android.com/build/releases/about-agp
-agp = "9.1.0"
+agp = "9.2.0"
 
 # Circuit - ⚡️ A Compose-driven architecture for Kotlin and Android applications.
 # https://github.com/slackhq/circuit
