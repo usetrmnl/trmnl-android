@@ -698,11 +698,16 @@ fun AppSettingsContent(
                 deviceIdError = (state.validationResult as? ValidationResult.InvalidDeviceMacId)?.message,
             )
 
-            // Password field with toggle visibility button
             OutlinedTextField(
                 value = state.accessToken,
                 onValueChange = { state.eventSink(AppSettingsScreen.Event.AccessTokenChanged(it)) },
                 label = { Text("Device API Key") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Key,
+                        contentDescription = null,
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -962,8 +967,8 @@ private fun DeviceTypeSelectorConfig(
     deviceIdError: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    // Control device ID visibility
-    var deviceIdVisible by remember { mutableStateOf(false) }
+    // Control device ID visibility (defaults to visible for MAC address text)
+    var deviceIdVisible by remember { mutableStateOf(true) }
 
     /**
      * Device model choosing is disabled for now as it is not supported yet.
@@ -1019,6 +1024,12 @@ private fun DeviceTypeSelectorConfig(
                     onValueChange = onServerUrlChanged,
                     label = { Text("API Server Base URL") },
                     placeholder = { Text("https://your-trmnl-server.com") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Link,
+                            contentDescription = null,
+                        )
+                    },
                     isError = isServerUrlError,
                     supportingText = {
                         if (isServerUrlError && serverUrlError != null) {
@@ -1032,7 +1043,7 @@ private fun DeviceTypeSelectorConfig(
                     keyboardOptions =
                         KeyboardOptions(
                             keyboardType = KeyboardType.Uri,
-                            imeAction = ImeAction.Done,
+                            imeAction = ImeAction.Next,
                         ),
                     singleLine = true,
                 )
@@ -1043,6 +1054,12 @@ private fun DeviceTypeSelectorConfig(
                     onValueChange = onDeviceIdChanged,
                     label = { Text("Device ID (MAC Address)") },
                     placeholder = { Text("A1:B2:C3:D4:E5:F6") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Badge,
+                            contentDescription = null,
+                        )
+                    },
                     isError = isDeviceMacIdError,
                     modifier =
                         Modifier
@@ -1050,8 +1067,8 @@ private fun DeviceTypeSelectorConfig(
                             .padding(top = 0.dp, bottom = 8.dp),
                     keyboardOptions =
                         KeyboardOptions(
-                            keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Done,
+                            keyboardType = KeyboardType.Ascii,
+                            imeAction = ImeAction.Next,
                         ),
                     visualTransformation = if (deviceIdVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     singleLine = true,

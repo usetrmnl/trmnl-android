@@ -14,6 +14,9 @@ import ink.trmnl.android.R
  */
 object Icons {
     object Default {
+        val Badge: ImageVector
+            @Composable get() = ImageVector.vectorResource(id = R.drawable.badge_24dp)
+
         val CheckCircle: ImageVector
             @Composable get() = ImageVector.vectorResource(id = R.drawable.ic_check_circle_24dp)
 
@@ -22,6 +25,12 @@ object Icons {
 
         val DateRange: ImageVector
             @Composable get() = ImageVector.vectorResource(id = R.drawable.ic_date_range_24dp)
+
+        val Key: ImageVector
+            @Composable get() = ImageVector.vectorResource(id = R.drawable.key_24dp)
+
+        val Link: ImageVector
+            @Composable get() = ImageVector.vectorResource(id = R.drawable.link_24dp)
 
         val PlayArrow: ImageVector
             @Composable get() = ImageVector.vectorResource(id = R.drawable.ic_play_arrow_24dp)
