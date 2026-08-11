@@ -36,7 +36,7 @@ android {
         minSdk = 28
 
         // See https://apilevels.com/
-        targetSdk = 36 // Android 16.0 (Baklava)
+        targetSdk = 37 // Android 17.0
         
         // ⚠️ App versioning update is required in multiple places.
         // 👇🏽 Use the following workflow to update versions everywhere automatically ♻️
