@@ -14,6 +14,12 @@ import ink.trmnl.android.R
  */
 object Icons {
     object Default {
+        val Adb: ImageVector
+            @Composable get() = ImageVector.vectorResource(id = R.drawable.adb_24dp)
+
+        val Android: ImageVector
+            @Composable get() = ImageVector.vectorResource(id = R.drawable.android_24dp)
+
         val Badge: ImageVector
             @Composable get() = ImageVector.vectorResource(id = R.drawable.badge_24dp)
 
