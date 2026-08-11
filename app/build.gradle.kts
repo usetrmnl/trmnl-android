@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlinter)
@@ -25,7 +24,7 @@ if (secretPropsFile.exists()) {
 
 android {
     namespace = "ink.trmnl.android"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         // The application ID is the unique identifier for the app on the Play Store and other app stores.
@@ -36,7 +35,7 @@ android {
         minSdk = 28
 
         // See https://apilevels.com/
-        targetSdk = 36 // Android 16.0 (Baklava)
+        targetSdk = 37 // Android 17.0
         
         // ⚠️ App versioning update is required in multiple places.
         // 👇🏽 Use the following workflow to update versions everywhere automatically ♻️
