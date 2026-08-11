@@ -25,7 +25,7 @@ if (secretPropsFile.exists()) {
 
 android {
     namespace = "ink.trmnl.android"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         // The application ID is the unique identifier for the app on the Play Store and other app stores.
