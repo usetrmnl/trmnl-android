@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlinter)
     alias(libs.plugins.ksp)
-    id("dev.zacsweers.metro")
+    alias(libs.plugins.metro)
 }
 
 // Load secret.properties file for local development
@@ -119,7 +119,6 @@ android {
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
-        freeCompilerArgs.addAll(listOf("-Xannotation-default-target=param-property"))
     }
 }
 

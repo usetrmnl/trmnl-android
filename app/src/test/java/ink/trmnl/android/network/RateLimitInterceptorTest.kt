@@ -2,6 +2,8 @@ package ink.trmnl.android.network
 
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -178,37 +180,7 @@ class RateLimitInterceptorTest {
                 .post("{}".toRequestBody("application/json".toMediaType()))
                 .build()
 
-        val mockChain =
-            object : Interceptor.Chain {
-                override fun request(): Request = postRequest
-
-                override fun proceed(request: Request): Response = createResponse(429, "Too Many Requests")
-
-                override fun connection() = null
-
-                override fun call() = throw UnsupportedOperationException("Not implemented for test")
-
-                override fun connectTimeoutMillis() = 30_000
-
-                override fun withConnectTimeout(
-                    timeout: Int,
-                    unit: TimeUnit,
-                ) = this
-
-                override fun readTimeoutMillis() = 30_000
-
-                override fun withReadTimeout(
-                    timeout: Int,
-                    unit: TimeUnit,
-                ) = this
-
-                override fun writeTimeoutMillis() = 30_000
-
-                override fun withWriteTimeout(
-                    timeout: Int,
-                    unit: TimeUnit,
-                ) = this
-            }
+        val mockChain = createMockChain(429, "Too Many Requests", postRequest)
 
         // Act
         val response = interceptor.intercept(mockChain)
@@ -228,37 +200,7 @@ class RateLimitInterceptorTest {
                 .patch("{}".toRequestBody("application/json".toMediaType()))
                 .build()
 
-        val mockChain =
-            object : Interceptor.Chain {
-                override fun request(): Request = patchRequest
-
-                override fun proceed(request: Request): Response = createResponse(429, "Too Many Requests")
-
-                override fun connection() = null
-
-                override fun call() = throw UnsupportedOperationException("Not implemented for test")
-
-                override fun connectTimeoutMillis() = 30_000
-
-                override fun withConnectTimeout(
-                    timeout: Int,
-                    unit: TimeUnit,
-                ) = this
-
-                override fun readTimeoutMillis() = 30_000
-
-                override fun withReadTimeout(
-                    timeout: Int,
-                    unit: TimeUnit,
-                ) = this
-
-                override fun writeTimeoutMillis() = 30_000
-
-                override fun withWriteTimeout(
-                    timeout: Int,
-                    unit: TimeUnit,
-                ) = this
-            }
+        val mockChain = createMockChain(429, "Too Many Requests", patchRequest)
 
         // Act
         val response = interceptor.intercept(mockChain)
@@ -303,43 +245,7 @@ class RateLimitInterceptorTest {
                 createResponse(200, "OK"),
             )
 
-        val mockChain =
-            object : Interceptor.Chain {
-                private var callCount = 0
-
-                override fun request(): Request = headRequest
-
-                override fun proceed(request: Request): Response {
-                    val response = responses.removeFirstOrNull() ?: createResponse(500, "Out of responses")
-                    callCount++
-                    return response
-                }
-
-                override fun connection() = null
-
-                override fun call() = throw UnsupportedOperationException("Not implemented for test")
-
-                override fun connectTimeoutMillis() = 30_000
-
-                override fun withConnectTimeout(
-                    timeout: Int,
-                    unit: TimeUnit,
-                ) = this
-
-                override fun readTimeoutMillis() = 30_000
-
-                override fun withReadTimeout(
-                    timeout: Int,
-                    unit: TimeUnit,
-                ) = this
-
-                override fun writeTimeoutMillis() = 30_000
-
-                override fun withWriteTimeout(
-                    timeout: Int,
-                    unit: TimeUnit,
-                ) = this
-            }
+        val mockChain = createMockChainWithMultipleResponses(responses, headRequest)
 
         // Act
         val response = interceptor.intercept(mockChain)
@@ -439,37 +345,7 @@ class RateLimitInterceptorTest {
                     .post("{}".toRequestBody("application/json".toMediaType()))
                     .build()
 
-            val mockChain =
-                object : Interceptor.Chain {
-                    override fun request(): Request = postRequest
-
-                    override fun proceed(request: Request): Response = createResponse(429, "Too Many Requests")
-
-                    override fun connection() = null
-
-                    override fun call() = throw UnsupportedOperationException("Not implemented for test")
-
-                    override fun connectTimeoutMillis() = 30_000
-
-                    override fun withConnectTimeout(
-                        timeout: Int,
-                        unit: TimeUnit,
-                    ) = this
-
-                    override fun readTimeoutMillis() = 30_000
-
-                    override fun withReadTimeout(
-                        timeout: Int,
-                        unit: TimeUnit,
-                    ) = this
-
-                    override fun writeTimeoutMillis() = 30_000
-
-                    override fun withWriteTimeout(
-                        timeout: Int,
-                        unit: TimeUnit,
-                    ) = this
-                }
+            val mockChain = createMockChain(429, "Too Many Requests", postRequest)
 
             // Act & Assert
             interceptor.retryEvents.test {
@@ -485,85 +361,36 @@ class RateLimitInterceptorTest {
     private fun createMockChain(
         statusCode: Int,
         message: String,
-    ): Interceptor.Chain =
-        object : Interceptor.Chain {
-            override fun request(): Request = testRequest
+        requestToUse: Request = testRequest,
+    ): Interceptor.Chain {
+        val chain = mockk<Interceptor.Chain>()
+        every { chain.request() } returns requestToUse
+        every { chain.proceed(any()) } answers { createResponse(statusCode, message, requestToUse) }
+        return chain
+    }
 
-            override fun proceed(request: Request): Response = createResponse(statusCode, message)
-
-            override fun connection() = null
-
-            override fun call() = throw UnsupportedOperationException("Not implemented for test")
-
-            override fun connectTimeoutMillis() = 30_000
-
-            override fun withConnectTimeout(
-                timeout: Int,
-                unit: TimeUnit,
-            ) = this
-
-            override fun readTimeoutMillis() = 30_000
-
-            override fun withReadTimeout(
-                timeout: Int,
-                unit: TimeUnit,
-            ) = this
-
-            override fun writeTimeoutMillis() = 30_000
-
-            override fun withWriteTimeout(
-                timeout: Int,
-                unit: TimeUnit,
-            ) = this
+    private fun createMockChainWithMultipleResponses(
+        responses: MutableList<Response>,
+        requestToUse: Request = testRequest,
+    ): Interceptor.Chain {
+        val chain = mockk<Interceptor.Chain>()
+        every { chain.request() } returns requestToUse
+        every { chain.proceed(any()) } answers {
+            responses.removeFirstOrNull() ?: createResponse(500, "Out of responses", requestToUse)
         }
-
-    private fun createMockChainWithMultipleResponses(responses: MutableList<Response>): Interceptor.Chain =
-        object : Interceptor.Chain {
-            private var callCount = 0
-
-            override fun request(): Request = testRequest
-
-            override fun proceed(request: Request): Response {
-                val response = responses.removeFirstOrNull() ?: createResponse(500, "Out of responses")
-                callCount++
-                return response
-            }
-
-            override fun connection() = null
-
-            override fun call() = throw UnsupportedOperationException("Not implemented for test")
-
-            override fun connectTimeoutMillis() = 30_000
-
-            override fun withConnectTimeout(
-                timeout: Int,
-                unit: TimeUnit,
-            ) = this
-
-            override fun readTimeoutMillis() = 30_000
-
-            override fun withReadTimeout(
-                timeout: Int,
-                unit: TimeUnit,
-            ) = this
-
-            override fun writeTimeoutMillis() = 30_000
-
-            override fun withWriteTimeout(
-                timeout: Int,
-                unit: TimeUnit,
-            ) = this
-        }
+        return chain
+    }
 
     private fun createResponse(
         statusCode: Int,
         message: String,
+        requestToUse: Request = testRequest,
         retryAfterSeconds: String? = null,
     ): Response {
         val responseBuilder =
             Response
                 .Builder()
-                .request(testRequest)
+                .request(requestToUse)
                 .protocol(Protocol.HTTP_2)
                 .code(statusCode)
                 .message(message)

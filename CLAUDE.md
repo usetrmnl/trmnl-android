@@ -11,7 +11,7 @@ TRMNL Android is a native Android app that displays TRMNL e-ink device content o
 - Build: Gradle 9.4.1 with AGP 9.2.0
 - Min SDK: 28 (Android 9.0 Pie), Target SDK: 37 (Android 17.0)
 - UI: Jetpack Compose with Circuit UDF architecture (Slack's unidirectional data flow)
-- DI: Metro 0.12.1 (dev.zacsweers.metro) with MetroX Android for compile-time DI
+- DI: Metro 1.4.1 (dev.zacsweers.metro) with MetroX Android for compile-time DI
 - Background Work: WorkManager 2.11.2 (15-minute minimum interval plus a 60-second scheduling buffer)
 - Networking: Retrofit 2.11.0 + OkHttp 4.12.0 + Moshi 1.15.2
 - Image Loading: Coil 3.4.0 with OkHttp integration
