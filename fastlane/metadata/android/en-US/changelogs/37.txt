@@ -1,0 +1,9 @@
+- Updated to the latest version (2.12.0)
+- Migrated to Android 17 (API 37) & AGP 9.3.1
+- Upgraded to Kotlin 2.4.10
+- KSP 2.3.11
+- Metro 1.4.1
+- Circuit 0.36.0
+- OkHttp 5.4.0
+- Retrofit 3.0.0
+- Added TRMNL Android Apps documentation link
