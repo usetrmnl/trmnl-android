@@ -49,4 +49,9 @@ object AppConfig {
      * URL for the TRMNL main website.
      */
     const val TRMNL_SITE_URL = "https://trmnl.com/"
+
+    /**
+     * URL for TRMNL Android documentation and guide article.
+     */
+    const val TRMNL_ANDROID_DOCUMENTATION_URL = "https://help.trmnl.com/en/articles/11647499-trmnl-for-android"
 }

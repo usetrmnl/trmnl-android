@@ -43,6 +43,7 @@ import dev.zacsweers.metro.AssistedInject
 import ink.trmnl.android.BuildConfig
 import ink.trmnl.android.R
 import ink.trmnl.android.data.AppConfig.TRMNL_ANDROID_APP_GITHUB_URL
+import ink.trmnl.android.data.AppConfig.TRMNL_ANDROID_DOCUMENTATION_URL
 import ink.trmnl.android.data.AppConfig.TRMNL_SITE_URL
 import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.ui.aboutapp.AppInfoScreen.Event
@@ -69,6 +70,8 @@ data object AppInfoScreen : Screen {
         data object OpenGithub : Event()
 
         data object OpenTrmnlSite : Event()
+
+        data object OpenTrmnlAndroidDoc : Event()
     }
 }
 
@@ -97,6 +100,10 @@ class AppInfoPresenter(
 
                     Event.OpenTrmnlSite -> {
                         uriHandler.openUri(TRMNL_SITE_URL)
+                    }
+
+                    Event.OpenTrmnlAndroidDoc -> {
+                        uriHandler.openUri(TRMNL_ANDROID_DOCUMENTATION_URL)
                     }
                 }
             },
@@ -250,6 +257,21 @@ fun AppInfoContent(
                     modifier = Modifier.padding(end = 12.dp),
                 )
                 Text("View on GitHub / Report Issues", modifier = Modifier.weight(1f))
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // TRMNL Android Apps Documentation Button
+            OutlinedButton(
+                onClick = { state.eventSink(Event.OpenTrmnlAndroidDoc) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Android,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 12.dp),
+                )
+                Text("TRMNL Android Apps", modifier = Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(12.dp))
