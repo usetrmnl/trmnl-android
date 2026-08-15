@@ -1,19 +1,26 @@
 package ink.trmnl.android.ui.display
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
+import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
@@ -22,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
@@ -29,6 +37,7 @@ import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_EXPANDED_L
 import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOWER_BOUND
 import ink.trmnl.android.R
 import ink.trmnl.android.ui.icons.Icons
+import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
 
 /**
  * Displays a set of configuration and control actions for the TRMNL display.
@@ -40,163 +49,181 @@ import ink.trmnl.android.ui.icons.Icons
  * - Accessing app settings
  *
  * @param state The current state of the TRMNL mirror display, including refresh info and event sink.
+ * @param modifier Modifier applied to the outer container.
  * @param windowSizeClass The current window size class, used to adapt the UI for different screen sizes.
  */
 @Composable
 internal fun OverlaySettingsView(
     state: TrmnlMirrorDisplayScreen.State,
+    modifier: Modifier = Modifier,
     windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo().windowSizeClass,
 ) {
-    // Shows larger button on tablets
-    // https://developer.android.com/develop/ui/compose/layouts/adaptive/support-different-display-sizes
-    // https://developer.android.com/develop/ui/compose/layouts/adaptive/use-window-size-classes
     val isExpandedWidth =
         windowSizeClass.isWidthAtLeastBreakpoint(WIDTH_DP_EXPANDED_LOWER_BOUND) ||
             windowSizeClass.isWidthAtLeastBreakpoint(WIDTH_DP_MEDIUM_LOWER_BOUND)
 
-    // Choose text style based on window width
-    val fabTextStyle =
-        if (isExpandedWidth) {
-            MaterialTheme.typography.titleLarge
-        } else {
-            MaterialTheme.typography.bodyLarge
-        }
+    val buttonHeight = if (isExpandedWidth) 52.dp else 48.dp
+    val iconSize = if (isExpandedWidth) 22.dp else 20.dp
 
-    val infoTextStyle =
-        if (isExpandedWidth) {
-            MaterialTheme.typography.titleLarge
-        } else {
-            MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-        }
-
-    Card(
+    OutlinedCard(
         modifier =
-            Modifier
-                .padding(16.dp),
-        elevation =
-            CardDefaults.cardElevation(
-                defaultElevation = 4.dp,
-            ),
+            modifier
+                .padding(16.dp)
+                .widthIn(max = 480.dp),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+            CardDefaults.outlinedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
             ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)),
     ) {
         Column(
             modifier =
                 Modifier
-                    .padding(16.dp)
+                    .padding(20.dp)
                     .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // Header
             Text(
-                text = "Display Configurations",
-                style = MaterialTheme.typography.displaySmall,
+                text = "Display Controls",
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp),
+                textAlign = TextAlign.Center,
             )
 
-            Text("Display image will refresh: ${state.nextImageRefreshIn}", style = infoTextStyle)
-
-            ExtendedFloatingActionButton(
-                onClick = {
-                    state.eventSink(TrmnlMirrorDisplayScreen.Event.ConfigureRequested)
-                },
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = null,
-                        modifier = if (isExpandedWidth) Modifier.size(32.dp) else Modifier,
-                    )
-                },
-                text = {
-                    Text(
-                        "Configure TRMNL",
-                        style = fabTextStyle,
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
+            // Status chip
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer,
             ) {
-                ExtendedFloatingActionButton(
-                    onClick = {
-                        state.eventSink(TrmnlMirrorDisplayScreen.Event.RefreshCurrentPlaylistItemRequested)
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = null,
-                            modifier = if (isExpandedWidth) Modifier.size(32.dp) else Modifier,
-                        )
-                    },
-                    text = {
-                        Text(
-                            "Reload Current Image",
-                            style = fabTextStyle,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    },
-                )
-
-                FloatingActionButton(
-                    onClick = {
-                        state.eventSink(TrmnlMirrorDisplayScreen.Event.SaveImageRequested)
-                    },
-                    modifier = Modifier.padding(start = 8.dp),
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.download_photo),
-                        contentDescription = "Save Image",
-                        modifier = Modifier.size(32.dp),
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = "Next refresh: ${state.nextImageRefreshIn}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                 }
             }
 
-            ExtendedFloatingActionButton(
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Action 1: Configure TRMNL (Top action)
+            OutlinedButton(
+                onClick = {
+                    state.eventSink(TrmnlMirrorDisplayScreen.Event.ConfigureRequested)
+                },
+                modifier = Modifier.fillMaxWidth().height(buttonHeight),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = null,
+                    modifier = Modifier.size(iconSize),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Configure TRMNL",
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+
+            // Action 2: Load Next Playlist Image (Primary action)
+            Button(
                 onClick = {
                     state.eventSink(TrmnlMirrorDisplayScreen.Event.LoadNextPlaylistItemImage)
                 },
-                icon = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        modifier = if (isExpandedWidth) Modifier.size(32.dp) else Modifier,
-                    )
-                },
-                text = {
-                    Text(
-                        "Load Next Playlist Image",
-                        style = fabTextStyle,
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-            )
+                modifier = Modifier.fillMaxWidth().height(buttonHeight),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(iconSize),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Load Next Playlist Image",
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
 
-            ExtendedFloatingActionButton(
+            // Action 3: Reload Image & Save Image
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilledTonalButton(
+                    onClick = {
+                        state.eventSink(TrmnlMirrorDisplayScreen.Event.RefreshCurrentPlaylistItemRequested)
+                    },
+                    modifier = Modifier.weight(1f).height(buttonHeight),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(iconSize),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Reload Image",
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+
+                FilledTonalButton(
+                    onClick = {
+                        state.eventSink(TrmnlMirrorDisplayScreen.Event.SaveImageRequested)
+                    },
+                    modifier = Modifier.height(buttonHeight),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.download_photo),
+                        contentDescription = "Save Image",
+                        modifier = Modifier.size(iconSize),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Save",
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+
+            // Action 4: View Image Refresh Logs
+            OutlinedButton(
                 onClick = {
                     state.eventSink(TrmnlMirrorDisplayScreen.Event.ViewLogsRequested)
                 },
-                icon = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.List,
-                        contentDescription = null,
-                        modifier = if (isExpandedWidth) Modifier.size(32.dp) else Modifier,
-                    )
-                },
-                text = {
-                    Text(
-                        "View Image Refresh Logs",
-                        style = fabTextStyle,
-                        fontWeight = FontWeight.Bold,
-                    )
-                },
-            )
+                modifier = Modifier.fillMaxWidth().height(buttonHeight),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.List,
+                    contentDescription = null,
+                    modifier = Modifier.size(iconSize),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "View Refresh Logs",
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
     }
 }
@@ -204,18 +231,20 @@ internal fun OverlaySettingsView(
 @Preview(name = "Overlay Settings Preview")
 @Composable
 fun PreviewOverlaySettingsView() {
-    Surface {
-        OverlaySettingsView(
-            state =
-                TrmnlMirrorDisplayScreen.State(
-                    imageUrl = null,
-                    overlayControlsVisible = true,
-                    nextImageRefreshIn = "5 minutes",
-                    isLoading = false,
-                    errorMessage = null,
-                    saveImageResult = null,
-                    eventSink = {},
-                ),
-        )
+    TrmnlDisplayAppTheme {
+        Surface {
+            OverlaySettingsView(
+                state =
+                    TrmnlMirrorDisplayScreen.State(
+                        imageUrl = null,
+                        overlayControlsVisible = true,
+                        nextImageRefreshIn = "5 minutes",
+                        isLoading = false,
+                        errorMessage = null,
+                        saveImageResult = null,
+                        eventSink = {},
+                    ),
+            )
+        }
     }
 }
