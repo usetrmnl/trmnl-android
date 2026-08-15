@@ -1,0 +1,4 @@
+- Updated to the latest version (2.13.0)
+- UI polish across Settings
+- About App
+- and Overlay controls; hide refresh schedule when unconfigured
