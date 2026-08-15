@@ -3,6 +3,7 @@ package ink.trmnl.android.network.util
 import com.slack.eithernet.ApiResult
 import com.slack.eithernet.InternalEitherNetApi
 import ink.trmnl.android.data.HttpResponseMetadata
+import kotlin.reflect.KClass
 
 /**
  * Constructs the full URL for API requests based on the configured base URL for device.
@@ -53,13 +54,22 @@ internal fun extractHttpResponseMetadata(apiResult: ApiResult.Success<*>): HttpR
  * @param apiResult The failed API result containing response metadata
  * @return HttpResponseMetadata object containing useful response information, or null if not available
  */
-@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @OptIn(InternalEitherNetApi::class)
 internal fun extractHttpResponseMetadataFromFailure(apiResult: ApiResult.Failure<*>): HttpResponseMetadata? {
     // HttpFailure has tags property that contains the Response
     if (apiResult !is ApiResult.Failure.HttpFailure) return null
 
-    val httpResponse = apiResult.tags[okhttp3.Response::class] as? okhttp3.Response ?: return null
+    val tags =
+        try {
+            val field = apiResult.javaClass.getDeclaredField("tags")
+            field.isAccessible = true
+            @Suppress("UNCHECKED_CAST")
+            field.get(apiResult) as? Map<KClass<*>, Any>
+        } catch (_: Exception) {
+            null
+        }
+
+    val httpResponse = tags?.get(okhttp3.Response::class) as? okhttp3.Response ?: return null
 
     // Calculate the request duration using the timestamps from the response
     val requestDuration = httpResponse.receivedResponseAtMillis - httpResponse.sentRequestAtMillis

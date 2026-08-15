@@ -52,11 +52,12 @@ import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
  * @param modifier Modifier applied to the outer container.
  * @param windowSizeClass The current window size class, used to adapt the UI for different screen sizes.
  */
+@Suppress("DEPRECATION")
 @Composable
 internal fun OverlaySettingsView(
     state: TrmnlMirrorDisplayScreen.State,
     modifier: Modifier = Modifier,
-    windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo().windowSizeClass,
+    windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo(supportLargeAndXLargeWidth = true).windowSizeClass,
 ) {
     val isExpandedWidth =
         windowSizeClass.isWidthAtLeastBreakpoint(WIDTH_DP_EXPANDED_LOWER_BOUND) ||
