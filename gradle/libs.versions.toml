@@ -1,7 +1,7 @@
 [versions]
 activityCompose = "1.13.0"
 # https://developer.android.com/jetpack/androidx/releases/compose-material3-adaptive
-adaptive = "1.2.0"
+adaptive = "1.3.0"
 
 # Android Gradle plugin
 # https://developer.android.com/build/releases/about-agp
@@ -9,12 +9,12 @@ agp = "9.3.1"
 
 # Circuit - ⚡️ A Compose-driven architecture for Kotlin and Android applications.
 # https://github.com/slackhq/circuit
-circuit = "0.36.0"
+circuit = "0.36.1"
 
 # Compose Bill of Materials (BOM) lets you manage all of your
 # Compose library versions by specifying only the BOM's version.
 # https://developer.android.com/develop/ui/compose/bom
-composeBom = "2026.06.01"
+composeBom = "2026.08.00"
 
 # AndroidX Core KTX - Kotlin extensions for Android core libraries.
 # https://developer.android.com/jetpack/androidx/releases/core
@@ -40,7 +40,7 @@ lifecycleRuntimeKtx = "2.11.0"
 # Kotlin linter with built-in formatter
 # https://github.com/jeremymailen/kotlinter-gradle
 # https://github.com/pinterest/ktlint
-kotlinter = "5.6.0"
+kotlinter = "5.7.0"
 
 # Http client for Android
 # https://lysine.dev/okhttp/changelogs/changelog/
