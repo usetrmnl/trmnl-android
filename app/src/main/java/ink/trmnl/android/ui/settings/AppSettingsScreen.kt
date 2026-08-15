@@ -5,6 +5,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -36,6 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -43,6 +47,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -55,6 +60,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -141,6 +147,7 @@ data class AppSettingsScreen(
         val accessToken: String,
         val deviceMacId: String,
         val isByodMasterDevice: Boolean,
+        val isTokenConfigured: Boolean = false,
         val isLoading: Boolean = false,
         val validationResult: ValidationResult? = null,
         val isDeviceSetupLoading: Boolean = false,
@@ -276,6 +283,7 @@ class AppSettingsPresenter(
         var accessToken by remember { mutableStateOf("") }
         var deviceMacId by remember { mutableStateOf("") }
         var isByodMasterDevice by remember { mutableStateOf(true) }
+        var isTokenConfigured by remember { mutableStateOf(false) }
         var isLoading by remember { mutableStateOf(false) }
         var validationResult by remember { mutableStateOf<ValidationResult?>(null) }
         var isDeviceSetupLoading by remember { mutableStateOf(false) }
@@ -322,21 +330,26 @@ class AppSettingsPresenter(
 
         // Load saved token if available
         LaunchedEffect(Unit) {
-            deviceConfigStore.deviceConfigFlow.filterNotNull().collect {
-                deviceType = it.type
-                accessToken = it.apiAccessToken
+            deviceConfigStore.deviceConfigFlow.collect { config ->
+                if (config != null && config.apiAccessToken.isNotBlank()) {
+                    isTokenConfigured = true
+                    deviceType = config.type
+                    accessToken = config.apiAccessToken
 
-                if (it.type == TrmnlDeviceType.BYOS) {
-                    // On initial load, prefill only if the device type is BYOS
-                    serverBaseUrl = it.apiBaseUrl
-                    it.deviceMacId?.let { savedDeviceId ->
-                        deviceMacId = savedDeviceId
+                    if (config.type == TrmnlDeviceType.BYOS) {
+                        // On initial load, prefill only if the device type is BYOS
+                        serverBaseUrl = config.apiBaseUrl
+                        config.deviceMacId?.let { savedDeviceId ->
+                            deviceMacId = savedDeviceId
+                        }
                     }
-                }
 
-                // Load BYOD-specific settings
-                if (it.type == TrmnlDeviceType.BYOD) {
-                    isByodMasterDevice = it.isMasterDevice ?: true
+                    // Load BYOD-specific settings
+                    if (config.type == TrmnlDeviceType.BYOD) {
+                        isByodMasterDevice = config.isMasterDevice ?: true
+                    }
+                } else {
+                    isTokenConfigured = false
                 }
             }
         }
@@ -347,6 +360,7 @@ class AppSettingsPresenter(
             accessToken = accessToken,
             deviceMacId = deviceMacId,
             isByodMasterDevice = isByodMasterDevice,
+            isTokenConfigured = isTokenConfigured,
             isLoading = isLoading,
             validationResult = validationResult,
             isDeviceSetupLoading = isDeviceSetupLoading,
@@ -653,282 +667,487 @@ fun AppSettingsContent(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
                     .padding(innerPadding)
-                    .padding(horizontal = 32.dp)
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
                     // Add navigation bar padding to bottom content
                     .navigationBarsPadding()
                     // Add IME padding for keyboard handling
                     .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            Icon(
-                painter = painterResource(R.drawable.trmnl_logo_plain),
-                contentDescription = "TRMNL Logo",
-                tint = MaterialTheme.colorScheme.onSurface,
-                modifier =
-                    Modifier
-                        .size(64.dp)
-                        .padding(bottom = 16.dp),
-            )
-
-            Text(
-                text = "Display Configuration",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            DeviceTypeSelectorConfig(
-                selectedType = state.deviceType,
-                serverUrl = state.serverBaseUrl,
-                deviceId = state.deviceMacId,
-                isByodMasterDevice = state.isByodMasterDevice,
-                savedDeviceModel = state.savedDeviceModel,
-                onTypeSelected = { state.eventSink(AppSettingsScreen.Event.DeviceTypeChanged(it)) },
-                onServerUrlChanged = { state.eventSink(AppSettingsScreen.Event.ServerUrlChanged(it)) },
-                onDeviceIdChanged = { state.eventSink(AppSettingsScreen.Event.DeviceMacIdChanged(it)) },
-                onByodMasterDeviceChanged = { state.eventSink(AppSettingsScreen.Event.ByodMasterDeviceChanged(it)) },
-                onOverrideDisplayModelPressed = { state.eventSink(AppSettingsScreen.Event.OverrideDisplayModelPressed) },
-                isServerUrlError = state.validationResult is InvalidServerUrl,
-                serverUrlError = (state.validationResult as? InvalidServerUrl)?.message,
-                isDeviceMacIdError = state.validationResult is ValidationResult.InvalidDeviceMacId,
-                deviceIdError = (state.validationResult as? ValidationResult.InvalidDeviceMacId)?.message,
-            )
-
-            OutlinedTextField(
-                value = state.accessToken,
-                onValueChange = { state.eventSink(AppSettingsScreen.Event.AccessTokenChanged(it)) },
-                label = { Text("Device API Key") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Key,
-                        contentDescription = null,
-                    )
-                },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions =
-                    KeyboardOptions(
-                        keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done,
-                    ),
-                keyboardActions =
-                    KeyboardActions(
-                        onDone = {
-                            state.eventSink(AppSettingsScreen.Event.ValidateToken)
-                        },
-                    ),
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            painter = painterResource(if (passwordVisible) R.drawable.visibility_off_24dp else R.drawable.visibility_24dp),
-                            contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                        )
-                    }
-                },
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SwitchDeviceTypeInfoText(deviceType = state.deviceType)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = { state.eventSink(AppSettingsScreen.Event.ValidateToken) },
-                enabled = state.accessToken.isNotBlank() && !state.isLoading,
-                modifier = Modifier.fillMaxWidth(),
+            // Header Section
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             ) {
-                Text("Validate Token")
+                Icon(
+                    painter = painterResource(R.drawable.trmnl_logo_plain),
+                    contentDescription = "TRMNL Logo",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier =
+                        Modifier
+                            .size(56.dp)
+                            .padding(bottom = 8.dp),
+                )
+
+                Text(
+                    text = "Display Configuration",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Text(
+                    text = "Configure your TRMNL connection and refresh settings",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Main Configuration Card
+            OutlinedCard(
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = "Device Configuration",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+
+                    DeviceTypeSelectorConfig(
+                        selectedType = state.deviceType,
+                        serverUrl = state.serverBaseUrl,
+                        deviceId = state.deviceMacId,
+                        isByodMasterDevice = state.isByodMasterDevice,
+                        savedDeviceModel = state.savedDeviceModel,
+                        onTypeSelected = { state.eventSink(AppSettingsScreen.Event.DeviceTypeChanged(it)) },
+                        onServerUrlChanged = { state.eventSink(AppSettingsScreen.Event.ServerUrlChanged(it)) },
+                        onDeviceIdChanged = { state.eventSink(AppSettingsScreen.Event.DeviceMacIdChanged(it)) },
+                        onByodMasterDeviceChanged = { state.eventSink(AppSettingsScreen.Event.ByodMasterDeviceChanged(it)) },
+                        onOverrideDisplayModelPressed = { state.eventSink(AppSettingsScreen.Event.OverrideDisplayModelPressed) },
+                        isServerUrlError = state.validationResult is InvalidServerUrl,
+                        serverUrlError = (state.validationResult as? InvalidServerUrl)?.message,
+                        isDeviceMacIdError = state.validationResult is ValidationResult.InvalidDeviceMacId,
+                        deviceIdError = (state.validationResult as? ValidationResult.InvalidDeviceMacId)?.message,
+                    )
+
+                    OutlinedTextField(
+                        value = state.accessToken,
+                        onValueChange = { state.eventSink(AppSettingsScreen.Event.AccessTokenChanged(it)) },
+                        label = { Text("Device API Key") },
+                        placeholder = { Text("Enter your API key / token") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Key,
+                                contentDescription = null,
+                            )
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions =
+                            KeyboardOptions(
+                                keyboardType = KeyboardType.Password,
+                                imeAction = ImeAction.Done,
+                            ),
+                        keyboardActions =
+                            KeyboardActions(
+                                onDone = {
+                                    state.eventSink(AppSettingsScreen.Event.ValidateToken)
+                                },
+                            ),
+                        trailingIcon = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (state.accessToken.isNotEmpty()) {
+                                    IconButton(onClick = { state.eventSink(AppSettingsScreen.Event.AccessTokenChanged("")) }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Clear,
+                                            contentDescription = "Clear token",
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                    }
+                                }
+                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                    Icon(
+                                        painter =
+                                            painterResource(
+                                                if (passwordVisible) R.drawable.visibility_off_24dp else R.drawable.visibility_24dp,
+                                            ),
+                                        contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                                    )
+                                }
+                            }
+                        },
+                    )
+
+                    SwitchDeviceTypeInfoText(deviceType = state.deviceType)
+
+                    Button(
+                        onClick = { state.eventSink(AppSettingsScreen.Event.ValidateToken) },
+                        enabled = state.accessToken.isNotBlank() && !state.isLoading,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                    ) {
+                        if (state.isLoading) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Validating Token...")
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Validate Token")
+                        }
+                    }
+                }
+            }
 
             // Show validation result
-            state.validationResult?.let { result ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
+            AnimatedVisibility(
+                visible = state.validationResult != null,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                state.validationResult?.let { result ->
                     when (result) {
                         is Success -> {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                    ),
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text(
-                                    "✅ Token Valid",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-
-                                Text(
-                                    "Token: $maskedToken",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                )
-
-                                // Image preview using Coil with improved caching
-                                AsyncImage(
-                                    model = CoilRequestUtils.createCachedImageRequest(context, result.imageUrl),
-                                    contentDescription = "Preview image",
-                                    contentScale = ContentScale.Fit,
-                                    modifier =
-                                        Modifier
-                                            .size(240.dp)
-                                            .padding(4.dp),
-                                )
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                Button(
-                                    onClick = { state.eventSink(AppSettingsScreen.Event.SaveAndContinue) },
-                                    modifier = Modifier.fillMaxWidth(),
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
                                 ) {
-                                    Text("Save and Continue")
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = "Success",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(24.dp),
+                                        )
+                                        Text(
+                                            "Token Validated",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = MaterialTheme.colorScheme.surface,
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                    ) {
+                                        Text(
+                                            text = "Token: $maskedToken",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        )
+                                    }
+
+                                    // Image preview using Coil with improved caching and styled container
+                                    AsyncImage(
+                                        model = CoilRequestUtils.createCachedImageRequest(context, result.imageUrl),
+                                        contentDescription = "Preview image",
+                                        contentScale = ContentScale.Fit,
+                                        modifier =
+                                            Modifier
+                                                .size(240.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                                                .padding(4.dp),
+                                    )
+
+                                    Button(
+                                        onClick = { state.eventSink(AppSettingsScreen.Event.SaveAndContinue) },
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Save and Continue")
+                                    }
                                 }
                             }
                         }
 
                         is InvalidServerUrl -> {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    ),
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text(
-                                    "❌ Server URL Invalid",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.error,
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    result.message,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.error,
-                                )
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Warning,
+                                        contentDescription = "Error",
+                                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                                        modifier = Modifier.size(28.dp),
+                                    )
+                                    Text(
+                                        "Server URL Invalid",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                    Text(
+                                        result.message,
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                }
                             }
                         }
 
                         is ValidationResult.InvalidDeviceMacId -> {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    ),
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text(
-                                    "❌ Device ID (Mac Address) Invalid Format",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.error,
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    result.message,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.error,
-                                )
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Warning,
+                                        contentDescription = "Error",
+                                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                                        modifier = Modifier.size(28.dp),
+                                    )
+                                    Text(
+                                        "Invalid MAC Address Format",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                    Text(
+                                        result.message,
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                }
                             }
                         }
 
                         is Failure -> {
-                            // Error state remains the same
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    ),
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text(
-                                    "❌ Validation Failed",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.error,
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    result.message,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.error,
-                                )
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Warning,
+                                        contentDescription = "Error",
+                                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                                        modifier = Modifier.size(28.dp),
+                                    )
+                                    Text(
+                                        "Validation Failed",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                    Text(
+                                        result.message,
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                }
                             }
                         }
 
                         is ValidationResult.UserTokenSuccess -> {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                    ),
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text(
-                                    "✅ User Token Valid",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    "Welcome, ${result.userName}!",
-                                    textAlign = TextAlign.Center,
-                                    fontWeight = FontWeight.Bold,
-                                )
-                                Text(
-                                    result.userEmail,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = "Success",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp),
+                                    )
+                                    Text(
+                                        "User Token Valid",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                    Text(
+                                        "Welcome, ${result.userName}!",
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                    Text(
+                                        result.userEmail,
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
 
                         is ValidationResult.InvalidUserToken -> {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    ),
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text(
-                                    "❌ Invalid User Token",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.error,
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    result.message,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.error,
-                                )
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Warning,
+                                        contentDescription = "Error",
+                                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                                        modifier = Modifier.size(28.dp),
+                                    )
+                                    Text(
+                                        "Invalid User Token",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                    Text(
+                                        result.message,
+                                        textAlign = TextAlign.Center,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                }
                             }
                         }
 
                         is ValidationResult.DeviceSetupRequired -> {
-                            Column(
-                                modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                    ),
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text(
-                                    "⚠️ Device Setup Required",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.error,
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                if (state.deviceSetupMessage != null) {
-                                    Text(
-                                        text = state.deviceSetupMessage,
-                                        textAlign = TextAlign.Center,
-                                        color = MaterialTheme.colorScheme.primary,
+                                Column(
+                                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Warning,
+                                        contentDescription = "Warning",
+                                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        modifier = Modifier.size(28.dp),
                                     )
-                                } else {
-                                    FilledTonalButton(
-                                        onClick = {
-                                            state.eventSink(
-                                                AppSettingsScreen.Event.SetupDevice(
-                                                    deviceMacId = state.deviceMacId,
-                                                ),
-                                            )
-                                        },
-                                        enabled = !state.isDeviceSetupLoading,
-                                    ) {
-                                        if (state.isDeviceSetupLoading) {
-                                            CircularProgressIndicator(
-                                                color = MaterialTheme.colorScheme.onPrimary,
-                                                modifier = Modifier.size(20.dp),
-                                                strokeWidth = 2.dp,
-                                            )
-                                        } else {
-                                            Text("Setup Device")
+                                    Text(
+                                        "Device Setup Required",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    )
+                                    if (state.deviceSetupMessage != null) {
+                                        Text(
+                                            text = state.deviceSetupMessage,
+                                            textAlign = TextAlign.Center,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "This device needs initial registration with the server before continuing.",
+                                            textAlign = TextAlign.Center,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        )
+                                        FilledTonalButton(
+                                            onClick = {
+                                                state.eventSink(
+                                                    AppSettingsScreen.Event.SetupDevice(
+                                                        deviceMacId = state.deviceMacId,
+                                                    ),
+                                                )
+                                            },
+                                            shape = RoundedCornerShape(12.dp),
+                                            enabled = !state.isDeviceSetupLoading,
+                                        ) {
+                                            if (state.isDeviceSetupLoading) {
+                                                CircularProgressIndicator(
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                    modifier = Modifier.size(20.dp),
+                                                    strokeWidth = 2.dp,
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text("Setting up...")
+                                            } else {
+                                                Text("Setup Device")
+                                            }
                                         }
                                     }
                                 }
@@ -938,13 +1157,14 @@ fun AppSettingsContent(
                 }
             }
 
-            if (state.isLoading) {
-                Spacer(modifier = Modifier.height(16.dp))
-                CircularProgressIndicator()
+            // Refresh Schedule Status Section - only show if a valid token has been configured
+            AnimatedVisibility(
+                visible = state.isTokenConfigured,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                WorkScheduleStatusCard(state = state, modifier = Modifier.fillMaxWidth())
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            WorkScheduleStatusCard(state = state, modifier = Modifier.fillMaxWidth())
         }
     }
 }
@@ -983,7 +1203,10 @@ private fun DeviceTypeSelectorConfig(
      */
     val shouldDisableDeviceModel = true
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             TrmnlDeviceType.entries.forEachIndexed { index, deviceType ->
                 SegmentedButton(
@@ -1018,10 +1241,10 @@ private fun DeviceTypeSelectorConfig(
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut(),
         ) {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = serverUrl,
-                    onValueChange = onServerUrlChanged,
+                    onServerUrlChanged,
                     label = { Text("API Server Base URL") },
                     placeholder = { Text("https://your-trmnl-server.com") },
                     leadingIcon = {
@@ -1030,16 +1253,14 @@ private fun DeviceTypeSelectorConfig(
                             contentDescription = null,
                         )
                     },
+                    shape = RoundedCornerShape(12.dp),
                     isError = isServerUrlError,
                     supportingText = {
                         if (isServerUrlError && serverUrlError != null) {
                             Text(serverUrlError)
                         }
                     },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     keyboardOptions =
                         KeyboardOptions(
                             keyboardType = KeyboardType.Uri,
@@ -1060,11 +1281,9 @@ private fun DeviceTypeSelectorConfig(
                             contentDescription = null,
                         )
                     },
+                    shape = RoundedCornerShape(12.dp),
                     isError = isDeviceMacIdError,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = 0.dp, bottom = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     keyboardOptions =
                         KeyboardOptions(
                             keyboardType = KeyboardType.Ascii,
@@ -1100,41 +1319,44 @@ private fun DeviceTypeSelectorConfig(
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut(),
         ) {
-            Column {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Checkbox(
-                        checked = isByodMasterDevice,
-                        onCheckedChange = { onByodMasterDeviceChanged(it) },
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Act as master device (auto-advance playlist image)",
-                            style = MaterialTheme.typography.bodyMedium,
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(
+                            checked = isByodMasterDevice,
+                            onCheckedChange = { onByodMasterDeviceChanged(it) },
                         )
-                        Text(
-                            text =
-                                "Uncheck if this device should mirror another BYOD device " +
-                                    "that automatically auto-advances playlist image",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Act as master device",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text =
+                                    "Uncheck if this device should mirror another BYOD device " +
+                                        "that automatically auto-advances playlist image",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
 
                 // Show saved device model if available
                 if (!shouldDisableDeviceModel && savedDeviceModel != null) {
                     Card(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp, bottom = 8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
                         colors =
                             CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -1161,6 +1383,7 @@ private fun DeviceTypeSelectorConfig(
                 if (!shouldDisableDeviceModel) {
                     OutlinedButton(
                         onClick = onOverrideDisplayModelPressed,
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text("Override Display Model")
@@ -1182,48 +1405,25 @@ private fun WorkScheduleStatusCard(
     state: AppSettingsScreen.State,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    OutlinedCard(
         modifier = modifier.fillMaxWidth(),
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
-            ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = "TRMNL Display Image Refresh Schedule Status",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-
             val nextRefreshJobInfo: NextImageRefreshDisplayInfo? = state.nextRefreshJobInfo
-            if (nextRefreshJobInfo != null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                ) {
-                    Icon(
-                        imageVector = nextRefreshJobInfo.workerState.toIcon(),
-                        contentDescription = null,
-                        tint = nextRefreshJobInfo.workerState.toColor(),
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Status: ${nextRefreshJobInfo.workerState.toDisplayString()}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = nextRefreshJobInfo.workerState.toColor(),
-                    )
-                }
 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.DateRange,
@@ -1231,25 +1431,103 @@ private fun WorkScheduleStatusCard(
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp),
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Next refresh: ${nextRefreshJobInfo.timeUntilNextRefresh}",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "Refresh Schedule",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                     )
                 }
 
-                Text(
-                    text = "Scheduled for: ${nextRefreshJobInfo.nextRefreshOnDateTime}",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(start = 28.dp, top = 2.dp),
-                )
+                if (nextRefreshJobInfo != null) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = nextRefreshJobInfo.workerState.toColor().copy(alpha = 0.15f),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Icon(
+                                imageVector = nextRefreshJobInfo.workerState.toIcon(),
+                                contentDescription = null,
+                                tint = nextRefreshJobInfo.workerState.toColor(),
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Text(
+                                text = nextRefreshJobInfo.workerState.toDisplayString(),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = nextRefreshJobInfo.workerState.toColor(),
+                            )
+                        }
+                    }
+                }
+            }
 
-                // Add a button to cancel the work if it's scheduled
+            if (nextRefreshJobInfo != null) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Column {
+                                Text(
+                                    text = "Next Refresh",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    text = nextRefreshJobInfo.timeUntilNextRefresh,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = "Scheduled for: ${nextRefreshJobInfo.nextRefreshOnDateTime}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 26.dp),
+                        )
+                    }
+                }
+
+                // Add action buttons
                 if (nextRefreshJobInfo.workerState == WorkInfo.State.ENQUEUED ||
                     nextRefreshJobInfo.workerState == WorkInfo.State.RUNNING ||
                     nextRefreshJobInfo.workerState == WorkInfo.State.BLOCKED
                 ) {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedButton(
+                        onClick = {
+                            state.eventSink(AppSettingsScreen.Event.ViewLogsRequested)
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.List,
+                            contentDescription = "View logs",
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("View Refresh Logs")
+                    }
 
                     Button(
                         onClick = {
@@ -1257,47 +1535,37 @@ private fun WorkScheduleStatusCard(
                         },
                         colors =
                             ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error,
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
                             ),
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Clear,
                             contentDescription = "Cancel scheduled work",
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Cancel Periodic Refresh Job")
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedButton(
-                        onClick = {
-                            state.eventSink(AppSettingsScreen.Event.ViewLogsRequested)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.List,
-                            contentDescription = "View logs",
-                            modifier = Modifier.size(20.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("View Refresh Logs")
-                    }
                 }
             } else {
-                Text(
-                    text = "No scheduled refresh work found.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                )
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = "No scheduled refresh work found.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(12.dp),
+                    )
+                }
             }
         }
     }
-
-    Spacer(modifier = Modifier.height(8.dp))
 }
 
 @Preview(name = "App Settings Content - Initial State")
@@ -1407,6 +1675,7 @@ private fun PreviewAppSettingsContentWithWork() {
                     accessToken = "valid-token-123",
                     deviceMacId = "aa:bb:cc:dd:ee:ff",
                     isByodMasterDevice = true,
+                    isTokenConfigured = true,
                     isLoading = false,
                     validationResult = null, // Can also be Success state
                     nextRefreshJobInfo =
