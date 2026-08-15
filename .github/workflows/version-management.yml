@@ -37,6 +37,9 @@ on:
 jobs:
   update-version:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -122,46 +125,49 @@ jobs:
           cat fastlane/metadata/android/en-US/changelogs/${{ inputs.version_code }}.txt
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          add-paths: |
-            app/build.gradle.kts
-            fastlane/
-          commit-message: "chore: prepare release ${{ inputs.version_name }}"
-          title: "Prepare release ${{ inputs.version_name }}"
-          body: |
-            This PR updates the version to ${{ inputs.version_name }} (${{ inputs.version_code }})
-            
-            ## 📋 Release Notes:
-            ${{ inputs.release_notes }}
-            
-            ## 🔄 Changes Made:
-            - Updated app/build.gradle.kts
-            - Created changelog file
-            
-            ### ⚡ Trigger CI Workflows (Do This First):
-            
-            Since this PR was created by a bot, CI workflows won't trigger automatically. To trigger them:
-            
-            ```sh
-            git fetch && git checkout ${{ env.BRANCH_NAME }}
-            ```
-            
-            ```sh
-            git commit --allow-empty -m "chore: empty commit for triggering workflows" && git push
-            ```
-            
-            ### 🏷️ After Merging This PR:
-            
-            After merging this PR, create and push the release tag:
-            
-            ```sh
-            git checkout main && git pull origin main
-            ```
-            
-            ```sh
-            git tag v${{ inputs.version_name }} && git push origin v${{ inputs.version_name }}
-            ```
-          branch: ${{ env.BRANCH_NAME }}
-          base: main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git checkout -b "${{ env.BRANCH_NAME }}"
+          git add app/build.gradle.kts fastlane/
+          git commit -m "chore: prepare release ${{ inputs.version_name }}"
+          git push -u origin "${{ env.BRANCH_NAME }}"
+          gh pr create \
+            --title "Prepare release ${{ inputs.version_name }}" \
+            --body "$(cat << 'EOF'
+          This PR updates the version to ${{ inputs.version_name }} (${{ inputs.version_code }})
+
+          ## 📋 Release Notes:
+          ${{ inputs.release_notes }}
+
+          ## 🔄 Changes Made:
+          - Updated app/build.gradle.kts
+          - Created changelog file
+
+          ### ⚡ Trigger CI Workflows (Do This First):
+
+          Since this PR was created by a bot, CI workflows won't trigger automatically. To trigger them:
+
+          \`\`\`sh
+          git fetch && git checkout ${{ env.BRANCH_NAME }}
+          \`\`\`
+
+          \`\`\`sh
+          git commit --allow-empty -m "chore: empty commit for triggering workflows" && git push
+          \`\`\`
+
+          ### 🏷️ After Merging This PR:
+
+          After merging this PR, create and push the release tag:
+
+          \`\`\`sh
+          git checkout main && git pull origin main
+          \`\`\`
+
+          \`\`\`sh
+          git tag v${{ inputs.version_name }} && git push origin v${{ inputs.version_name }}
+          \`\`\`
+          EOF
+          )" \
+            --base main \
+            --head "${{ env.BRANCH_NAME }}"
