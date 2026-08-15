@@ -1,6 +1,8 @@
 package ink.trmnl.android.ui.aboutapp
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,21 +12,28 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -128,7 +137,7 @@ fun AppInfoContent(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("App Info") },
+                title = { Text("About App") },
                 navigationIcon = {
                     IconButton(onClick = { state.eventSink(Event.BackPressed) }) {
                         Icon(
@@ -146,151 +155,223 @@ fun AppInfoContent(
             modifier =
                 Modifier
                     .padding(innerPadding)
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
                     .verticalScroll(rememberScrollState())
                     .fillMaxWidth()
                     .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // App Logo
-            Icon(
-                painter = painterResource(R.drawable.trmnl_logo_plain),
-                contentDescription = null,
-                tint = TrmnlOrange,
-                modifier = Modifier.height(72.dp),
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // App Name
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // App Description
-            Text(
-                text = "Display your TRMNL content on your Android device",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // App Details Section
+            // Hero Header Section
             Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .padding(
-                            top = 16.dp,
-                            bottom = 16.dp,
-                        ),
-                horizontalAlignment = Alignment.Start,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                Icon(
+                    painter = painterResource(R.drawable.trmnl_logo_plain),
+                    contentDescription = null,
+                    tint = TrmnlOrange,
+                    modifier = Modifier.size(72.dp),
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Display TRMNL e-ink content on your Android devices",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+
+            // Application Details Card
+            OutlinedCard(
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        text = "Version",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = state.appVersion,
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "Application Details",
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
-                }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        text = "Build Type",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    AppInfoRow(
+                        label = "Version",
+                        value = state.appVersion,
                     )
-                    Text(
-                        text = state.buildType,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                    AppInfoRow(
+                        label = "Build Type",
+                        value = state.buildType.replaceFirstChar { it.uppercase() },
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            // Connect & Learn Resources Card
+            OutlinedCard(
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                ) {
+                    Text(
+                        text = "Connect & Learn",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    )
 
-            HorizontalDivider(modifier = Modifier.fillMaxWidth())
+                    Spacer(modifier = Modifier.height(4.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
+                    ResourceLinkItem(
+                        title = "GitHub Repository",
+                        subtitle = "Source code, contributions & issue tracking",
+                        iconPainter = painterResource(R.drawable.github_filled),
+                        onClick = { state.eventSink(Event.OpenGithub) },
+                    )
 
-            // Actions Section
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    )
+
+                    ResourceLinkItem(
+                        title = "TRMNL Android Apps",
+                        subtitle = "Learn about other Android apps for TRMNL",
+                        iconVector = Icons.Default.Android,
+                        onClick = { state.eventSink(Event.OpenTrmnlAndroidDoc) },
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    )
+
+                    ResourceLinkItem(
+                        title = "Official TRMNL Website",
+                        subtitle = "Learn more about TRMNL e-ink hardware",
+                        iconPainter = painterResource(R.drawable.outline_link_2_24),
+                        onClick = { state.eventSink(Event.OpenTrmnlSite) },
+                    )
+                }
+            }
+
+            // Footer Attribution
             Text(
-                text = "Connect & Learn",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.fillMaxWidth(),
+                text = "TRMNL Android is open source under the MIT License",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // GitHub Button
-            OutlinedButton(
-                onClick = { state.eventSink(Event.OpenGithub) },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.github_filled),
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 12.dp),
-                )
-                Text("View on GitHub / Report Issues", modifier = Modifier.weight(1f))
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // TRMNL Android Apps Documentation Button
-            OutlinedButton(
-                onClick = { state.eventSink(Event.OpenTrmnlAndroidDoc) },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Android,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 12.dp),
-                )
-                Text("TRMNL Android Apps", modifier = Modifier.weight(1f))
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // TRMNL Website Button
-            OutlinedButton(
-                onClick = { state.eventSink(Event.OpenTrmnlSite) },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.outline_link_2_24),
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 12.dp),
-                )
-                Text("Visit TRMNL", modifier = Modifier.weight(1f))
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
+
+@Composable
+private fun AppInfoRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun ResourceLinkItem(
+    title: String,
+    subtitle: String,
+    iconPainter: Painter? = null,
+    iconVector: ImageVector? = null,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.size(40.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                if (iconPainter != null) {
+                    Icon(
+                        painter = iconPainter,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                } else if (iconVector != null) {
+                    Icon(
+                        imageVector = iconVector,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+            contentDescription = "Open",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.size(16.dp),
+        )
     }
 }
 
