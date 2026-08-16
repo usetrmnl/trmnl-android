@@ -39,7 +39,7 @@ Download the app from Google Play Store:
 1. Configure the API `access-token` or `ID` _(MAC Address)_ in the app settings
 2. Save the token and keep the app always-on with the TRMNL's display image showing.
 
-<img alt="Demo Video" src="https://github.com/user-attachments/assets/2e3fcdef-2681-4c06-9372-2ad98131fb3c" width="500">  
+<img alt="Demo Video" src="project-resources/video-demo/v2.13.0/2026-08-16%2009.02.58.gif" width="500">  
 
 ### Limitations 🚧
 1. Right now, screen lock using Google's [recommended](https://developer.android.com/develop/background-work/background-tasks/awake/screen-on) **`FLAG_KEEP_SCREEN_ON`** is not working on e-Ink tablet due to strict battery optimization. So, if you plan to keep the screen on indefinitely, you should set that in the device settings.
