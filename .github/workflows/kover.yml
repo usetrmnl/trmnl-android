@@ -1,0 +1,85 @@
+name: Kover Code Coverage
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+# https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs
+permissions:
+  pull-requests: write
+
+jobs:
+  kover-coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check file changes
+        uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            src:
+              - 'app/**'
+              - 'gradle/**'
+              - 'build.gradle.kts'
+              - 'settings.gradle.kts'
+              - 'gradle.properties'
+              - '.github/workflows/kover.yml'
+
+      - name: Set up JDK
+        if: steps.filter.outputs.src == 'true' || github.event_name == 'push'
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Gradle
+        if: steps.filter.outputs.src == 'true' || github.event_name == 'push'
+        uses: gradle/actions/setup-gradle@v6
+
+      # Generates reports in following location
+      # - app/build/reports/kover/htmlDebug/index.html
+      # - app/build/reports/kover/reportDebug.xml
+      - name: Build and run tests with coverage
+        if: steps.filter.outputs.src == 'true' || github.event_name == 'push'
+        run: ./gradlew koverHtmlReportDebug koverXmlReportDebug --parallel --daemon
+
+      # https://github.com/actions/upload-artifact
+      - name: Upload Kover report
+        if: steps.filter.outputs.src == 'true' || github.event_name == 'push'
+        uses: actions/upload-artifact@v6
+        with:
+          name: kover-report
+          path: app/build/reports/kover/htmlDebug
+
+      # Sticky Pull Request Comment
+      # https://github.com/marocchino/sticky-pull-request-comment
+      - name: Post coverage comment
+        if: (steps.filter.outputs.src == 'true' || github.event_name == 'push') && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          message: |
+            ## Code Coverage Report
+            [View Coverage Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      # GitHub Action that uploads coverage to Codecov ☂️
+      # https://github.com/codecov/codecov-action
+      - name: Upload coverage reports to Codecov
+        if: steps.filter.outputs.src == 'true' || github.event_name == 'push'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./app/build/reports/kover/reportDebug.xml
+          slug: usetrmnl/trmnl-android
+
+      - if: steps.filter.outputs.src != 'true' && github.event_name != 'push'
+        name: Skip build
+        run: echo "No relevant changes detected — coverage skipped."
