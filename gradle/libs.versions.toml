@@ -33,7 +33,7 @@ ksp = "2.3.11"
 
 # Metro - compile-time DI framework powered by a Kotlin compiler plugin
 # https://github.com/ZacSweers/metro
-metro = "1.4.1"
+metro = "1.4.2"
 
 lifecycleRuntimeKtx = "2.11.0"
 
