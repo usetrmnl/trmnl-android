@@ -53,9 +53,12 @@ retrofit = "3.0.0"
 # https://github.com/JakeWharton/timber
 timber = "5.0.1"
 
-# A modern JSON library for Kotlin and Java.
 # https://github.com/square/moshi
 moshi = "1.15.2"
+
+# Kover - Kotlin code coverage
+# https://github.com/Kotlin/kotlinx-kover
+koverPlugin = "0.9.9"
 
 # API result type for modeling network API responses.
 # https://github.com/slackhq/EitherNet
@@ -187,3 +190,7 @@ metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
 # https://github.com/jeremymailen/kotlinter-gradle
 # https://github.com/pinterest/ktlint
 kotlinter = { id = "org.jmailen.kotlinter", version.ref = "kotlinter" }
+
+# Kover is a set of solutions for collecting test coverage of Kotlin code compiled for JVM and Android platforms.
+# https://github.com/Kotlin/kotlinx-kover?tab=readme-ov-file#kover-gradle-plugin
+kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "koverPlugin" }

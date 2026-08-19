@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlinter)
+    alias(libs.plugins.kotlinx.kover)
     alias(libs.plugins.ksp)
     alias(libs.plugins.metro)
 }
@@ -119,6 +120,63 @@ android {
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
+}
+
+// Kotlin Code Coverage - https://github.com/Kotlin/kotlinx-kover
+kover {
+    // Configure reports for the debug build variant
+    // Key tasks:
+    // - koverHtmlReportDebug - Generates HTML coverage report for 'debug' variant
+    // - koverXmlReportDebug - Generates XML coverage report for 'debug' variant
+    // - koverVerifyDebug - Verifies coverage rules for 'debug' variant
+    reports {
+        // filters for all report types of all build variants
+        filters {
+            excludes {
+                androidGeneratedClasses()
+                // Exclude generated code and UI boilerplate to focus coverage on business logic
+                classes(
+                    // Metro / DI generated factories and binders
+                    "*$$$*",
+                    "*_Factory*",
+                    "*Factory$*",
+                    // Moshi generated adapters
+                    "*JsonAdapter*",
+                    // Circuit generated code
+                    "*Circuit*",
+                    // Compose UI Composables, screens, themes, and views
+                    "*.ui.theme.*",
+                    "*ScreenKt*",
+                    "*ViewKt*",
+                    "*ContentKt*",
+                    "*ComponentsKt*",
+                    "*BottomSheetKt*",
+                    "*PreviewKt*",
+                    "*ComposableSingletons*",
+                    // Android UI entry points
+                    "*Activity*",
+                    "*Application*",
+                )
+                annotatedBy(
+                    "androidx.compose.runtime.Composable",
+                    "androidx.compose.ui.tooling.preview.Preview",
+                    "*Composable",
+                    "*Parcelize",
+                    "*Preview",
+                    "javax.annotation.processing.Generated",
+                )
+            }
+        }
+
+        variant("release") {
+            // verification only for 'release' build variant
+            verify {
+                rule {
+                    minBound(50)
+                }
+            }
+        }
     }
 }
 
