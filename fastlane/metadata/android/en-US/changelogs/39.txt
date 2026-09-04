@@ -1,0 +1,2 @@
+- Updated to the latest version (2.14.0)
+- BOYS now reports battery and wifi signal strength
