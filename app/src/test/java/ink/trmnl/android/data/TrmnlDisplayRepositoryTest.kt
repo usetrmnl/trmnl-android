@@ -314,6 +314,7 @@ class TrmnlDisplayRepositoryTest {
                     accessToken = byosDeviceConfig.apiAccessToken,
                     useBase64 = any(),
                     rssi = any(),
+                    percentCharged = any(),
                 )
             } returns ApiResult.success(successResponse)
 
@@ -332,6 +333,7 @@ class TrmnlDisplayRepositoryTest {
                     accessToken = byosDeviceConfig.apiAccessToken,
                     useBase64 = any(),
                     rssi = any(),
+                    percentCharged = any(),
                 )
             }
         }
@@ -641,30 +643,33 @@ class TrmnlDisplayRepositoryTest {
         }
 
     @Test
-    fun `getNextDisplayData should NOT send RSSI for BYOS device`() =
+    fun `getNextDisplayData should send RSSI for BYOS device when WiFi available`() =
         runTest {
             // Arrange - BYOS device uses next display data endpoint (not current_screen)
             val byosConfig =
                 byosDeviceConfig.copy(
                     apiAccessToken = "byos_api_key",
                 )
+            val expectedRssi = -60
 
-            coEvery { apiService.getNextDisplayData(any(), any(), any(), any(), any()) } returns
+            every { androidDeviceInfoProvider.getWifiSignalStrength() } returns expectedRssi
+
+            coEvery { apiService.getNextDisplayData(any(), any(), any(), any(), any(), any()) } returns
                 ApiResult.success(mockk(relaxed = true))
 
             // Act
             repository.getNextDisplayData(byosConfig)
 
-            // Assert - Verify WiFi signal was NOT fetched for BYOS device
-            coVerify(exactly = 0) { androidDeviceInfoProvider.getWifiSignalStrength() }
-            // Verify null RSSI was sent
+            // Assert - Verify WiFi signal was fetched and sent as header for BYOS device
+            coVerify(exactly = 1) { androidDeviceInfoProvider.getWifiSignalStrength() }
             coVerify {
                 apiService.getNextDisplayData(
                     fullApiUrl = any(),
                     accessToken = any(),
                     deviceMacId = any(),
                     useBase64 = any(),
-                    rssi = null,
+                    rssi = expectedRssi,
+                    percentCharged = any(),
                 )
             }
         }
@@ -790,13 +795,17 @@ class TrmnlDisplayRepositoryTest {
         }
 
     @Test
-    fun `getNextDisplayData should NOT send battery percentage for BYOS device`() =
+    fun `getNextDisplayData should send battery percentage for BYOS device`() =
         runTest {
             // Arrange - BYOS device
             val byosConfig =
                 byosDeviceConfig.copy(
                     apiAccessToken = "byos_api_key",
                 )
+            val expectedBatteryLevel = 80
+
+            every { androidDeviceInfoProvider.getBatteryLevel() } returns expectedBatteryLevel
+            every { androidDeviceInfoProvider.getWifiSignalStrength() } returns -65
 
             coEvery {
                 apiService.getNextDisplayData(
@@ -804,31 +813,30 @@ class TrmnlDisplayRepositoryTest {
                     accessToken = any(),
                     deviceMacId = any(),
                     useBase64 = any(),
-                    rssi = null,
-                    percentCharged = null,
+                    rssi = any(),
+                    percentCharged = expectedBatteryLevel,
                 )
             } returns ApiResult.success(mockk(relaxed = true))
 
             // Act
             repository.getNextDisplayData(byosConfig)
 
-            // Assert - Verify battery level was NOT fetched for BYOS device
-            coVerify(exactly = 0) { androidDeviceInfoProvider.getBatteryLevel() }
-            // Verify null battery percentage was sent
+            // Assert - Verify battery level was fetched and sent as header for BYOS device
+            coVerify(exactly = 1) { androidDeviceInfoProvider.getBatteryLevel() }
             coVerify {
                 apiService.getNextDisplayData(
                     fullApiUrl = any(),
                     accessToken = any(),
                     deviceMacId = any(),
                     useBase64 = any(),
-                    rssi = null,
-                    percentCharged = null,
+                    rssi = any(),
+                    percentCharged = expectedBatteryLevel,
                 )
             }
         }
 
     @Test
-    fun `getNextDisplayData should call getWifiSignalStrength only for BYOD devices`() =
+    fun `getNextDisplayData should call getWifiSignalStrength only for BYOD and BYOS devices`() =
         runTest {
             // Arrange - Multiple device types
             val byodConfig = byodDeviceConfig.copy(apiAccessToken = "byod_key")
@@ -846,8 +854,8 @@ class TrmnlDisplayRepositoryTest {
             repository.getNextDisplayData(trmnlConfig)
             repository.getNextDisplayData(byosConfig)
 
-            // Assert - Verify WiFi signal was called only once (for BYOD)
-            coVerify(exactly = 1) { androidDeviceInfoProvider.getWifiSignalStrength() }
+            // Assert - Verify WiFi signal was called twice (for BYOD and BYOS, not TRMNL)
+            coVerify(exactly = 2) { androidDeviceInfoProvider.getWifiSignalStrength() }
         }
 
     @Test

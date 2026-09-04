@@ -52,15 +52,15 @@ class TrmnlDisplayRepository(
                     // See https://github.com/usetrmnl/trmnl-android/issues/76#issuecomment-2980018109
                     // useBase64 = trmnlDeviceConfig.type == TrmnlDeviceType.BYOS, // Disabled for now
                     rssi =
-                        if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOD) {
-                            // Send WiFi signal strength (RSSI) if available for BYOD devices only
+                        if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOD || trmnlDeviceConfig.type == TrmnlDeviceType.BYOS) {
+                            // Send WiFi signal strength (RSSI) if available for BYOD and BYOS devices
                             androidDeviceInfoProvider.getWifiSignalStrength()
                         } else {
                             null
                         },
                     percentCharged =
-                        if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOD) {
-                            // Send battery percentage if available for BYOD devices only
+                        if (trmnlDeviceConfig.type == TrmnlDeviceType.BYOD || trmnlDeviceConfig.type == TrmnlDeviceType.BYOS) {
+                            // Send battery percentage if available for BYOD and BYOS devices
                             // See following for context:
                             // https://github.com/usetrmnl/trmnl-android/issues/252
                             // https://github.com/usetrmnl/trmnl-android/issues/239
