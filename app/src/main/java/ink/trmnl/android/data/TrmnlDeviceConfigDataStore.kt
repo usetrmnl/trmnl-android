@@ -177,7 +177,18 @@ class TrmnlDeviceConfigDataStore(
      */
     val refreshRateSecondsFlow: Flow<Long?> =
         context.deviceConfigStore.data.map { preferences ->
-            preferences[REFRESH_RATE_SEC_KEY]
+            preferences[REFRESH_RATE_SEC_KEY] ?: run {
+                val configJson = preferences[CONFIG_JSON_KEY]
+                if (configJson != null) {
+                    try {
+                        deviceConfigAdapter.fromJson(configJson)?.refreshRateSecs
+                    } catch (e: Exception) {
+                        null
+                    }
+                } else {
+                    null
+                }
+            }
         }
 
     /**
@@ -395,6 +406,17 @@ class TrmnlDeviceConfigDataStore(
     suspend fun saveRefreshRateSeconds(seconds: Long) {
         context.deviceConfigStore.edit { preferences ->
             preferences[REFRESH_RATE_SEC_KEY] = seconds
+            val configJson = preferences[CONFIG_JSON_KEY]
+            if (configJson != null) {
+                try {
+                    val config = deviceConfigAdapter.fromJson(configJson)
+                    if (config != null) {
+                        preferences[CONFIG_JSON_KEY] = deviceConfigAdapter.toJson(config.copy(refreshRateSecs = seconds))
+                    }
+                } catch (e: Exception) {
+                    Timber.tag(TAG).e(e, "Failed to update refresh rate in JSON config")
+                }
+            }
         }
     }
 

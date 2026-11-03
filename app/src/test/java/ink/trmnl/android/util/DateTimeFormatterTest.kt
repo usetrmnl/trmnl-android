@@ -1,6 +1,7 @@
 package ink.trmnl.android.util
 
 import com.google.common.truth.Truth.assertThat
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 /**
@@ -118,5 +119,31 @@ class DateTimeFormatterTest {
         val result = getTimeElapsedString(timestamp)
 
         assertThat(result).isEqualTo("1 day 1 hour and 1 minute ago")
+    }
+
+    @Test
+    fun `formatRefreshInterval formats whole minutes correctly`() {
+        assertThat(formatRefreshInterval(300L)).isEqualTo("5 min")
+        assertThat(formatRefreshInterval(600L)).isEqualTo("10 min")
+        assertThat(formatRefreshInterval(60L)).isEqualTo("1 min")
+    }
+
+    @Test
+    fun `formatRefreshInterval formats seconds only correctly`() {
+        assertThat(formatRefreshInterval(45L)).isEqualTo("45 s")
+        assertThat(formatRefreshInterval(0L)).isEqualTo("0 s")
+    }
+
+    @Test
+    fun `formatRefreshInterval formats minutes and seconds correctly`() {
+        assertThat(formatRefreshInterval(90L)).isEqualTo("1 min 30 s")
+        assertThat(formatRefreshInterval(125L)).isEqualTo("2 min 5 s")
+    }
+
+    @Test
+    fun `formatRefreshInterval throws on negative seconds`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            formatRefreshInterval(-1L)
+        }
     }
 }

@@ -35,6 +35,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -108,6 +109,7 @@ import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
 import ink.trmnl.android.util.CoilRequestUtils
 import ink.trmnl.android.util.ERROR_TYPE_DEVICE_SETUP_REQUIRED
 import ink.trmnl.android.util.NextImageRefreshDisplayInfo
+import ink.trmnl.android.util.formatRefreshInterval
 import ink.trmnl.android.util.isHttpError
 import ink.trmnl.android.util.isValidMacAddress
 import ink.trmnl.android.util.isValidUrl
@@ -154,6 +156,7 @@ data class AppSettingsScreen(
         val deviceSetupMessage: String? = null,
         val nextRefreshJobInfo: NextImageRefreshDisplayInfo? = null,
         val savedDeviceModel: DeviceModelSelection? = null,
+        val configuredRefreshIntervalSec: Long? = null,
         val eventSink: (Event) -> Unit,
     ) : CircuitUiState
 
@@ -297,6 +300,13 @@ class AppSettingsPresenter(
             }
         }
 
+        // Load saved refresh rate in seconds (updated from server or periodic work)
+        val savedRefreshRate by produceState<Long?>(initialValue = null) {
+            deviceConfigStore.refreshRateSecondsFlow.collect { rate ->
+                value = rate
+            }
+        }
+
         // Load saved device model preference based on current device type
         // Flow automatically updates when preferences change in DataStore
         // Use a single collector that filters by current deviceType value instead of restarting on deviceType change
@@ -354,6 +364,8 @@ class AppSettingsPresenter(
             }
         }
 
+        val currentRefreshIntervalSec = (validationResult as? Success)?.refreshRateSecs ?: savedRefreshRate
+
         return AppSettingsScreen.State(
             deviceType = deviceType,
             serverBaseUrl = serverBaseUrl,
@@ -367,6 +379,7 @@ class AppSettingsPresenter(
             deviceSetupMessage = deviceSetupMessage,
             nextRefreshJobInfo = nextRefreshInfo,
             savedDeviceModel = savedDeviceModel,
+            configuredRefreshIntervalSec = currentRefreshIntervalSec,
             eventSink = { event ->
                 when (event) {
                     is AppSettingsScreen.Event.AccessTokenChanged -> {
@@ -1505,6 +1518,37 @@ private fun WorkScheduleStatusCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 26.dp),
                         )
+
+                        val configuredInterval = state.configuredRefreshIntervalSec
+                        if (configuredInterval != null &&
+                            configuredInterval > 0 &&
+                            configuredInterval < TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_SECONDS
+                        ) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.Top,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Info,
+                                    contentDescription = "Refresh rate notice",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(16.dp).padding(top = 2.dp),
+                                )
+                                Text(
+                                    text =
+                                        "Refreshes every ${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} min. " +
+                                            "Android allows background refresh no more often than " +
+                                            "every ${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} minutes. " +
+                                            "Your TRMNL is set to ${formatRefreshInterval(configuredInterval)}.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -1714,6 +1758,36 @@ private fun PreviewWorkScheduleStatusCardScheduled() {
                             nextRefreshOnDateTime = nextRunTimeFormatted,
                             nextRefreshTimeMillis = nextRunTimeMillis,
                         ),
+                    eventSink = {},
+                ),
+        )
+    }
+}
+
+@Preview(name = "Work Schedule Status Card - Clamped to 15m Minimum")
+@Composable
+private fun PreviewWorkScheduleStatusCardClamped() {
+    val formatter = DateTimeFormatter.ofPattern("MMM dd 'at' hh:mm:ss a")
+    val nextRunTimeMillis = Instant.now().plusSeconds(15 * 60).toEpochMilli()
+    val nextRunTimeFormatted = Instant.ofEpochMilli(nextRunTimeMillis).atZone(ZoneId.systemDefault()).format(formatter)
+
+    TrmnlDisplayAppTheme {
+        WorkScheduleStatusCard(
+            state =
+                AppSettingsScreen.State(
+                    deviceType = TrmnlDeviceType.TRMNL,
+                    serverBaseUrl = "https://example.com",
+                    accessToken = "some-token",
+                    deviceMacId = "AA:BB:CC:DD:EE:FF",
+                    isByodMasterDevice = true,
+                    nextRefreshJobInfo =
+                        NextImageRefreshDisplayInfo(
+                            workerState = WorkInfo.State.ENQUEUED,
+                            timeUntilNextRefresh = "in 15 minutes",
+                            nextRefreshOnDateTime = nextRunTimeFormatted,
+                            nextRefreshTimeMillis = nextRunTimeMillis,
+                        ),
+                    configuredRefreshIntervalSec = 300L,
                     eventSink = {},
                 ),
         )

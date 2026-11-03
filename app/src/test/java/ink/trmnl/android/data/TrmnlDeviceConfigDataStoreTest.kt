@@ -133,6 +133,28 @@ class TrmnlDeviceConfigDataStoreTest {
         }
 
     @Test
+    fun `saveRefreshRateSeconds updates JSON config when present`() =
+        runTest {
+            // Arrange
+            val initialConfig =
+                TrmnlDeviceConfig(
+                    type = TrmnlDeviceType.TRMNL,
+                    apiAccessToken = "test-token",
+                    apiBaseUrl = AppConfig.TRMNL_API_SERVER_BASE_URL,
+                    refreshRateSecs = 1800L,
+                )
+            deviceConfigDataStore.saveDeviceConfig(initialConfig)
+
+            // Act - update refresh rate
+            deviceConfigDataStore.saveRefreshRateSeconds(300L)
+
+            // Assert - both individual flow and full config flow reflect the new rate
+            assertThat(deviceConfigDataStore.refreshRateSecondsFlow.first()).isEqualTo(300L)
+            val updatedConfig = deviceConfigDataStore.deviceConfigFlow.first()
+            assertThat(updatedConfig?.refreshRateSecs).isEqualTo(300L)
+        }
+
+    @Test
     fun `deviceConfigFlow returns null when not saved`() =
         runTest {
             // Act

@@ -48,7 +48,12 @@ class TrmnlWorkScheduler(
          * - https://developer.android.com/reference/androidx/work/PeriodicWorkRequest
          * - https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work
          */
-        private const val WORK_MANAGER_MINIMUM_INTERVAL_MINUTES = 15L
+        internal const val WORK_MANAGER_MINIMUM_INTERVAL_MINUTES = 15L
+
+        /**
+         * Minimum interval for periodic work in seconds (15 minutes = 900 seconds).
+         */
+        internal const val WORK_MANAGER_MINIMUM_INTERVAL_SECONDS = WORK_MANAGER_MINIMUM_INTERVAL_MINUTES * 60L
 
         /**
          * When loading current image of the TRMNL, we add this delay before fetching
