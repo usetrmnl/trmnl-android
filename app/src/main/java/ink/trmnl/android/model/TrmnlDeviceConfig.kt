@@ -34,3 +34,14 @@ data class TrmnlDeviceConfig constructor(
      */
     val isMasterDevice: Boolean? = null,
 )
+
+/**
+ * Checks if two configs have the same user-editable form configuration
+ * (ignoring background-updated fields like [TrmnlDeviceConfig.refreshRateSecs]).
+ */
+fun TrmnlDeviceConfig?.hasSameFormContent(other: TrmnlDeviceConfig?): Boolean =
+    this?.type == other?.type &&
+        this?.apiAccessToken == other?.apiAccessToken &&
+        this?.apiBaseUrl == other?.apiBaseUrl &&
+        this?.deviceMacId == other?.deviceMacId &&
+        this?.isMasterDevice == other?.isMasterDevice

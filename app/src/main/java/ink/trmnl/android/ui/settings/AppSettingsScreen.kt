@@ -35,6 +35,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -95,6 +96,7 @@ import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.model.DeviceModelSelection
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
+import ink.trmnl.android.model.hasSameFormContent
 import ink.trmnl.android.ui.aboutapp.AppInfoScreen
 import ink.trmnl.android.ui.devicemodel.DeviceModelSelectorScreen
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
@@ -108,6 +110,7 @@ import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
 import ink.trmnl.android.util.CoilRequestUtils
 import ink.trmnl.android.util.ERROR_TYPE_DEVICE_SETUP_REQUIRED
 import ink.trmnl.android.util.NextImageRefreshDisplayInfo
+import ink.trmnl.android.util.formatRefreshInterval
 import ink.trmnl.android.util.isHttpError
 import ink.trmnl.android.util.isValidMacAddress
 import ink.trmnl.android.util.isValidUrl
@@ -118,6 +121,7 @@ import ink.trmnl.android.util.toDisplayString
 import ink.trmnl.android.util.toIcon
 import ink.trmnl.android.work.TrmnlImageUpdateManager
 import ink.trmnl.android.work.TrmnlWorkScheduler
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
@@ -154,6 +158,7 @@ data class AppSettingsScreen(
         val deviceSetupMessage: String? = null,
         val nextRefreshJobInfo: NextImageRefreshDisplayInfo? = null,
         val savedDeviceModel: DeviceModelSelection? = null,
+        val configuredRefreshIntervalSec: Long? = null,
         val eventSink: (Event) -> Unit,
     ) : CircuitUiState
 
@@ -297,6 +302,13 @@ class AppSettingsPresenter(
             }
         }
 
+        // Load saved refresh rate in seconds (updated from server or periodic work)
+        val savedRefreshRate by produceState<Long?>(initialValue = null) {
+            deviceConfigStore.refreshRateSecondsFlow.collect { rate ->
+                value = rate
+            }
+        }
+
         // Load saved device model preference based on current device type
         // Flow automatically updates when preferences change in DataStore
         // Use a single collector that filters by current deviceType value instead of restarting on deviceType change
@@ -330,28 +342,30 @@ class AppSettingsPresenter(
 
         // Load saved token if available
         LaunchedEffect(Unit) {
-            deviceConfigStore.deviceConfigFlow.collect { config ->
-                if (config != null && config.apiAccessToken.isNotBlank()) {
-                    isTokenConfigured = true
-                    deviceType = config.type
-                    accessToken = config.apiAccessToken
+            deviceConfigStore.deviceConfigFlow
+                .distinctUntilChanged { old, new -> old.hasSameFormContent(new) }
+                .collect { config ->
+                    if (config != null && config.apiAccessToken.isNotBlank()) {
+                        isTokenConfigured = true
+                        deviceType = config.type
+                        accessToken = config.apiAccessToken
 
-                    if (config.type == TrmnlDeviceType.BYOS) {
-                        // On initial load, prefill only if the device type is BYOS
-                        serverBaseUrl = config.apiBaseUrl
-                        config.deviceMacId?.let { savedDeviceId ->
-                            deviceMacId = savedDeviceId
+                        if (config.type == TrmnlDeviceType.BYOS) {
+                            // On initial load, prefill only if the device type is BYOS
+                            serverBaseUrl = config.apiBaseUrl
+                            config.deviceMacId?.let { savedDeviceId ->
+                                deviceMacId = savedDeviceId
+                            }
                         }
-                    }
 
-                    // Load BYOD-specific settings
-                    if (config.type == TrmnlDeviceType.BYOD) {
-                        isByodMasterDevice = config.isMasterDevice ?: true
+                        // Load BYOD-specific settings
+                        if (config.type == TrmnlDeviceType.BYOD) {
+                            isByodMasterDevice = config.isMasterDevice ?: true
+                        }
+                    } else {
+                        isTokenConfigured = false
                     }
-                } else {
-                    isTokenConfigured = false
                 }
-            }
         }
 
         return AppSettingsScreen.State(
@@ -367,6 +381,7 @@ class AppSettingsPresenter(
             deviceSetupMessage = deviceSetupMessage,
             nextRefreshJobInfo = nextRefreshInfo,
             savedDeviceModel = savedDeviceModel,
+            configuredRefreshIntervalSec = savedRefreshRate,
             eventSink = { event ->
                 when (event) {
                     is AppSettingsScreen.Event.AccessTokenChanged -> {
@@ -1505,6 +1520,38 @@ private fun WorkScheduleStatusCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 26.dp),
                         )
+
+                        val configuredInterval = state.configuredRefreshIntervalSec
+                        if (configuredInterval != null &&
+                            configuredInterval > 0 &&
+                            configuredInterval < TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_SECONDS
+                        ) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.Top,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Info,
+                                    contentDescription = "Refresh rate notice",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(16.dp).padding(top = 2.dp),
+                                )
+                                Text(
+                                    text =
+                                        "Refreshes every ${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} min. " +
+                                            "To optimize battery life, the app uses Android WorkManager, " +
+                                            "which requires at least ${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} " +
+                                            "minutes between background refreshes. " +
+                                            "Your TRMNL is set to ${formatRefreshInterval(configuredInterval)}.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -1714,6 +1761,36 @@ private fun PreviewWorkScheduleStatusCardScheduled() {
                             nextRefreshOnDateTime = nextRunTimeFormatted,
                             nextRefreshTimeMillis = nextRunTimeMillis,
                         ),
+                    eventSink = {},
+                ),
+        )
+    }
+}
+
+@Preview(name = "Work Schedule Status Card - Clamped to 15m Minimum")
+@Composable
+private fun PreviewWorkScheduleStatusCardClamped() {
+    val formatter = DateTimeFormatter.ofPattern("MMM dd 'at' hh:mm:ss a")
+    val nextRunTimeMillis = Instant.now().plusSeconds(15 * 60).toEpochMilli()
+    val nextRunTimeFormatted = Instant.ofEpochMilli(nextRunTimeMillis).atZone(ZoneId.systemDefault()).format(formatter)
+
+    TrmnlDisplayAppTheme {
+        WorkScheduleStatusCard(
+            state =
+                AppSettingsScreen.State(
+                    deviceType = TrmnlDeviceType.TRMNL,
+                    serverBaseUrl = "https://example.com",
+                    accessToken = "some-token",
+                    deviceMacId = "AA:BB:CC:DD:EE:FF",
+                    isByodMasterDevice = true,
+                    nextRefreshJobInfo =
+                        NextImageRefreshDisplayInfo(
+                            workerState = WorkInfo.State.ENQUEUED,
+                            timeUntilNextRefresh = "in 15 minutes",
+                            nextRefreshOnDateTime = nextRunTimeFormatted,
+                            nextRefreshTimeMillis = nextRunTimeMillis,
+                        ),
+                    configuredRefreshIntervalSec = 300L,
                     eventSink = {},
                 ),
         )

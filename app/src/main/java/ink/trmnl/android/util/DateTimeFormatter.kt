@@ -52,3 +52,23 @@ internal fun getTimeElapsedString(timestamp: Long): String {
         }
     }
 }
+
+/**
+ * Formats a duration in seconds into a human-readable interval string.
+ *
+ * Examples:
+ * - 300s -> "5 min"
+ * - 60s -> "1 min"
+ * - 90s -> "1 min 30 s"
+ * - 45s -> "45 s"
+ */
+internal fun formatRefreshInterval(seconds: Long): String {
+    require(seconds >= 0) { "Interval seconds must not be negative: $seconds" }
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+    return when {
+        minutes > 0 && remainingSeconds > 0 -> "$minutes min $remainingSeconds s"
+        minutes > 0 -> "$minutes min"
+        else -> "$remainingSeconds s"
+    }
+}
