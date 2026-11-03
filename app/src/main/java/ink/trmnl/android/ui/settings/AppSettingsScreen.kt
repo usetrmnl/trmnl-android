@@ -96,6 +96,7 @@ import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.model.DeviceModelSelection
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
+import ink.trmnl.android.model.hasSameFormContent
 import ink.trmnl.android.ui.aboutapp.AppInfoScreen
 import ink.trmnl.android.ui.devicemodel.DeviceModelSelectorScreen
 import ink.trmnl.android.ui.display.TrmnlMirrorDisplayScreen
@@ -120,6 +121,7 @@ import ink.trmnl.android.util.toDisplayString
 import ink.trmnl.android.util.toIcon
 import ink.trmnl.android.work.TrmnlImageUpdateManager
 import ink.trmnl.android.work.TrmnlWorkScheduler
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
@@ -340,31 +342,31 @@ class AppSettingsPresenter(
 
         // Load saved token if available
         LaunchedEffect(Unit) {
-            deviceConfigStore.deviceConfigFlow.collect { config ->
-                if (config != null && config.apiAccessToken.isNotBlank()) {
-                    isTokenConfigured = true
-                    deviceType = config.type
-                    accessToken = config.apiAccessToken
+            deviceConfigStore.deviceConfigFlow
+                .distinctUntilChanged { old, new -> old.hasSameFormContent(new) }
+                .collect { config ->
+                    if (config != null && config.apiAccessToken.isNotBlank()) {
+                        isTokenConfigured = true
+                        deviceType = config.type
+                        accessToken = config.apiAccessToken
 
-                    if (config.type == TrmnlDeviceType.BYOS) {
-                        // On initial load, prefill only if the device type is BYOS
-                        serverBaseUrl = config.apiBaseUrl
-                        config.deviceMacId?.let { savedDeviceId ->
-                            deviceMacId = savedDeviceId
+                        if (config.type == TrmnlDeviceType.BYOS) {
+                            // On initial load, prefill only if the device type is BYOS
+                            serverBaseUrl = config.apiBaseUrl
+                            config.deviceMacId?.let { savedDeviceId ->
+                                deviceMacId = savedDeviceId
+                            }
                         }
-                    }
 
-                    // Load BYOD-specific settings
-                    if (config.type == TrmnlDeviceType.BYOD) {
-                        isByodMasterDevice = config.isMasterDevice ?: true
+                        // Load BYOD-specific settings
+                        if (config.type == TrmnlDeviceType.BYOD) {
+                            isByodMasterDevice = config.isMasterDevice ?: true
+                        }
+                    } else {
+                        isTokenConfigured = false
                     }
-                } else {
-                    isTokenConfigured = false
                 }
-            }
         }
-
-        val currentRefreshIntervalSec = (validationResult as? Success)?.refreshRateSecs ?: savedRefreshRate
 
         return AppSettingsScreen.State(
             deviceType = deviceType,
@@ -379,7 +381,7 @@ class AppSettingsPresenter(
             deviceSetupMessage = deviceSetupMessage,
             nextRefreshJobInfo = nextRefreshInfo,
             savedDeviceModel = savedDeviceModel,
-            configuredRefreshIntervalSec = currentRefreshIntervalSec,
+            configuredRefreshIntervalSec = savedRefreshRate,
             eventSink = { event ->
                 when (event) {
                     is AppSettingsScreen.Event.AccessTokenChanged -> {

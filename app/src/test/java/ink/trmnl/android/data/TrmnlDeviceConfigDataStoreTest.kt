@@ -2,11 +2,14 @@ package ink.trmnl.android.data
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
+import ink.trmnl.android.model.hasSameFormContent
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -152,6 +155,39 @@ class TrmnlDeviceConfigDataStoreTest {
             assertThat(deviceConfigDataStore.refreshRateSecondsFlow.first()).isEqualTo(300L)
             val updatedConfig = deviceConfigDataStore.deviceConfigFlow.first()
             assertThat(updatedConfig?.refreshRateSecs).isEqualTo(300L)
+        }
+
+    @Test
+    fun `deviceConfigFlow with hasSameFormContent filter does not emit on refresh-rate-only change`() =
+        runTest {
+            // Arrange
+            val initialConfig =
+                TrmnlDeviceConfig(
+                    type = TrmnlDeviceType.TRMNL,
+                    apiAccessToken = "test-token",
+                    apiBaseUrl = AppConfig.TRMNL_API_SERVER_BASE_URL,
+                    refreshRateSecs = 1800L,
+                )
+            deviceConfigDataStore.saveDeviceConfig(initialConfig)
+
+            deviceConfigDataStore.deviceConfigFlow
+                .distinctUntilChanged { old, new -> old.hasSameFormContent(new) }
+                .test {
+                    val firstConfig = awaitItem()
+                    assertThat(firstConfig?.apiAccessToken).isEqualTo("test-token")
+
+                    // Act - update only refresh rate
+                    deviceConfigDataStore.saveRefreshRateSeconds(300L)
+                    expectNoEvents()
+
+                    // Act 2 - update actual form field (access token)
+                    deviceConfigDataStore.saveDeviceConfig(initialConfig.copy(apiAccessToken = "new-token"))
+
+                    val secondConfig = awaitItem()
+                    assertThat(secondConfig?.apiAccessToken).isEqualTo("new-token")
+
+                    cancelAndIgnoreRemainingEvents()
+                }
         }
 
     @Test
