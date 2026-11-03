@@ -1,0 +1,4 @@
+- Updated to the latest version (2.15.0)
+- Show 15-minute refresh minimum notice in settings and overlay
+- Explain WorkManager battery optimization limitation
+- Preserve unsaved form settings during background refresh interval updates
