@@ -1541,8 +1541,9 @@ private fun WorkScheduleStatusCard(
                                 Text(
                                     text =
                                         "Refreshes every ${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} min. " +
-                                            "Android allows background refresh no more often than " +
-                                            "every ${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} minutes. " +
+                                            "To optimize battery life, the app uses Android WorkManager, " +
+                                            "which requires at least ${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} " +
+                                            "minutes between background refreshes. " +
                                             "Your TRMNL is set to ${formatRefreshInterval(configuredInterval)}.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
