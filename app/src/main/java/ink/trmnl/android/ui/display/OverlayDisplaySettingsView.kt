@@ -38,6 +38,8 @@ import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOW
 import ink.trmnl.android.R
 import ink.trmnl.android.ui.icons.Icons
 import ink.trmnl.android.ui.theme.TrmnlDisplayAppTheme
+import ink.trmnl.android.util.formatRefreshInterval
+import ink.trmnl.android.work.TrmnlWorkScheduler
 
 /**
  * Displays a set of configuration and control actions for the TRMNL display.
@@ -115,6 +117,33 @@ internal fun OverlaySettingsView(
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+            }
+
+            val configuredInterval = state.configuredRefreshIntervalSec
+            if (configuredInterval != null &&
+                configuredInterval > 0 &&
+                configuredInterval < TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_SECONDS
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = "Refresh rate notice",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Text(
+                        text =
+                            "Your TRMNL is set to ${formatRefreshInterval(configuredInterval)}, " +
+                                "but Android limits background refresh to every 15 min.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
@@ -242,6 +271,28 @@ fun PreviewOverlaySettingsView() {
                         isLoading = false,
                         errorMessage = null,
                         saveImageResult = null,
+                        eventSink = {},
+                    ),
+            )
+        }
+    }
+}
+
+@Preview(name = "Overlay Settings Preview - Clamped")
+@Composable
+fun PreviewOverlaySettingsViewClamped() {
+    TrmnlDisplayAppTheme {
+        Surface {
+            OverlaySettingsView(
+                state =
+                    TrmnlMirrorDisplayScreen.State(
+                        imageUrl = null,
+                        overlayControlsVisible = true,
+                        nextImageRefreshIn = "in 14 minutes",
+                        isLoading = false,
+                        errorMessage = null,
+                        saveImageResult = null,
+                        configuredRefreshIntervalSec = 240L,
                         eventSink = {},
                     ),
             )

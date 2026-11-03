@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -86,6 +87,7 @@ data object TrmnlMirrorDisplayScreen : Screen {
         val saveImageResult: SaveImageResult? = null,
         val rateLimitMessage: String? = null,
         val retryInfo: RetryInfo? = null,
+        val configuredRefreshIntervalSec: Long? = null,
         val eventSink: (Event) -> Unit,
     ) : CircuitUiState
 
@@ -154,6 +156,13 @@ class TrmnlMirrorDisplayPresenter(
         var retryInfo by remember { mutableStateOf<TrmnlMirrorDisplayScreen.RetryInfo?>(null) }
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
+
+        // Load configured refresh rate in seconds (updated from server or periodic work)
+        val configuredRefreshInterval by produceState<Long?>(initialValue = null) {
+            trmnlDeviceConfigDataStore.refreshRateSecondsFlow.collect { rate ->
+                value = rate
+            }
+        }
 
         // Collect retry events from RateLimitInterceptor for UI feedback
         LaunchedEffect(Unit) {
@@ -261,6 +270,7 @@ class TrmnlMirrorDisplayPresenter(
             saveImageResult = saveImageResult,
             rateLimitMessage = rateLimitMessage,
             retryInfo = retryInfo,
+            configuredRefreshIntervalSec = configuredRefreshInterval,
             eventSink = { event ->
                 when (event) {
                     TrmnlMirrorDisplayScreen.Event.RefreshCurrentPlaylistItemRequested -> {
