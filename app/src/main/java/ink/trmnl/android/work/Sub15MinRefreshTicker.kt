@@ -15,7 +15,20 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicLong
+
+/**
+ * Represents the next scheduled refresh time for the active display screen when configured
+ * with a sub-15-minute refresh interval.
+ */
+data class ActiveDisplayRefreshSchedule(
+    val timeUntilNextRefresh: String,
+    val nextRefreshOnDateTime: String,
+    val nextRefreshTimeMillis: Long,
+)
 
 /**
  * Isolated hybrid refresh component for sub-15-minute refresh intervals (`1..899` seconds).
@@ -42,6 +55,7 @@ class Sub15MinRefreshTicker(
         private const val TAG = "Sub15MinTicker"
         internal const val POLL_DELAY_UNDER_MINUTE_MS = 1_000L
         internal const val POLL_DELAY_DEFAULT_MS = 5_000L
+        private val DATE_TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM dd 'at' hh:mm:ss a")
     }
 
     /**
@@ -195,6 +209,74 @@ class Sub15MinRefreshTicker(
                             }
                         delay(delayMs)
                     }
+                }
+
+                metadataJob.cancel()
+            }
+        }
+
+    /**
+     * Observes the next scheduled refresh time for the active display screen when [intervalSeconds]
+     * is under 15 minutes (`1..899s`).
+     *
+     * Unlike [observeTicks], this read-only flow only computes and emits the schedule for UI display
+     * (e.g. in Settings) without triggering refreshes itself.
+     *
+     * When [intervalSeconds] is `>= 15 minutes` (or `<= 0` / `null`), emits `null` and completes immediately.
+     */
+    fun observeNextRefreshSchedule(
+        intervalSeconds: Long?,
+        clock: () -> Long = { System.currentTimeMillis() },
+    ): Flow<ActiveDisplayRefreshSchedule?> =
+        channelFlow {
+            if (intervalSeconds == null || !isSub15MinInterval(intervalSeconds)) {
+                send(null)
+                return@channelFlow
+            }
+
+            val initialMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
+            lastTimestampRef.updateAndGet { current ->
+                maxOf(current, initialMetadata?.timestamp ?: clock())
+            }
+
+            coroutineScope {
+                val metadataJob =
+                    launch {
+                        imageMetadataStore.imageMetadataFlow.collect { metadata ->
+                            if (metadata != null) {
+                                lastTimestampRef.updateAndGet { current -> maxOf(current, metadata.timestamp) }
+                            }
+                        }
+                    }
+
+                while (isActive) {
+                    val now = clock()
+                    val lastTimestamp = lastTimestampRef.get()
+                    val nextRefreshTimeMillis = lastTimestamp + (intervalSeconds * 1_000L)
+                    val remainingMillis = nextRefreshTimeMillis - now
+                    val scheduledTimestampMillis = maxOf(now, nextRefreshTimeMillis)
+                    val nextRefreshOnDateTime =
+                        Instant
+                            .ofEpochMilli(scheduledTimestampMillis)
+                            .atZone(ZoneId.systemDefault())
+                            .format(DATE_TIME_FORMATTER)
+
+                    send(
+                        ActiveDisplayRefreshSchedule(
+                            timeUntilNextRefresh = formatCountdown(remainingMillis),
+                            nextRefreshOnDateTime = nextRefreshOnDateTime,
+                            nextRefreshTimeMillis = scheduledTimestampMillis,
+                        ),
+                    )
+
+                    val remainingSeconds = remainingMillis / 1_000L
+                    val delayMs =
+                        if (remainingSeconds in 1 until 60) {
+                            POLL_DELAY_UNDER_MINUTE_MS
+                        } else {
+                            POLL_DELAY_DEFAULT_MS
+                        }
+                    delay(delayMs)
                 }
 
                 metadataJob.cancel()

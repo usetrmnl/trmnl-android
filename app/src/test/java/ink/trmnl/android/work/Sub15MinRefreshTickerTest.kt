@@ -415,4 +415,32 @@ class Sub15MinRefreshTickerTest {
         assertThat(ticker.formatCountdown(3_600_000L)).isEqualTo("in 1 hour")
         assertThat(ticker.formatCountdown(7_200_000L)).isEqualTo("in 2 hours")
     }
+
+    @Test
+    fun `observeNextRefreshSchedule emits null when interval is 15 minutes or above`() =
+        runTest {
+            assertThat(ticker.observeNextRefreshSchedule(900L).first()).isNull()
+            assertThat(ticker.observeNextRefreshSchedule(null).first()).isNull()
+        }
+
+    @Test
+    fun `observeNextRefreshSchedule emits read-only active schedule without triggering refresh`() =
+        runTest {
+            val now = 1_000_000L
+            val metadata =
+                ImageMetadata(
+                    url = "https://trmnl.com/image.png",
+                    refreshIntervalSecs = 291L,
+                    timestamp = now - 50_000L, // 241s remaining (~4 minutes)
+                )
+            every { imageMetadataStore.imageMetadataFlow } returns MutableStateFlow(metadata)
+
+            val schedule = ticker.observeNextRefreshSchedule(intervalSeconds = 291L, clock = { now }).first()
+
+            assertThat(schedule).isNotNull()
+            assertThat(schedule?.timeUntilNextRefresh).isEqualTo("in 4 minutes")
+            assertThat(schedule?.nextRefreshTimeMillis).isEqualTo(now + 241_000L)
+            assertThat(schedule?.nextRefreshOnDateTime).isNotEmpty()
+            coVerify(exactly = 0) { trmnlWorkScheduler.triggerScheduledRefresh() }
+        }
 }
