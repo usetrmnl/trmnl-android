@@ -45,3 +45,18 @@ fun TrmnlDeviceConfig?.hasSameFormContent(other: TrmnlDeviceConfig?): Boolean =
         this?.apiBaseUrl == other?.apiBaseUrl &&
         this?.deviceMacId == other?.deviceMacId &&
         this?.isMasterDevice == other?.isMasterDevice
+
+/**
+ * Determines whether periodic refreshes should advance the playlist (`/api/display`)
+ * or mirror the current screen (`/api/current_screen`).
+ * - [TrmnlDeviceType.BYOS]: Always advances playlist (`true`)
+ * - [TrmnlDeviceType.BYOD]: Advances when configured as master device (`isMasterDevice ?: true`)
+ * - [TrmnlDeviceType.TRMNL]: Always mirrors (`false`)
+ */
+fun TrmnlDeviceConfig?.shouldAdvancePlaylist(): Boolean =
+    when (this?.type) {
+        TrmnlDeviceType.BYOS -> true
+        TrmnlDeviceType.BYOD -> isMasterDevice ?: true
+        TrmnlDeviceType.TRMNL -> false
+        null -> false
+    }

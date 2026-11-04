@@ -57,4 +57,46 @@ class TrmnlDeviceConfigTest {
         assertThat(config.hasSameFormContent(null)).isFalse()
         assertThat(nullConfig.hasSameFormContent(config)).isFalse()
     }
+
+    @Test
+    fun `shouldAdvancePlaylist returns true for BYOS`() {
+        val config =
+            TrmnlDeviceConfig(
+                type = TrmnlDeviceType.BYOS,
+                apiBaseUrl = "https://custom.com",
+                apiAccessToken = "token-1",
+            )
+        assertThat(config.shouldAdvancePlaylist()).isTrue()
+    }
+
+    @Test
+    fun `shouldAdvancePlaylist returns true for BYOD master or default null and false for slave`() {
+        val masterConfig =
+            TrmnlDeviceConfig(
+                type = TrmnlDeviceType.BYOD,
+                apiBaseUrl = "https://trmnl.com",
+                apiAccessToken = "token-1",
+                isMasterDevice = true,
+            )
+        val defaultByodConfig = masterConfig.copy(isMasterDevice = null)
+        val slaveConfig = masterConfig.copy(isMasterDevice = false)
+
+        assertThat(masterConfig.shouldAdvancePlaylist()).isTrue()
+        assertThat(defaultByodConfig.shouldAdvancePlaylist()).isTrue()
+        assertThat(slaveConfig.shouldAdvancePlaylist()).isFalse()
+    }
+
+    @Test
+    fun `shouldAdvancePlaylist returns false for TRMNL and null config`() {
+        val trmnlConfig =
+            TrmnlDeviceConfig(
+                type = TrmnlDeviceType.TRMNL,
+                apiBaseUrl = "https://trmnl.com",
+                apiAccessToken = "token-1",
+            )
+        val nullConfig: TrmnlDeviceConfig? = null
+
+        assertThat(trmnlConfig.shouldAdvancePlaylist()).isFalse()
+        assertThat(nullConfig.shouldAdvancePlaylist()).isFalse()
+    }
 }

@@ -139,8 +139,8 @@ internal fun OverlaySettingsView(
                     )
                     Text(
                         text =
-                            "Your TRMNL is set to ${formatRefreshInterval(configuredInterval)}, " +
-                                "but the background scheduler limits refresh to every 15 min to save battery.",
+                            "Refreshes every ${formatRefreshInterval(configuredInterval)} while active on screen. " +
+                                "Background refresh is limited to 15 min when app is closed to save battery.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,

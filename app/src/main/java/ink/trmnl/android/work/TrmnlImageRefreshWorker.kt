@@ -20,6 +20,7 @@ import ink.trmnl.android.util.isRateLimitError
 import ink.trmnl.android.work.RefreshWorkResult.FAILURE
 import ink.trmnl.android.work.RefreshWorkResult.SUCCESS
 import ink.trmnl.android.work.TrmnlWorkScheduler.Companion.IMAGE_REFRESH_PERIODIC_WORK_TAG
+import ink.trmnl.android.work.TrmnlWorkScheduler.Companion.WORK_MANAGER_MINIMUM_INTERVAL_SECONDS
 import kotlinx.coroutines.flow.firstOrNull
 import timber.log.Timber
 
@@ -77,6 +78,36 @@ class TrmnlImageRefreshWorker(
                     KEY_ERROR_MESSAGE to "No device config with API token found",
                 ),
             )
+        }
+
+        // Sub-15-minute coordination:
+        // When refresh interval is under 15 minutes, both Sub15MinRefreshTicker (foreground one-time work)
+        // and background WorkManager periodic work (15m minimum) may be scheduled.
+        // If an image was already successfully refreshed within the configured sub-15m interval,
+        // skip duplicate periodic execution to prevent double playlist advance and redundant network calls.
+        val intervalSec = deviceConfig.refreshRateSecs
+        if (workTypeValue == RefreshWorkType.PERIODIC.name && intervalSec in 1 until WORK_MANAGER_MINIMUM_INTERVAL_SECONDS) {
+            val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
+            if (cachedMetadata != null && cachedMetadata.url.isNotBlank()) {
+                val isLastFetchSuccess = cachedMetadata.httpStatusCode == null || cachedMetadata.httpStatusCode == 200
+                if (isLastFetchSuccess) {
+                    val ageMs = System.currentTimeMillis() - cachedMetadata.timestamp
+                    val jitterBufferMs = minOf(30_000L, (intervalSec * 1000L) / 4)
+                    val minIntervalMs = (intervalSec * 1000L) - jitterBufferMs
+                    if (ageMs < minIntervalMs) {
+                        Timber.tag(TAG).i(
+                            "Skipping duplicate sub-15m periodic refresh: last update was ${ageMs / 1000}s ago " +
+                                "(interval=${intervalSec}s, threshold=${minIntervalMs / 1000}s).",
+                        )
+                        return Result.success(
+                            workDataOf(
+                                KEY_REFRESH_RESULT to SUCCESS.name,
+                                KEY_NEW_IMAGE_URL to cachedMetadata.url,
+                            ),
+                        )
+                    }
+                }
+            }
         }
 
         // Fetch TRMNL display image - current or next from playlist based on request type

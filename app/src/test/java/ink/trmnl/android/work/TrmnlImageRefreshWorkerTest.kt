@@ -710,4 +710,70 @@ class TrmnlImageRefreshWorkerTest {
                 imageMetadataStore.saveImageMetadata(any(), any(), any())
             }
         }
+
+    @Test
+    fun `doWork skips duplicate periodic refresh when interval is under 15m and image was updated recently`() =
+        runTest {
+            every { workerParameters.inputData } returns
+                workDataOf(
+                    PARAM_REFRESH_WORK_TYPE to RefreshWorkType.PERIODIC.name,
+                    PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to false,
+                )
+
+            // validRefreshRate in setUp is 600L (10 min < 15 min)
+            val recentMetadata =
+                ImageMetadata(
+                    url = validImageUrl,
+                    refreshIntervalSecs = validRefreshRate,
+                    errorMessage = null,
+                    httpStatusCode = HTTP_200,
+                    timestamp = System.currentTimeMillis() - 5_000L,
+                )
+            every { imageMetadataStore.imageMetadataFlow } returns flow { emit(recentMetadata) }
+
+            val result = worker.doWork()
+
+            assertThat(result).isInstanceOf(ListenableWorker.Result.Success::class.java)
+            coVerify(exactly = 0) { displayRepository.getCurrentDisplayData(any()) }
+            coVerify(exactly = 0) { displayRepository.getNextDisplayData(any()) }
+        }
+
+    @Test
+    fun `doWork does not skip periodic refresh when interval is 15 minutes or above`() =
+        runTest {
+            every { workerParameters.inputData } returns
+                workDataOf(
+                    PARAM_REFRESH_WORK_TYPE to RefreshWorkType.PERIODIC.name,
+                    PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to false,
+                )
+
+            // Configure 15-minute (900s) refresh rate
+            val config15m = trmnlDeviceConfig.copy(refreshRateSecs = 900L)
+            every { trmnlDeviceConfigDataStore.deviceConfigFlow } returns MutableStateFlow(config15m)
+
+            val recentMetadata =
+                ImageMetadata(
+                    url = validImageUrl,
+                    refreshIntervalSecs = 900L,
+                    errorMessage = null,
+                    httpStatusCode = HTTP_200,
+                    timestamp = System.currentTimeMillis() - 5_000L,
+                )
+            every { imageMetadataStore.imageMetadataFlow } returns flow { emit(recentMetadata) }
+
+            val successfulResponse =
+                TrmnlDisplayInfo(
+                    status = HTTP_200,
+                    trmnlDeviceType = TrmnlDeviceType.TRMNL,
+                    imageUrl = validImageUrl,
+                    imageFileName = "test-image.png",
+                    refreshIntervalSeconds = 900L,
+                )
+            coEvery { displayRepository.getCurrentDisplayData(any()) } returns successfulResponse
+
+            val result = worker.doWork()
+
+            assertThat(result).isInstanceOf(ListenableWorker.Result.Success::class.java)
+            coVerify(exactly = 1) { displayRepository.getCurrentDisplayData(any()) }
+        }
 }
