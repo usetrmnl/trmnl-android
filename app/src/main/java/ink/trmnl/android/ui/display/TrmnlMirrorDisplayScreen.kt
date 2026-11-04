@@ -45,6 +45,7 @@ import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.repeatOnLifecycle
 import coil3.compose.AsyncImage
 import coil3.network.HttpException
 import com.slack.circuit.codegen.annotations.CircuitInject
@@ -72,6 +73,7 @@ import ink.trmnl.android.util.formatRefreshInterval
 import ink.trmnl.android.util.nextRunTime
 import ink.trmnl.android.work.TrmnlImageUpdateManager
 import ink.trmnl.android.work.TrmnlWorkScheduler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.isActive
@@ -269,6 +271,7 @@ class TrmnlMirrorDisplayPresenter(
                                         "Cached image is STALE on resume (age: ${ageSec}s >= interval: ${interval}s). " +
                                             "Triggering fresh fetch.",
                                     )
+                                    isLoading = true
                                     trmnlWorkScheduler.triggerScheduledRefresh()
                                 } else {
                                     Timber.tag(TAG).d(
@@ -288,7 +291,7 @@ class TrmnlMirrorDisplayPresenter(
 
         // Active foreground display refresh ticker
         // When configuredRefreshInterval is present, runs an in-app timer to refresh the display
-        // on exact interval (supporting 1m, 5m, etc.) while the display screen is open.
+        // on exact interval (supporting 1m, 5m, etc.) while the display screen is open and resumed.
         LaunchedEffect(configuredRefreshInterval, lastImageTimestamp) {
             val interval = configuredRefreshInterval
             if (interval == null || interval <= 0) {
@@ -304,54 +307,66 @@ class TrmnlMirrorDisplayPresenter(
                 return@LaunchedEffect
             }
 
-            Timber.tag(TAG).i("Starting active foreground display ticker: interval=${interval}s, lastImageTimestamp=$lastImageTimestamp")
-            var lastLoggedRemainingSec = -1L
+            val lifecycleOwner = activity
+            val tickerBlock: suspend CoroutineScope.() -> Unit = {
+                Timber.tag(TAG).i(
+                    "Starting active foreground display ticker: interval=${interval}s, lastImageTimestamp=$lastImageTimestamp",
+                )
+                var lastLoggedRemainingSec = -1L
 
-            while (isActive) {
-                val now = System.currentTimeMillis()
-                val lastTimestamp = lastImageTimestamp ?: now
-                val nextRefreshTimeMillis = lastTimestamp + (interval * 1000L)
-                val remainingMillis = nextRefreshTimeMillis - now
+                while (isActive) {
+                    val now = System.currentTimeMillis()
+                    val lastTimestamp = lastImageTimestamp ?: now
+                    val nextRefreshTimeMillis = lastTimestamp + (interval * 1000L)
+                    val remainingMillis = nextRefreshTimeMillis - now
 
-                if (remainingMillis <= 0) {
-                    if (!isLoading) {
-                        Timber.tag(TAG).i("Foreground interval elapsed ($interval s). Triggering scheduled refresh now!")
-                        trmnlWorkScheduler.triggerScheduledRefresh()
+                    if (remainingMillis <= 0) {
+                        if (!isLoading) {
+                            Timber.tag(TAG).i("Foreground interval elapsed ($interval s). Triggering scheduled refresh now!")
+                            isLoading = true
+                            trmnlWorkScheduler.triggerScheduledRefresh()
+                        } else {
+                            Timber.tag(TAG).d(
+                                "Foreground interval elapsed ($interval s), but refresh is already in progress " +
+                                    "(isLoading=true). Skipping duplicate trigger.",
+                            )
+                        }
+                        nextRefreshTime = "any moment now"
+                        delay(5_000L)
                     } else {
-                        Timber.tag(TAG).d(
-                            "Foreground interval elapsed ($interval s), but refresh is already in progress " +
-                                "(isLoading=true). Skipping duplicate trigger.",
-                        )
-                    }
-                    nextRefreshTime = "any moment now"
-                    delay(5_000L)
-                } else {
-                    val remainingSeconds = remainingMillis / 1000L
-                    nextRefreshTime =
-                        when {
-                            remainingSeconds <= 0 -> "any moment now"
-                            remainingSeconds < 60 -> "in $remainingSeconds seconds"
-                            remainingSeconds < 3600 -> "in ${remainingMillis / 60_000L} minutes"
-                            else -> "in ${remainingMillis / 3_600_000L} hours"
+                        val remainingSeconds = remainingMillis / 1000L
+                        nextRefreshTime =
+                            when {
+                                remainingSeconds <= 0 -> "any moment now"
+                                remainingSeconds < 60 -> "in $remainingSeconds seconds"
+                                remainingSeconds < 3600 -> "in ${remainingMillis / 60_000L} minutes"
+                                else -> "in ${remainingMillis / 3_600_000L} hours"
+                            }
+
+                        // Log on minute boundaries or when under 60s at 10s intervals
+                        val shouldLog =
+                            lastLoggedRemainingSec == -1L ||
+                                (remainingSeconds < 60 && (remainingSeconds % 10L == 0L || remainingSeconds <= 5L)) ||
+                                (remainingSeconds >= 60 && remainingSeconds / 60 != lastLoggedRemainingSec / 60)
+                        if (shouldLog) {
+                            Timber.tag(TAG).d("Foreground ticker countdown: $nextRefreshTime (${remainingSeconds}s remaining)")
+                            lastLoggedRemainingSec = remainingSeconds
                         }
 
-                    // Log on minute boundaries or when under 60s at 10s intervals
-                    val shouldLog =
-                        lastLoggedRemainingSec == -1L ||
-                            (remainingSeconds < 60 && (remainingSeconds % 10L == 0L || remainingSeconds <= 5L)) ||
-                            (remainingSeconds >= 60 && remainingSeconds / 60 != lastLoggedRemainingSec / 60)
-                    if (shouldLog) {
-                        Timber.tag(TAG).d("Foreground ticker countdown: $nextRefreshTime (${remainingSeconds}s remaining)")
-                        lastLoggedRemainingSec = remainingSeconds
+                        val delayMs = if (remainingSeconds < 60) 1_000L else 5_000L
+                        delay(delayMs)
                     }
-
-                    val delayMs = if (remainingSeconds < 60) 1_000L else 5_000L
-                    delay(delayMs)
                 }
+            }
+
+            if (lifecycleOwner != null) {
+                lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED, tickerBlock)
+            } else {
+                tickerBlock()
             }
         }
 
-        // Initialize by checking token and starting one-time work if needed
+        // Initialize by checking token and starting initial refresh if needed
         LaunchedEffect(Unit) {
             val token = trmnlDeviceConfigDataStore.accessTokenFlow.firstOrNull()
             if (token.isNullOrBlank()) {
@@ -360,15 +375,22 @@ class TrmnlMirrorDisplayPresenter(
                 return@LaunchedEffect
             }
 
-            // Check if we have a cached image
-            val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
-            val hasValidImage = imageMetadataStore.hasValidImageUrlFlow.firstOrNull() ?: false
-            Timber.tag(TAG).d("Initial check: hasValidImage=$hasValidImage, cachedTimestamp=${cachedMetadata?.timestamp}")
-            if (hasValidImage && cachedMetadata != null) {
-                // Initial loading state will be updated when imageUpdateFlow emits
-                Timber.tag(TAG).d("Valid cached image URL exists in ImageMetadataStore")
-                lastImageTimestamp = cachedMetadata.timestamp
+            // Always initialize image update manager in a child coroutine so it doesn't block this effect
+            launch {
                 trmnlImageUpdateManager.initialize()
+            }
+
+            // Check if we have a cached image to display immediately
+            val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
+            val hasCachedImage = cachedMetadata != null && cachedMetadata.url.isNotBlank()
+            Timber.tag(TAG).d("Initial check: hasCachedImage=$hasCachedImage, cachedTimestamp=${cachedMetadata?.timestamp}")
+            if (cachedMetadata != null && cachedMetadata.url.isNotBlank()) {
+                lastImageTimestamp = cachedMetadata.timestamp
+                if (cachedMetadata.errorMessage == null) {
+                    imageUrl = cachedMetadata.url
+                    isLoading = false
+                    error = null
+                }
 
                 // Check if cached image is already stale according to configured interval
                 val interval =
@@ -382,6 +404,7 @@ class TrmnlMirrorDisplayPresenter(
                             "Cached image is STALE on launch (age: ${ageSec}s >= interval: ${interval}s). " +
                                 "Triggering immediate refresh.",
                         )
+                        isLoading = true
                         trmnlWorkScheduler.triggerScheduledRefresh()
                     } else {
                         Timber.tag(TAG).d(
@@ -391,12 +414,14 @@ class TrmnlMirrorDisplayPresenter(
                     }
                 }
             } else {
-                Timber.tag(TAG).d("No valid cached image, starting one-time refresh work")
+                Timber.tag(TAG).d("No valid cached image, starting initial refresh work")
                 // Always keep in loading state until we get a valid result
                 isLoading = true
                 error = null
-                // No valid image, start a refresh work
-                trmnlWorkScheduler.startOneTimeImageRefreshWork()
+                val shouldAdvance = trmnlDeviceConfigDataStore.shouldAdvancePlaylistSync()
+                trmnlWorkScheduler.startOneTimeImageRefreshWork(
+                    loadNextPlaylistImage = shouldAdvance,
+                )
             }
         }
 

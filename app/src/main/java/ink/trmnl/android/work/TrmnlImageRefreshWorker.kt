@@ -79,6 +79,36 @@ class TrmnlImageRefreshWorker(
             )
         }
 
+        // Check for duplicate periodic execution:
+        // Background periodic work (IMAGE_REFRESH_PERIODIC_WORK_NAME) and foreground scheduled work
+        // (IMAGE_REFRESH_ONETIME_WORK_NAME) use separate unique work names in WorkManager.
+        // If a scheduled refresh ran recently, skip duplicate periodic execution to prevent double
+        // playlist advance (for BYOS/master devices) and redundant network requests.
+        if (workTypeValue == RefreshWorkType.PERIODIC.name) {
+            val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
+            if (cachedMetadata != null && cachedMetadata.url.isNotBlank()) {
+                val isLastFetchSuccess = cachedMetadata.httpStatusCode == null || cachedMetadata.httpStatusCode == 200
+                val intervalSec = deviceConfig.refreshRateSecs
+                if (isLastFetchSuccess && intervalSec > 0) {
+                    val ageMs = System.currentTimeMillis() - cachedMetadata.timestamp
+                    val jitterBufferMs = minOf(30_000L, (intervalSec * 1000L) / 4)
+                    val minIntervalMs = (intervalSec * 1000L) - jitterBufferMs
+                    if (ageMs < minIntervalMs) {
+                        Timber.tag(TAG).i(
+                            "Skipping duplicate periodic refresh: last update was ${ageMs / 1000}s ago, " +
+                                "which is within interval (${intervalSec}s, threshold ${minIntervalMs / 1000}s).",
+                        )
+                        return Result.success(
+                            workDataOf(
+                                KEY_REFRESH_RESULT to SUCCESS.name,
+                                KEY_NEW_IMAGE_URL to cachedMetadata.url,
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+
         // Fetch TRMNL display image - current or next from playlist based on request type
         // The `loadNextPluginImage` parameter is set by TrmnlWorkScheduler based on:
         // - BYOS devices: always true (auto-advance playlist)

@@ -8,6 +8,7 @@ import ink.trmnl.android.di.AppScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import timber.log.Timber
 
 /**
@@ -53,11 +54,10 @@ class TrmnlImageUpdateManager(
      * Initialize the manager with the last cached image URL if available
      */
     suspend fun initialize() {
-        imageMetadataStore.imageMetadataFlow.collect { metadata ->
-            if (metadata != null && _imageUpdateFlow.value == null) {
-                Timber.d("Initializing image URL from ImageMetadataStore cache: ${metadata.url}")
-                _imageUpdateFlow.value = metadata
-            }
+        val metadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
+        if (metadata != null && _imageUpdateFlow.value == null) {
+            Timber.d("Initializing image URL from ImageMetadataStore cache: ${metadata.url}")
+            _imageUpdateFlow.value = metadata
         }
     }
 }

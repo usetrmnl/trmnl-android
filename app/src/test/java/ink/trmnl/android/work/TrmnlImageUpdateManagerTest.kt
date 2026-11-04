@@ -82,7 +82,6 @@ class TrmnlImageUpdateManagerTest {
             assertThat(result?.errorMessage).isEqualTo(testErrorMessage)
         }
 
-    @Ignore
     @Test
     fun `initialize should load metadata from store when available and flow is null`() =
         runTest {
@@ -99,7 +98,6 @@ class TrmnlImageUpdateManagerTest {
             assertThat(result).isEqualTo(testImageMetadata)
         }
 
-    @Ignore
     @Test
     fun `initialize should not update flow if existing value is present`() =
         runTest {
@@ -128,7 +126,6 @@ class TrmnlImageUpdateManagerTest {
             assertThat(result).isNotEqualTo(testImageMetadata)
         }
 
-    @Ignore
     @Test
     fun `initialize should not update flow if store returns null`() =
         runTest {

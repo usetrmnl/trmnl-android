@@ -212,11 +212,21 @@ class TrmnlWorkScheduler(
                 ).addTag(IMAGE_REFRESH_ONETIME_WORK_TAG)
                 .build()
 
+        // Use KEEP for scheduled periodic requests to avoid cancelling slow in-flight fetches
+        // or aborting exponential backoff retries when rate-limited.
+        // Use REPLACE for user-initiated one-time manual refreshes.
+        val existingWorkPolicy =
+            if (refreshWorkType == RefreshWorkType.PERIODIC) {
+                ExistingWorkPolicy.KEEP
+            } else {
+                ExistingWorkPolicy.REPLACE
+            }
+
         WorkManager
             .getInstance(context)
             .enqueueUniqueWork(
                 uniqueWorkName = IMAGE_REFRESH_ONETIME_WORK_NAME,
-                existingWorkPolicy = ExistingWorkPolicy.REPLACE,
+                existingWorkPolicy = existingWorkPolicy,
                 request = workRequest,
             )
     }

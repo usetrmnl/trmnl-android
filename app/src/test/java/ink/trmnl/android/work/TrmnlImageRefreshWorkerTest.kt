@@ -710,4 +710,151 @@ class TrmnlImageRefreshWorkerTest {
                 imageMetadataStore.saveImageMetadata(any(), any(), any())
             }
         }
+
+    @Test
+    fun `doWork skips network call and returns success when periodic refresh is triggered but image was updated recently`() =
+        runTest {
+            // Arrange - Periodic refresh with recently updated image (5 seconds ago vs 600s interval)
+            every { workerParameters.inputData } returns
+                workDataOf(
+                    PARAM_REFRESH_WORK_TYPE to RefreshWorkType.PERIODIC.name,
+                    PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to false,
+                )
+
+            val recentMetadata =
+                ImageMetadata(
+                    url = validImageUrl,
+                    refreshIntervalSecs = validRefreshRate,
+                    errorMessage = null,
+                    httpStatusCode = HTTP_200,
+                    timestamp = System.currentTimeMillis() - 5_000L,
+                )
+            every { imageMetadataStore.imageMetadataFlow } returns flow { emit(recentMetadata) }
+
+            // Act
+            val result = worker.doWork()
+
+            // Assert - Should return success without making network requests
+            assertThat(result).isInstanceOf(ListenableWorker.Result.Success::class.java)
+            val outputData = (result as ListenableWorker.Result.Success).outputData
+            assertThat(outputData.getString(KEY_REFRESH_RESULT)).isEqualTo(SUCCESS.name)
+            assertThat(outputData.getString(KEY_NEW_IMAGE_URL)).isEqualTo(validImageUrl)
+
+            coVerify(exactly = 0) { displayRepository.getCurrentDisplayData(any()) }
+            coVerify(exactly = 0) { displayRepository.getNextDisplayData(any()) }
+        }
+
+    @Test
+    fun `doWork executes network call when periodic refresh is triggered and image is stale`() =
+        runTest {
+            // Arrange - Periodic refresh with stale image (700s ago vs 600s interval)
+            every { workerParameters.inputData } returns
+                workDataOf(
+                    PARAM_REFRESH_WORK_TYPE to RefreshWorkType.PERIODIC.name,
+                    PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to false,
+                )
+
+            val staleMetadata =
+                ImageMetadata(
+                    url = validImageUrl,
+                    refreshIntervalSecs = validRefreshRate,
+                    errorMessage = null,
+                    httpStatusCode = HTTP_200,
+                    timestamp = System.currentTimeMillis() - 700_000L,
+                )
+            every { imageMetadataStore.imageMetadataFlow } returns flow { emit(staleMetadata) }
+
+            val successfulResponse =
+                TrmnlDisplayInfo(
+                    status = HTTP_200,
+                    trmnlDeviceType = TrmnlDeviceType.TRMNL,
+                    imageUrl = validImageUrl,
+                    imageFileName = "fresh-image.png",
+                    refreshIntervalSeconds = validRefreshRate,
+                )
+            coEvery { displayRepository.getCurrentDisplayData(any()) } returns successfulResponse
+
+            // Act
+            val result = worker.doWork()
+
+            // Assert - Should make network request and return success
+            assertThat(result).isInstanceOf(ListenableWorker.Result.Success::class.java)
+            coVerify(exactly = 1) { displayRepository.getCurrentDisplayData(any()) }
+        }
+
+    @Test
+    fun `doWork executes network call when manual ONE_TIME refresh is triggered even if image was recently updated`() =
+        runTest {
+            // Arrange - Manual refresh (ONE_TIME) with recently updated image (2 seconds ago)
+            every { workerParameters.inputData } returns
+                workDataOf(
+                    PARAM_REFRESH_WORK_TYPE to RefreshWorkType.ONE_TIME.name,
+                    PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to false,
+                )
+
+            val recentMetadata =
+                ImageMetadata(
+                    url = validImageUrl,
+                    refreshIntervalSecs = validRefreshRate,
+                    errorMessage = null,
+                    httpStatusCode = HTTP_200,
+                    timestamp = System.currentTimeMillis() - 2_000L,
+                )
+            every { imageMetadataStore.imageMetadataFlow } returns flow { emit(recentMetadata) }
+
+            val successfulResponse =
+                TrmnlDisplayInfo(
+                    status = HTTP_200,
+                    trmnlDeviceType = TrmnlDeviceType.TRMNL,
+                    imageUrl = validImageUrl,
+                    imageFileName = "manual-refresh-image.png",
+                    refreshIntervalSeconds = validRefreshRate,
+                )
+            coEvery { displayRepository.getCurrentDisplayData(any()) } returns successfulResponse
+
+            // Act
+            val result = worker.doWork()
+
+            // Assert - Manual refresh must proceed with network call
+            assertThat(result).isInstanceOf(ListenableWorker.Result.Success::class.java)
+            coVerify(exactly = 1) { displayRepository.getCurrentDisplayData(any()) }
+        }
+
+    @Test
+    fun `doWork executes network call when periodic refresh is triggered and previous fetch was rate-limited`() =
+        runTest {
+            // Arrange - Periodic refresh with recent cached image that had rate limit (HTTP 429)
+            every { workerParameters.inputData } returns
+                workDataOf(
+                    PARAM_REFRESH_WORK_TYPE to RefreshWorkType.PERIODIC.name,
+                    PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to false,
+                )
+
+            val rateLimitedMetadata =
+                ImageMetadata(
+                    url = validImageUrl,
+                    refreshIntervalSecs = validRefreshRate,
+                    errorMessage = null,
+                    httpStatusCode = HTTP_429,
+                    timestamp = System.currentTimeMillis() - 5_000L,
+                )
+            every { imageMetadataStore.imageMetadataFlow } returns flow { emit(rateLimitedMetadata) }
+
+            val successfulResponse =
+                TrmnlDisplayInfo(
+                    status = HTTP_200,
+                    trmnlDeviceType = TrmnlDeviceType.TRMNL,
+                    imageUrl = validImageUrl,
+                    imageFileName = "recovered-image.png",
+                    refreshIntervalSeconds = validRefreshRate,
+                )
+            coEvery { displayRepository.getCurrentDisplayData(any()) } returns successfulResponse
+
+            // Act
+            val result = worker.doWork()
+
+            // Assert - Should proceed with retry/fetch rather than skipping
+            assertThat(result).isInstanceOf(ListenableWorker.Result.Success::class.java)
+            coVerify(exactly = 1) { displayRepository.getCurrentDisplayData(any()) }
+        }
 }
