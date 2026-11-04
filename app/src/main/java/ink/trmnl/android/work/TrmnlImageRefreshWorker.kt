@@ -63,7 +63,7 @@ class TrmnlImageRefreshWorker(
         val workTypeValue = inputData.getString(PARAM_REFRESH_WORK_TYPE) ?: RefreshWorkType.ONE_TIME.name
         val loadNextPluginImage = inputData.getBoolean(PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE, false)
 
-        Timber.tag(TAG).d("Work type: $workTypeValue, loadNextPluginImage: $loadNextPluginImage")
+        Timber.tag(TAG).i("Executing image refresh: workType=$workTypeValue, loadNextPluginImage=$loadNextPluginImage")
 
         // Get device config
         val deviceConfig: TrmnlDeviceConfig? = trmnlDeviceConfigDataStore.deviceConfigFlow.firstOrNull()
@@ -168,6 +168,11 @@ class TrmnlImageRefreshWorker(
             refreshIntervalSeconds = trmnlDisplayInfo.refreshIntervalSeconds,
             imageRefreshWorkType = workTypeValue,
             httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
+        )
+
+        Timber.tag(TAG).i(
+            "Image refresh succeeded: imageFileName=${trmnlDisplayInfo.imageFileName}, " +
+                "refreshIntervalSeconds=${trmnlDisplayInfo.refreshIntervalSeconds}s, workType=$workTypeValue",
         )
 
         // NOTE: Image metadata caching is handled automatically by `TrmnlDisplayRepository`

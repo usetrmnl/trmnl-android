@@ -68,6 +68,7 @@ import ink.trmnl.android.ui.settings.AppSettingsScreen
 import ink.trmnl.android.util.CoilRequestUtils
 import ink.trmnl.android.util.HTTP_429
 import ink.trmnl.android.util.ImageSaver
+import ink.trmnl.android.util.formatRefreshInterval
 import ink.trmnl.android.util.nextRunTime
 import ink.trmnl.android.work.TrmnlImageUpdateManager
 import ink.trmnl.android.work.TrmnlWorkScheduler
@@ -150,6 +151,10 @@ class TrmnlMirrorDisplayPresenter(
     private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
     private val rateLimitInterceptor: RateLimitInterceptor,
 ) : Presenter<TrmnlMirrorDisplayScreen.State> {
+    companion object {
+        private const val TAG = "MirrorDisplay"
+    }
+
     @Composable
     override fun present(): TrmnlMirrorDisplayScreen.State {
         var imageUrl by remember { mutableStateOf<String?>(null) }
@@ -167,6 +172,10 @@ class TrmnlMirrorDisplayPresenter(
         // Load configured refresh rate in seconds (updated from server or periodic work)
         val configuredRefreshInterval by produceState<Long?>(initialValue = null) {
             trmnlDeviceConfigDataStore.refreshRateSecondsFlow.collect { rate ->
+                Timber.tag(TAG).i(
+                    "Observed configured refresh interval: $rate seconds " +
+                        "(${rate?.let { formatRefreshInterval(it) } ?: "null"})",
+                )
                 value = rate
             }
         }
@@ -187,7 +196,7 @@ class TrmnlMirrorDisplayPresenter(
                         delaySeconds = (event.delayMs / 1000).toInt(),
                         reason = reasonText,
                     )
-                Timber.d("Retry info updated: attempt ${event.attempt}/${event.maxRetries}, delay ${event.delayMs}ms")
+                Timber.tag(TAG).d("Retry info updated: attempt ${event.attempt}/${event.maxRetries}, delay ${event.delayMs}ms")
             }
         }
 
@@ -195,9 +204,13 @@ class TrmnlMirrorDisplayPresenter(
         LaunchedEffect(Unit) {
             imageMetadataStore.imageMetadataFlow.collect { metadata ->
                 lastImageTimestamp = metadata?.timestamp
+                Timber.tag(TAG).d(
+                    "Image metadata update received: timestamp=${metadata?.timestamp}, " +
+                        "statusCode=${metadata?.httpStatusCode}",
+                )
                 if (metadata?.httpStatusCode == HTTP_429) {
                     rateLimitMessage = "Showing cached image - rate limited by API server. Retrying in background..."
-                    Timber.d("Rate limit detected (HTTP 429), showing cached image with notification")
+                    Timber.tag(TAG).d("Rate limit detected (HTTP 429), showing cached image with notification")
                 } else {
                     rateLimitMessage = null
                 }
@@ -208,7 +221,7 @@ class TrmnlMirrorDisplayPresenter(
         // Latest image URL is received from WorkManager work requests.
         LaunchedEffect(Unit) {
             trmnlImageUpdateManager.imageUpdateFlow.collect { imageMetadata ->
-                Timber.d("Received new image URL from TRMNL Image Update Manager: $imageMetadata")
+                Timber.tag(TAG).d("Received new image URL from TRMNL Image Update Manager: $imageMetadata")
                 if (imageMetadata != null && imageMetadata.errorMessage == null) {
                     imageUrl = imageMetadata.url
                     isLoading = false
@@ -216,7 +229,7 @@ class TrmnlMirrorDisplayPresenter(
                     retryInfo = null // Clear retry info on successful load
                     lastImageTimestamp = imageMetadata.timestamp
                 } else {
-                    Timber.w("Failed to get cached image URL from TRMNL Image Update Manager `imageUpdateFlow`")
+                    Timber.tag(TAG).w("Failed to get cached image URL from TRMNL Image Update Manager `imageUpdateFlow`")
                     // Keep showing loading state until we have a valid response from the server
                     // Only set error state if we have a non-null imageMetadata with an error
                     if (imageMetadata != null) {
@@ -242,6 +255,7 @@ class TrmnlMirrorDisplayPresenter(
             val observer =
                 LifecycleEventObserver { _, event ->
                     if (event == Lifecycle.Event.ON_RESUME) {
+                        Timber.tag(TAG).d("Activity ON_RESUME event received")
                         scope.launch {
                             val metadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
                             val interval =
@@ -249,9 +263,18 @@ class TrmnlMirrorDisplayPresenter(
                                     ?: metadata?.refreshIntervalSecs
                             if (metadata != null && interval != null && interval > 0) {
                                 val ageMs = System.currentTimeMillis() - metadata.timestamp
+                                val ageSec = ageMs / 1000
                                 if (ageMs >= interval * 1000L && !isLoading) {
-                                    Timber.d("Image stale on resume ($ageMs ms >= ${interval * 1000} ms). Fetching fresh image.")
+                                    Timber.tag(TAG).i(
+                                        "Cached image is STALE on resume (age: ${ageSec}s >= interval: ${interval}s). " +
+                                            "Triggering fresh fetch.",
+                                    )
                                     trmnlWorkScheduler.triggerScheduledRefresh()
+                                } else {
+                                    Timber.tag(TAG).d(
+                                        "Cached image is FRESH on resume (age: ${ageSec}s < interval: ${interval}s, " +
+                                            "remaining: ${interval - ageSec}s).",
+                                    )
                                 }
                             }
                         }
@@ -269,16 +292,20 @@ class TrmnlMirrorDisplayPresenter(
         LaunchedEffect(configuredRefreshInterval, lastImageTimestamp) {
             val interval = configuredRefreshInterval
             if (interval == null || interval <= 0) {
-                // If interval is unconfigured, fall back to observing WorkManager scheduled work
+                Timber.tag(TAG).w("No configured refresh interval found; falling back to WorkManager scheduled info.")
                 trmnlWorkScheduler.getScheduledWorkInfo().collect { workInfo ->
                     workInfo?.nextRunTime()?.let {
                         nextRefreshTime = it.timeUntilNextRefresh
+                        Timber.tag(TAG).d("WorkManager next run time: ${it.timeUntilNextRefresh} (at ${it.nextRefreshOnDateTime})")
                     } ?: run {
                         nextRefreshTime = "No scheduled work found. Please set API token."
                     }
                 }
                 return@LaunchedEffect
             }
+
+            Timber.tag(TAG).i("Starting active foreground display ticker: interval=${interval}s, lastImageTimestamp=$lastImageTimestamp")
+            var lastLoggedRemainingSec = -1L
 
             while (isActive) {
                 val now = System.currentTimeMillis()
@@ -288,8 +315,13 @@ class TrmnlMirrorDisplayPresenter(
 
                 if (remainingMillis <= 0) {
                     if (!isLoading) {
-                        Timber.d("Foreground refresh interval elapsed ($interval s). Triggering scheduled refresh.")
+                        Timber.tag(TAG).i("Foreground interval elapsed ($interval s). Triggering scheduled refresh now!")
                         trmnlWorkScheduler.triggerScheduledRefresh()
+                    } else {
+                        Timber.tag(TAG).d(
+                            "Foreground interval elapsed ($interval s), but refresh is already in progress " +
+                                "(isLoading=true). Skipping duplicate trigger.",
+                        )
                     }
                     nextRefreshTime = "any moment now"
                     delay(5_000L)
@@ -302,6 +334,17 @@ class TrmnlMirrorDisplayPresenter(
                             remainingSeconds < 3600 -> "in ${remainingMillis / 60_000L} minutes"
                             else -> "in ${remainingMillis / 3_600_000L} hours"
                         }
+
+                    // Log on minute boundaries or when under 60s at 10s intervals
+                    val shouldLog =
+                        lastLoggedRemainingSec == -1L ||
+                            (remainingSeconds < 60 && (remainingSeconds % 10L == 0L || remainingSeconds <= 5L)) ||
+                            (remainingSeconds >= 60 && remainingSeconds / 60 != lastLoggedRemainingSec / 60)
+                    if (shouldLog) {
+                        Timber.tag(TAG).d("Foreground ticker countdown: $nextRefreshTime (${remainingSeconds}s remaining)")
+                        lastLoggedRemainingSec = remainingSeconds
+                    }
+
                     val delayMs = if (remainingSeconds < 60) 1_000L else 5_000L
                     delay(delayMs)
                 }
@@ -312,7 +355,7 @@ class TrmnlMirrorDisplayPresenter(
         LaunchedEffect(Unit) {
             val token = trmnlDeviceConfigDataStore.accessTokenFlow.firstOrNull()
             if (token.isNullOrBlank()) {
-                Timber.d("No access token found, navigating to configuration screen")
+                Timber.tag(TAG).d("No access token found, navigating to configuration screen")
                 navigator.goTo(AppSettingsScreen(returnToMirrorAfterSave = true))
                 return@LaunchedEffect
             }
@@ -320,9 +363,10 @@ class TrmnlMirrorDisplayPresenter(
             // Check if we have a cached image
             val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
             val hasValidImage = imageMetadataStore.hasValidImageUrlFlow.firstOrNull() ?: false
+            Timber.tag(TAG).d("Initial check: hasValidImage=$hasValidImage, cachedTimestamp=${cachedMetadata?.timestamp}")
             if (hasValidImage && cachedMetadata != null) {
                 // Initial loading state will be updated when imageUpdateFlow emits
-                Timber.d("Valid cached image URL exists in ImageMetadataStore")
+                Timber.tag(TAG).d("Valid cached image URL exists in ImageMetadataStore")
                 lastImageTimestamp = cachedMetadata.timestamp
                 trmnlImageUpdateManager.initialize()
 
@@ -332,13 +376,22 @@ class TrmnlMirrorDisplayPresenter(
                         ?: cachedMetadata.refreshIntervalSecs
                 if (interval != null && interval > 0) {
                     val ageMs = System.currentTimeMillis() - cachedMetadata.timestamp
+                    val ageSec = ageMs / 1000
                     if (ageMs >= interval * 1000L) {
-                        Timber.d("Cached image is stale ($ageMs ms >= ${interval * 1000} ms). Refreshing.")
+                        Timber.tag(TAG).i(
+                            "Cached image is STALE on launch (age: ${ageSec}s >= interval: ${interval}s). " +
+                                "Triggering immediate refresh.",
+                        )
                         trmnlWorkScheduler.triggerScheduledRefresh()
+                    } else {
+                        Timber.tag(TAG).d(
+                            "Cached image is FRESH on launch (age: ${ageSec}s < interval: ${interval}s, " +
+                                "remaining: ${interval - ageSec}s).",
+                        )
                     }
                 }
             } else {
-                Timber.d("No valid cached image, starting one-time refresh work")
+                Timber.tag(TAG).d("No valid cached image, starting one-time refresh work")
                 // Always keep in loading state until we get a valid result
                 isLoading = true
                 error = null

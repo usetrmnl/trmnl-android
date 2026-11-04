@@ -36,6 +36,8 @@ class TrmnlWorkScheduler(
     private val trmnlDeviceConfigDataStore: TrmnlDeviceConfigDataStore,
 ) {
     companion object {
+        private const val TAG = "TrmnlScheduler"
+
         internal const val IMAGE_REFRESH_PERIODIC_WORK_NAME = "trmnl_image_refresh_work_periodic"
         internal const val IMAGE_REFRESH_PERIODIC_WORK_TAG = "trmnl_image_refresh_work_periodic_tag"
         internal const val IMAGE_REFRESH_ONETIME_WORK_NAME = "trmnl_image_refresh_work_onetime"
@@ -101,7 +103,9 @@ class TrmnlWorkScheduler(
         val adjustedIntervalSeconds = intervalSeconds + EXTRA_REFRESH_WAIT_TIME_SEC
         val intervalMinutes = (adjustedIntervalSeconds / 60).coerceAtLeast(WORK_MANAGER_MINIMUM_INTERVAL_MINUTES)
 
-        Timber.d("Scheduling work: $intervalSeconds seconds + $EXTRA_REFRESH_WAIT_TIME_SEC seconds → $intervalMinutes minutes")
+        Timber.tag(TAG).i(
+            "Scheduling work: $intervalSeconds seconds + $EXTRA_REFRESH_WAIT_TIME_SEC seconds → $intervalMinutes minutes",
+        )
 
         if (trmnlDeviceConfigDataStore.hasTokenSync().not()) {
             Timber.w("Token not set, skipping image refresh work scheduling")
@@ -176,12 +180,12 @@ class TrmnlWorkScheduler(
         loadNextPlaylistImage: Boolean = false,
         refreshWorkType: RefreshWorkType = RefreshWorkType.ONE_TIME,
     ) {
-        Timber.d(
-            "Starting one-time image refresh work with loadNextPlaylistImage: $loadNextPlaylistImage, refreshWorkType: $refreshWorkType",
+        Timber.tag(TAG).i(
+            "Starting one-time image refresh work: loadNextPlaylistImage=$loadNextPlaylistImage, refreshWorkType=$refreshWorkType",
         )
 
         if (trmnlDeviceConfigDataStore.hasTokenSync().not()) {
-            Timber.w("Token not set, skipping one-time image refresh work")
+            Timber.tag(TAG).w("Token not set, skipping one-time image refresh work")
             return
         }
 
@@ -225,6 +229,7 @@ class TrmnlWorkScheduler(
      */
     fun triggerScheduledRefresh() {
         val shouldAdvance = trmnlDeviceConfigDataStore.shouldAdvancePlaylistSync()
+        Timber.tag(TAG).i("triggerScheduledRefresh: shouldAdvancePlaylist=$shouldAdvance, enqueueing periodic one-time worker")
         startOneTimeImageRefreshWork(
             loadNextPlaylistImage = shouldAdvance,
             refreshWorkType = RefreshWorkType.PERIODIC,
