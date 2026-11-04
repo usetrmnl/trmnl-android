@@ -233,7 +233,7 @@ class TrmnlMirrorDisplayPresenter(
         }
 
         val activity = LocalActivity.current as? ComponentActivity
-        LaunchedEffect(overlayControlsVisible, configuredRefreshInterval) {
+        LaunchedEffect(configuredRefreshInterval) {
             val interval = configuredRefreshInterval
             if (interval != null && sub15MinRefreshTicker.isSub15MinInterval(interval)) {
                 sub15MinRefreshTicker.runWhenResumed(
@@ -249,7 +249,12 @@ class TrmnlMirrorDisplayPresenter(
                     },
                     onNextRefreshTimeUpdate = { nextRefreshTime = it },
                 )
-            } else {
+            }
+        }
+
+        LaunchedEffect(overlayControlsVisible, configuredRefreshInterval) {
+            val interval = configuredRefreshInterval
+            if (interval == null || !sub15MinRefreshTicker.isSub15MinInterval(interval)) {
                 trmnlWorkScheduler.getScheduledWorkInfo().collect { workInfo ->
                     workInfo?.nextRunTime()?.let {
                         nextRefreshTime = it.timeUntilNextRefresh

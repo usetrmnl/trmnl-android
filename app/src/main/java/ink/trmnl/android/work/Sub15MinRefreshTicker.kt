@@ -45,6 +45,13 @@ class Sub15MinRefreshTicker(
     }
 
     /**
+     * Retains the latest refresh reference timestamp across collector restarts (e.g. lifecycle
+     * pause/resume transitions) so that an in-effect failure backoff deadline is not lost when
+     * `ImageMetadataStore` still holds an older timestamp from before a failed fetch.
+     */
+    private val lastTimestampRef = AtomicLong(0L)
+
+    /**
      * Returns `true` only when [intervalSeconds] is a valid positive interval strictly below
      * WorkManager's 15-minute (900s) minimum.
      */
@@ -120,8 +127,10 @@ class Sub15MinRefreshTicker(
             }
 
             val initialMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
-            // Capture fallback timestamp once on initialization if store is empty
-            val lastTimestampRef = AtomicLong(initialMetadata?.timestamp ?: clock())
+            // Initialize or advance the reference timestamp without regressing a newer failure-backoff timestamp
+            lastTimestampRef.updateAndGet { current ->
+                maxOf(current, initialMetadata?.timestamp ?: clock())
+            }
 
             coroutineScope {
                 val metadataJob =
@@ -162,7 +171,8 @@ class Sub15MinRefreshTicker(
                             )
                         }
                         send("any moment now")
-                        delay(POLL_DELAY_DEFAULT_MS)
+                        val postTriggerDelayMs = minOf(POLL_DELAY_DEFAULT_MS, intervalSeconds * 1_000L)
+                        delay(postTriggerDelayMs)
                     } else {
                         val remainingSeconds = remainingMillis / 1000L
                         val countdownText = formatCountdown(remainingMillis)
@@ -193,9 +203,23 @@ class Sub15MinRefreshTicker(
 
     internal fun formatCountdown(remainingMillis: Long): String =
         when {
-            remainingMillis <= 0 -> "any moment now"
-            remainingMillis < 60_000L -> "in ${remainingMillis / 1_000L} seconds"
-            remainingMillis < 3_600_000L -> "in ${remainingMillis / 60_000L} minutes"
-            else -> "in ${remainingMillis / 3_600_000L} hours"
+            remainingMillis <= 0 -> {
+                "any moment now"
+            }
+
+            remainingMillis < 60_000L -> {
+                val seconds = remainingMillis / 1_000L
+                "in $seconds ${if (seconds == 1L) "second" else "seconds"}"
+            }
+
+            remainingMillis < 3_600_000L -> {
+                val minutes = remainingMillis / 60_000L
+                "in $minutes ${if (minutes == 1L) "minute" else "minutes"}"
+            }
+
+            else -> {
+                val hours = remainingMillis / 3_600_000L
+                "in $hours ${if (hours == 1L) "hour" else "hours"}"
+            }
         }
 }

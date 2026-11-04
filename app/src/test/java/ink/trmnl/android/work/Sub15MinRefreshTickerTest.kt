@@ -186,14 +186,14 @@ class Sub15MinRefreshTickerTest {
             // Step 2: advance 1s (1s remaining)
             currentTime += 1_000L
             advanceTimeBy(1_000L)
-            assertThat(emissions).containsExactly("in 2 seconds", "in 1 seconds")
+            assertThat(emissions).containsExactly("in 2 seconds", "in 1 second")
 
             // Step 3: advance 1s (0s remaining -> triggers refresh)
             currentTime += 1_000L
             advanceTimeBy(1_000L)
             job.join()
 
-            assertThat(emissions).containsExactly("in 2 seconds", "in 1 seconds", "any moment now").inOrder()
+            assertThat(emissions).containsExactly("in 2 seconds", "in 1 second", "any moment now").inOrder()
             assertThat(isLoading).isTrue()
             coVerify(exactly = 1) { trmnlWorkScheduler.triggerScheduledRefresh() }
         }
@@ -224,14 +224,14 @@ class Sub15MinRefreshTickerTest {
             // Step 2: t=1s -> 1s remaining (proving fallback timestamp was NOT reset to new `now`)
             currentTime += 1_000L
             advanceTimeBy(1_000L)
-            assertThat(emissions).containsExactly("in 2 seconds", "in 1 seconds")
+            assertThat(emissions).containsExactly("in 2 seconds", "in 1 second")
 
             // Step 3: t=2s -> 0s remaining -> triggers refresh
             currentTime += 1_000L
             advanceTimeBy(1_000L)
             job.join()
 
-            assertThat(emissions).containsExactly("in 2 seconds", "in 1 seconds", "any moment now").inOrder()
+            assertThat(emissions).containsExactly("in 2 seconds", "in 1 second", "any moment now").inOrder()
             coVerify(exactly = 1) { trmnlWorkScheduler.triggerScheduledRefresh() }
         }
 
@@ -323,4 +323,96 @@ class Sub15MinRefreshTickerTest {
             assertThat(emissions).containsExactly("in 10 seconds", "in 5 minutes").inOrder()
             coVerify(exactly = 0) { trmnlWorkScheduler.triggerScheduledRefresh() }
         }
+
+    @Test
+    fun `observeTicks preserves failure backoff deadline across collector restarts`() =
+        runTest {
+            var currentTime = 1_000_000L
+            val staleMetadata =
+                ImageMetadata(
+                    url = "https://trmnl.com/image.png",
+                    refreshIntervalSecs = 300L,
+                    timestamp = currentTime - 350_000L,
+                )
+            every { imageMetadataStore.imageMetadataFlow } returns MutableStateFlow(staleMetadata)
+
+            // First collector triggers refresh and sets reference timestamp to `currentTime`
+            val firstEmission =
+                ticker
+                    .observeTicks(
+                        intervalSeconds = 300L,
+                        isLoading = { false },
+                        onRefreshTriggered = {},
+                        clock = { currentTime },
+                    ).first()
+            assertThat(firstEmission).isEqualTo("any moment now")
+            coVerify(exactly = 1) { trmnlWorkScheduler.triggerScheduledRefresh() }
+
+            // 5 seconds later, collector is recreated (e.g. lifecycle pause/resume) while metadata is still stale
+            currentTime += 5_000L
+            val secondEmission =
+                ticker
+                    .observeTicks(
+                        intervalSeconds = 300L,
+                        isLoading = { false },
+                        onRefreshTriggered = {},
+                        clock = { currentTime },
+                    ).first()
+
+            // Must continue counting down from the previous trigger's backoff deadline rather than re-triggering
+            assertThat(secondEmission).isEqualTo("in 4 minutes")
+            coVerify(exactly = 1) { trmnlWorkScheduler.triggerScheduledRefresh() }
+        }
+
+    @Test
+    fun `observeTicks bounds post-trigger delay for sub-5-second intervals`() =
+        runTest {
+            var currentTime = 1_000_000L
+            val staleMetadata =
+                ImageMetadata(
+                    url = "https://trmnl.com/image.png",
+                    refreshIntervalSecs = 2L,
+                    timestamp = currentTime - 5_000L,
+                )
+            every { imageMetadataStore.imageMetadataFlow } returns MutableStateFlow(staleMetadata)
+
+            val emissions = mutableListOf<String>()
+            val job =
+                launch {
+                    ticker
+                        .observeTicks(
+                            intervalSeconds = 2L,
+                            isLoading = { false },
+                            onRefreshTriggered = {},
+                            clock = { currentTime },
+                        ).take(2)
+                        .collect { emissions.add(it) }
+                }
+
+            // First trigger at t=0
+            advanceTimeBy(100L)
+            assertThat(emissions).containsExactly("any moment now")
+            coVerify(exactly = 1) { trmnlWorkScheduler.triggerScheduledRefresh() }
+
+            // Advance 2 seconds (matching 2s interval, < 5s default delay) -> triggers second time at t=2s
+            currentTime += 2_000L
+            advanceTimeBy(2_000L)
+            job.join()
+
+            assertThat(emissions).containsExactly("any moment now", "any moment now").inOrder()
+            coVerify(exactly = 2) { trmnlWorkScheduler.triggerScheduledRefresh() }
+        }
+
+    @Test
+    fun `formatCountdown uses singular and plural units appropriately`() {
+        assertThat(ticker.formatCountdown(0L)).isEqualTo("any moment now")
+        assertThat(ticker.formatCountdown(-1_000L)).isEqualTo("any moment now")
+        assertThat(ticker.formatCountdown(1_000L)).isEqualTo("in 1 second")
+        assertThat(ticker.formatCountdown(2_000L)).isEqualTo("in 2 seconds")
+        assertThat(ticker.formatCountdown(59_000L)).isEqualTo("in 59 seconds")
+        assertThat(ticker.formatCountdown(60_000L)).isEqualTo("in 1 minute")
+        assertThat(ticker.formatCountdown(120_000L)).isEqualTo("in 2 minutes")
+        assertThat(ticker.formatCountdown(3_600_000L)).isEqualTo("in 1 hour")
+        assertThat(ticker.formatCountdown(7_200_000L)).isEqualTo("in 2 hours")
+    }
 }
