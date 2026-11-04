@@ -1,5 +1,7 @@
 package ink.trmnl.android.ui.display
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -23,6 +25,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +43,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import coil3.compose.AsyncImage
 import coil3.network.HttpException
 import com.slack.circuit.codegen.annotations.CircuitInject
@@ -68,6 +73,7 @@ import ink.trmnl.android.work.TrmnlImageUpdateManager
 import ink.trmnl.android.work.TrmnlWorkScheduler
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import timber.log.Timber
@@ -150,6 +156,7 @@ class TrmnlMirrorDisplayPresenter(
         var overlayControlsVisible by remember { mutableStateOf(false) }
         var isLoading by remember { mutableStateOf(true) }
         var nextRefreshTime by remember { mutableStateOf("No scheduled work found. Please set API token.") }
+        var lastImageTimestamp by remember { mutableStateOf<Long?>(null) }
         var error by remember { mutableStateOf<String?>(null) }
         var saveImageResult by remember { mutableStateOf<TrmnlMirrorDisplayScreen.SaveImageResult?>(null) }
         var rateLimitMessage by remember { mutableStateOf<String?>(null) }
@@ -184,11 +191,10 @@ class TrmnlMirrorDisplayPresenter(
             }
         }
 
-        // Monitor image metadata for rate limit status (HTTP 429)
-        // Note: With the new RateLimitInterceptor, this flow may not receive HTTP 429
-        // since retries are handled transparently at the network layer
+        // Monitor image metadata for rate limit status (HTTP 429) and update last timestamp
         LaunchedEffect(Unit) {
             imageMetadataStore.imageMetadataFlow.collect { metadata ->
+                lastImageTimestamp = metadata?.timestamp
                 if (metadata?.httpStatusCode == HTTP_429) {
                     rateLimitMessage = "Showing cached image - rate limited by API server. Retrying in background..."
                     Timber.d("Rate limit detected (HTTP 429), showing cached image with notification")
@@ -208,6 +214,7 @@ class TrmnlMirrorDisplayPresenter(
                     isLoading = false
                     error = null
                     retryInfo = null // Clear retry info on successful load
+                    lastImageTimestamp = imageMetadata.timestamp
                 } else {
                     Timber.w("Failed to get cached image URL from TRMNL Image Update Manager `imageUpdateFlow`")
                     // Keep showing loading state until we have a valid response from the server
@@ -228,11 +235,76 @@ class TrmnlMirrorDisplayPresenter(
             }
         }
 
-        LaunchedEffect(overlayControlsVisible) {
-            trmnlWorkScheduler.getScheduledWorkInfo().collect { workInfo ->
-                workInfo?.nextRunTime()?.let {
-                    nextRefreshTime = it.timeUntilNextRefresh
-                } ?: "No scheduled work found. Please set API token."
+        // Observe lifecycle for on-resume stale image catch-up
+        val activity = LocalActivity.current as? ComponentActivity
+        DisposableEffect(activity) {
+            if (activity == null) return@DisposableEffect onDispose {}
+            val observer =
+                LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_RESUME) {
+                        scope.launch {
+                            val metadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
+                            val interval =
+                                trmnlDeviceConfigDataStore.refreshRateSecondsFlow.firstOrNull()
+                                    ?: metadata?.refreshIntervalSecs
+                            if (metadata != null && interval != null && interval > 0) {
+                                val ageMs = System.currentTimeMillis() - metadata.timestamp
+                                if (ageMs >= interval * 1000L && !isLoading) {
+                                    Timber.d("Image stale on resume ($ageMs ms >= ${interval * 1000} ms). Fetching fresh image.")
+                                    trmnlWorkScheduler.triggerScheduledRefresh()
+                                }
+                            }
+                        }
+                    }
+                }
+            activity.lifecycle.addObserver(observer)
+            onDispose {
+                activity.lifecycle.removeObserver(observer)
+            }
+        }
+
+        // Active foreground display refresh ticker
+        // When configuredRefreshInterval is present, runs an in-app timer to refresh the display
+        // on exact interval (supporting 1m, 5m, etc.) while the display screen is open.
+        LaunchedEffect(configuredRefreshInterval, lastImageTimestamp) {
+            val interval = configuredRefreshInterval
+            if (interval == null || interval <= 0) {
+                // If interval is unconfigured, fall back to observing WorkManager scheduled work
+                trmnlWorkScheduler.getScheduledWorkInfo().collect { workInfo ->
+                    workInfo?.nextRunTime()?.let {
+                        nextRefreshTime = it.timeUntilNextRefresh
+                    } ?: run {
+                        nextRefreshTime = "No scheduled work found. Please set API token."
+                    }
+                }
+                return@LaunchedEffect
+            }
+
+            while (isActive) {
+                val now = System.currentTimeMillis()
+                val lastTimestamp = lastImageTimestamp ?: now
+                val nextRefreshTimeMillis = lastTimestamp + (interval * 1000L)
+                val remainingMillis = nextRefreshTimeMillis - now
+
+                if (remainingMillis <= 0) {
+                    if (!isLoading) {
+                        Timber.d("Foreground refresh interval elapsed ($interval s). Triggering scheduled refresh.")
+                        trmnlWorkScheduler.triggerScheduledRefresh()
+                    }
+                    nextRefreshTime = "any moment now"
+                    delay(5_000L)
+                } else {
+                    val remainingSeconds = remainingMillis / 1000L
+                    nextRefreshTime =
+                        when {
+                            remainingSeconds <= 0 -> "any moment now"
+                            remainingSeconds < 60 -> "in $remainingSeconds seconds"
+                            remainingSeconds < 3600 -> "in ${remainingMillis / 60_000L} minutes"
+                            else -> "in ${remainingMillis / 3_600_000L} hours"
+                        }
+                    val delayMs = if (remainingSeconds < 60) 1_000L else 5_000L
+                    delay(delayMs)
+                }
             }
         }
 
@@ -246,11 +318,25 @@ class TrmnlMirrorDisplayPresenter(
             }
 
             // Check if we have a cached image
+            val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
             val hasValidImage = imageMetadataStore.hasValidImageUrlFlow.firstOrNull() ?: false
-            if (hasValidImage) {
+            if (hasValidImage && cachedMetadata != null) {
                 // Initial loading state will be updated when imageUpdateFlow emits
                 Timber.d("Valid cached image URL exists in ImageMetadataStore")
+                lastImageTimestamp = cachedMetadata.timestamp
                 trmnlImageUpdateManager.initialize()
+
+                // Check if cached image is already stale according to configured interval
+                val interval =
+                    trmnlDeviceConfigDataStore.refreshRateSecondsFlow.firstOrNull()
+                        ?: cachedMetadata.refreshIntervalSecs
+                if (interval != null && interval > 0) {
+                    val ageMs = System.currentTimeMillis() - cachedMetadata.timestamp
+                    if (ageMs >= interval * 1000L) {
+                        Timber.d("Cached image is stale ($ageMs ms >= ${interval * 1000} ms). Refreshing.")
+                        trmnlWorkScheduler.triggerScheduledRefresh()
+                    }
+                }
             } else {
                 Timber.d("No valid cached image, starting one-time refresh work")
                 // Always keep in loading state until we get a valid result

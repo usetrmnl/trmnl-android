@@ -221,6 +221,33 @@ class TrmnlDeviceConfigDataStoreTest {
         }
 
     @Test
+    fun `shouldAdvancePlaylistSync returns correct boolean for saved config`() =
+        runTest {
+            // When nothing saved, returns false
+            assertThat(deviceConfigDataStore.shouldAdvancePlaylistSync()).isFalse()
+
+            // When BYOS saved, returns true
+            deviceConfigDataStore.saveDeviceConfig(
+                TrmnlDeviceConfig(
+                    type = TrmnlDeviceType.BYOS,
+                    apiAccessToken = "token",
+                    apiBaseUrl = "https://example.com",
+                ),
+            )
+            assertThat(deviceConfigDataStore.shouldAdvancePlaylistSync()).isTrue()
+
+            // When TRMNL saved, returns false
+            deviceConfigDataStore.saveDeviceConfig(
+                TrmnlDeviceConfig(
+                    type = TrmnlDeviceType.TRMNL,
+                    apiAccessToken = "token",
+                    apiBaseUrl = "https://trmnl.com",
+                ),
+            )
+            assertThat(deviceConfigDataStore.shouldAdvancePlaylistSync()).isFalse()
+        }
+
+    @Test
     fun `shouldUpdateRefreshRate returns true when rates differ`() =
         runTest {
             // Arrange

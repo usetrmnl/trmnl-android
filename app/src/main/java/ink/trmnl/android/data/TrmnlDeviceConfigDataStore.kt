@@ -19,6 +19,7 @@ import ink.trmnl.android.di.ApplicationContext
 import ink.trmnl.android.model.DeviceModelSelection
 import ink.trmnl.android.model.TrmnlDeviceConfig
 import ink.trmnl.android.model.TrmnlDeviceType
+import ink.trmnl.android.model.shouldAdvancePlaylist
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -508,6 +509,12 @@ class TrmnlDeviceConfigDataStore(
             return@runBlocking deviceConfigFlow.first()
         }
     }
+
+    /**
+     * Checks synchronously whether scheduled refresh should advance the playlist
+     * based on the stored device config type and settings.
+     */
+    fun shouldAdvancePlaylistSync(): Boolean = getDeviceConfigSync().shouldAdvancePlaylist()
 
     /**
      * Validates if the provided URL is properly formatted

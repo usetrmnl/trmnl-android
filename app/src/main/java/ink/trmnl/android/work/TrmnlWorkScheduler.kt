@@ -114,19 +114,7 @@ class TrmnlWorkScheduler(
         // - TRMNL devices always mirror the official TRMNL device (stay on current screen)
         // See https://github.com/usetrmnl/trmnl-android/issues/190
         val deviceConfig = trmnlDeviceConfigDataStore.getDeviceConfigSync()
-        val shouldAdvancePlaylist =
-            when (deviceConfig?.type) {
-                ink.trmnl.android.model.TrmnlDeviceType.BYOS -> true
-
-                // Always auto-advance
-                ink.trmnl.android.model.TrmnlDeviceType.BYOD -> deviceConfig.isMasterDevice ?: true
-
-                // Default to master if not set
-                ink.trmnl.android.model.TrmnlDeviceType.TRMNL -> false
-
-                // Always mirror
-                null -> false
-            }
+        val shouldAdvancePlaylist = trmnlDeviceConfigDataStore.shouldAdvancePlaylistSync()
 
         Timber.d(
             "Device type: ${deviceConfig?.type}, isMasterDevice: ${deviceConfig?.isMasterDevice}, shouldAdvancePlaylist: $shouldAdvancePlaylist",
@@ -184,8 +172,13 @@ class TrmnlWorkScheduler(
      *                              If false, reloads current screen using /api/current_screen endpoint.
      *                              Defaults to false.
      */
-    fun startOneTimeImageRefreshWork(loadNextPlaylistImage: Boolean = false) {
-        Timber.d("Starting one-time image refresh work with loadNextPlaylistImage: $loadNextPlaylistImage")
+    fun startOneTimeImageRefreshWork(
+        loadNextPlaylistImage: Boolean = false,
+        refreshWorkType: RefreshWorkType = RefreshWorkType.ONE_TIME,
+    ) {
+        Timber.d(
+            "Starting one-time image refresh work with loadNextPlaylistImage: $loadNextPlaylistImage, refreshWorkType: $refreshWorkType",
+        )
 
         if (trmnlDeviceConfigDataStore.hasTokenSync().not()) {
             Timber.w("Token not set, skipping one-time image refresh work")
@@ -209,7 +202,7 @@ class TrmnlWorkScheduler(
                     TimeUnit.MILLISECONDS,
                 ).setInputData(
                     workDataOf(
-                        PARAM_REFRESH_WORK_TYPE to RefreshWorkType.ONE_TIME.name,
+                        PARAM_REFRESH_WORK_TYPE to refreshWorkType.name,
                         PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to loadNextPlaylistImage,
                     ),
                 ).addTag(IMAGE_REFRESH_ONETIME_WORK_TAG)
@@ -222,6 +215,20 @@ class TrmnlWorkScheduler(
                 existingWorkPolicy = ExistingWorkPolicy.REPLACE,
                 request = workRequest,
             )
+    }
+
+    /**
+     * Triggers a scheduled periodic image refresh immediately as a unique one-time request.
+     * This is used by the foreground active display timer and on-resume catch-up,
+     * ensuring playlist auto-advance rules are respected and the refresh is logged
+     * as [RefreshWorkType.PERIODIC].
+     */
+    fun triggerScheduledRefresh() {
+        val shouldAdvance = trmnlDeviceConfigDataStore.shouldAdvancePlaylistSync()
+        startOneTimeImageRefreshWork(
+            loadNextPlaylistImage = shouldAdvance,
+            refreshWorkType = RefreshWorkType.PERIODIC,
+        )
     }
 
     /**
