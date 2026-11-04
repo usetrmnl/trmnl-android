@@ -240,7 +240,13 @@ class TrmnlMirrorDisplayPresenter(
                     lifecycle = activity?.lifecycle,
                     intervalSeconds = interval,
                     isLoading = { isLoading },
-                    onRefreshTriggered = { isLoading = true },
+                    onRefreshTriggered = {
+                        // Keep displaying an existing cached image during automatic refreshes;
+                        // only enter the full-screen loading spinner when there is no image to show.
+                        if (imageUrl.isNullOrBlank()) {
+                            isLoading = true
+                        }
+                    },
                     onNextRefreshTimeUpdate = { nextRefreshTime = it },
                 )
             } else {

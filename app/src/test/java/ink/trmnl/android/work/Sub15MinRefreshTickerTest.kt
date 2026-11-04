@@ -3,9 +3,10 @@ package ink.trmnl.android.work
 import com.google.common.truth.Truth.assertThat
 import ink.trmnl.android.data.ImageMetadata
 import ink.trmnl.android.data.ImageMetadataStore
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -27,7 +28,7 @@ class Sub15MinRefreshTickerTest {
     fun setUp() {
         imageMetadataStore = mockk(relaxed = true)
         trmnlWorkScheduler = mockk(relaxed = true)
-        every { trmnlWorkScheduler.isImageRefreshWorkRunningSync() } returns false
+        coEvery { trmnlWorkScheduler.isImageRefreshWorkRunning() } returns false
         ticker = Sub15MinRefreshTicker(imageMetadataStore, trmnlWorkScheduler)
     }
 
@@ -63,7 +64,7 @@ class Sub15MinRefreshTickerTest {
 
             assertThat(emissions).isEmpty()
             assertThat(refreshTriggered).isFalse()
-            verify(exactly = 0) { trmnlWorkScheduler.triggerScheduledRefresh() }
+            coVerify(exactly = 0) { trmnlWorkScheduler.triggerScheduledRefresh() }
         }
 
     @Test
@@ -90,7 +91,7 @@ class Sub15MinRefreshTickerTest {
 
             assertThat(firstEmission).isEqualTo("any moment now")
             assertThat(refreshTriggered).isTrue()
-            verify(exactly = 1) { trmnlWorkScheduler.triggerScheduledRefresh() }
+            coVerify(exactly = 1) { trmnlWorkScheduler.triggerScheduledRefresh() }
         }
 
     @Test
@@ -104,7 +105,7 @@ class Sub15MinRefreshTickerTest {
                     timestamp = now - 350_000L,
                 )
             every { imageMetadataStore.imageMetadataFlow } returns MutableStateFlow(staleMetadata)
-            every { trmnlWorkScheduler.isImageRefreshWorkRunningSync() } returns true
+            coEvery { trmnlWorkScheduler.isImageRefreshWorkRunning() } returns true
 
             var refreshTriggered = false
             val firstEmission =
@@ -118,7 +119,7 @@ class Sub15MinRefreshTickerTest {
 
             assertThat(firstEmission).isEqualTo("any moment now")
             assertThat(refreshTriggered).isFalse()
-            verify(exactly = 0) { trmnlWorkScheduler.triggerScheduledRefresh() }
+            coVerify(exactly = 0) { trmnlWorkScheduler.triggerScheduledRefresh() }
         }
 
     @Test
@@ -145,7 +146,7 @@ class Sub15MinRefreshTickerTest {
 
             assertThat(firstEmission).isEqualTo("any moment now")
             assertThat(refreshTriggered).isFalse()
-            verify(exactly = 0) { trmnlWorkScheduler.triggerScheduledRefresh() }
+            coVerify(exactly = 0) { trmnlWorkScheduler.triggerScheduledRefresh() }
         }
 
     @Test
@@ -194,7 +195,86 @@ class Sub15MinRefreshTickerTest {
 
             assertThat(emissions).containsExactly("in 2 seconds", "in 1 seconds", "any moment now").inOrder()
             assertThat(isLoading).isTrue()
-            verify(exactly = 1) { trmnlWorkScheduler.triggerScheduledRefresh() }
+            coVerify(exactly = 1) { trmnlWorkScheduler.triggerScheduledRefresh() }
+        }
+
+    @Test
+    fun `observeTicks counts down using stable fallback timestamp when metadata store is initially empty`() =
+        runTest {
+            var currentTime = 1_000_000L
+            every { imageMetadataStore.imageMetadataFlow } returns MutableStateFlow(null)
+
+            val emissions = mutableListOf<String>()
+            val job =
+                launch {
+                    ticker
+                        .observeTicks(
+                            intervalSeconds = 2L,
+                            isLoading = { false },
+                            onRefreshTriggered = {},
+                            clock = { currentTime },
+                        ).take(3)
+                        .collect { emissions.add(it) }
+                }
+
+            // Step 1: t=0, fallback timestamp captured at 1_000_000L -> 2s remaining
+            advanceTimeBy(100L)
+            assertThat(emissions).containsExactly("in 2 seconds")
+
+            // Step 2: t=1s -> 1s remaining (proving fallback timestamp was NOT reset to new `now`)
+            currentTime += 1_000L
+            advanceTimeBy(1_000L)
+            assertThat(emissions).containsExactly("in 2 seconds", "in 1 seconds")
+
+            // Step 3: t=2s -> 0s remaining -> triggers refresh
+            currentTime += 1_000L
+            advanceTimeBy(1_000L)
+            job.join()
+
+            assertThat(emissions).containsExactly("in 2 seconds", "in 1 seconds", "any moment now").inOrder()
+            coVerify(exactly = 1) { trmnlWorkScheduler.triggerScheduledRefresh() }
+        }
+
+    @Test
+    fun `observeTicks advances reference timestamp on trigger to prevent rapid 5s retries after failure`() =
+        runTest {
+            var currentTime = 1_000_000L
+            // Cached image is stale (350s old on 300s interval), and subsequent fetch fails (metadata stays unchanged)
+            val staleMetadata =
+                ImageMetadata(
+                    url = "https://trmnl.com/image.png",
+                    refreshIntervalSecs = 300L,
+                    timestamp = currentTime - 350_000L,
+                )
+            every { imageMetadataStore.imageMetadataFlow } returns MutableStateFlow(staleMetadata)
+
+            val emissions = mutableListOf<String>()
+            val job =
+                launch {
+                    ticker
+                        .observeTicks(
+                            intervalSeconds = 300L,
+                            isLoading = { false },
+                            onRefreshTriggered = {},
+                            clock = { currentTime },
+                        ).take(2)
+                        .collect { emissions.add(it) }
+                }
+
+            // First tick: stale -> triggers refresh and sets reference timestamp to `currentTime`
+            advanceTimeBy(100L)
+            assertThat(emissions).containsExactly("any moment now")
+            coVerify(exactly = 1) { trmnlWorkScheduler.triggerScheduledRefresh() }
+
+            // 5 seconds later: fetch failed so metadata store did NOT update, and `isLoading` is false.
+            // Because reference timestamp was advanced to `currentTime`, remaining time is 295s ("in 4 minutes")
+            // instead of re-triggering another refresh 5 seconds later!
+            currentTime += 5_000L
+            advanceTimeBy(5_000L)
+            job.join()
+
+            assertThat(emissions).containsExactly("any moment now", "in 4 minutes").inOrder()
+            coVerify(exactly = 1) { trmnlWorkScheduler.triggerScheduledRefresh() }
         }
 
     @Test
@@ -241,6 +321,6 @@ class Sub15MinRefreshTickerTest {
             job.join()
 
             assertThat(emissions).containsExactly("in 10 seconds", "in 5 minutes").inOrder()
-            verify(exactly = 0) { trmnlWorkScheduler.triggerScheduledRefresh() }
+            coVerify(exactly = 0) { trmnlWorkScheduler.triggerScheduledRefresh() }
         }
 }

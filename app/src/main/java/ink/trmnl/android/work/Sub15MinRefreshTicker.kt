@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Isolated hybrid refresh component for sub-15-minute refresh intervals (`1..899` seconds).
@@ -103,7 +103,9 @@ class Sub15MinRefreshTicker(
      * Coordinates with background `WorkManager` by:
      * 1. Observing [ImageMetadataStore.imageMetadataFlow] so any background periodic refresh immediately
      *    resets the countdown timer.
-     * 2. Checking [isLoading] and [TrmnlWorkScheduler.isImageRefreshWorkRunningSync] before triggering.
+     * 2. Checking [isLoading] and [TrmnlWorkScheduler.isImageRefreshWorkRunning] before triggering.
+     * 3. Advancing the reference timestamp on each trigger attempt so failed fetches (e.g. HTTP 500)
+     *    wait for the next [intervalSeconds] cycle instead of retrying every 5 seconds.
      */
     internal fun observeTicks(
         intervalSeconds: Long,
@@ -118,15 +120,16 @@ class Sub15MinRefreshTicker(
             }
 
             val initialMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
-            val lastTimestampRef = AtomicReference<Long?>(initialMetadata?.timestamp)
+            // Capture fallback timestamp once on initialization if store is empty
+            val lastTimestampRef = AtomicLong(initialMetadata?.timestamp ?: clock())
 
             coroutineScope {
                 val metadataJob =
                     launch {
                         imageMetadataStore.imageMetadataFlow.collect { metadata ->
                             if (metadata != null) {
-                                lastTimestampRef.set(metadata.timestamp)
-                                Timber.tag(TAG).d("Updated last image timestamp from store: ${metadata.timestamp}")
+                                val updated = lastTimestampRef.updateAndGet { current -> maxOf(current, metadata.timestamp) }
+                                Timber.tag(TAG).d("Updated last image timestamp from store: $updated (emitted=${metadata.timestamp})")
                             }
                         }
                     }
@@ -135,12 +138,17 @@ class Sub15MinRefreshTicker(
 
                 while (isActive) {
                     val now = clock()
-                    val lastTimestamp = lastTimestampRef.get() ?: now
+                    val lastTimestamp = lastTimestampRef.get()
                     val nextRefreshTimeMillis = lastTimestamp + (intervalSeconds * 1000L)
                     val remainingMillis = nextRefreshTimeMillis - now
 
                     if (remainingMillis <= 0) {
-                        val workAlreadyRunning = isLoading() || trmnlWorkScheduler.isImageRefreshWorkRunningSync()
+                        val workAlreadyRunning = isLoading() || trmnlWorkScheduler.isImageRefreshWorkRunning()
+                        // Advance reference timestamp to `now` so that if the fetch fails (e.g. HTTP 500),
+                        // the ticker waits a full `intervalSeconds` before the next attempt rather than
+                        // retrying every 5 seconds. When a fetch succeeds, `metadataJob` updates this
+                        // reference to the exact server completion timestamp.
+                        lastTimestampRef.set(now)
                         if (!workAlreadyRunning) {
                             Timber.tag(TAG).i(
                                 "Sub-15m interval elapsed (${intervalSeconds}s). Triggering scheduled refresh.",

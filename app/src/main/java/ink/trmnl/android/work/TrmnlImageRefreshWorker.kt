@@ -22,6 +22,8 @@ import ink.trmnl.android.work.RefreshWorkResult.SUCCESS
 import ink.trmnl.android.work.TrmnlWorkScheduler.Companion.IMAGE_REFRESH_PERIODIC_WORK_TAG
 import ink.trmnl.android.work.TrmnlWorkScheduler.Companion.WORK_MANAGER_MINIMUM_INTERVAL_SECONDS
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
 
 /**
@@ -49,6 +51,12 @@ class TrmnlImageRefreshWorker(
 ) : CoroutineWorker(appContext, params) {
     companion object {
         private const val TAG = "TrmnlWorker"
+
+        /**
+         * Shared mutex to serialize freshness checks, network fetches, and cache updates
+         * across concurrent periodic and one-time worker instances.
+         */
+        private val refreshMutex = Mutex()
 
         const val KEY_REFRESH_RESULT = "refresh_result"
         const val KEY_NEW_IMAGE_URL = "new_image_url"
@@ -80,48 +88,49 @@ class TrmnlImageRefreshWorker(
             )
         }
 
-        // Sub-15-minute coordination:
-        // When refresh interval is under 15 minutes, both Sub15MinRefreshTicker (foreground one-time work)
-        // and background WorkManager periodic work (15m minimum) may be scheduled.
-        // If an image was already successfully refreshed within the configured sub-15m interval,
-        // skip duplicate periodic execution to prevent double playlist advance and redundant network calls.
-        val intervalSec = deviceConfig.refreshRateSecs
-        if (workTypeValue == RefreshWorkType.PERIODIC.name && intervalSec in 1 until WORK_MANAGER_MINIMUM_INTERVAL_SECONDS) {
-            val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
-            if (cachedMetadata != null && cachedMetadata.url.isNotBlank()) {
-                val isLastFetchSuccess = cachedMetadata.httpStatusCode == null || cachedMetadata.httpStatusCode == 200
-                if (isLastFetchSuccess) {
-                    val ageMs = System.currentTimeMillis() - cachedMetadata.timestamp
-                    val jitterBufferMs = minOf(30_000L, (intervalSec * 1000L) / 4)
-                    val minIntervalMs = (intervalSec * 1000L) - jitterBufferMs
-                    if (ageMs < minIntervalMs) {
-                        Timber.tag(TAG).i(
-                            "Skipping duplicate sub-15m periodic refresh: last update was ${ageMs / 1000}s ago " +
-                                "(interval=${intervalSec}s, threshold=${minIntervalMs / 1000}s).",
-                        )
-                        return Result.success(
-                            workDataOf(
-                                KEY_REFRESH_RESULT to SUCCESS.name,
-                                KEY_NEW_IMAGE_URL to cachedMetadata.url,
-                            ),
-                        )
+        // Serialize the sub-15m freshness check, API fetch, and metadata cache update across worker instances
+        // so concurrent periodic + one-time workers cannot both read stale metadata and double-advance playlists.
+        val trmnlDisplayInfo: TrmnlDisplayInfo =
+            refreshMutex.withLock {
+                val intervalSec = deviceConfig.refreshRateSecs
+                if (workTypeValue == RefreshWorkType.PERIODIC.name &&
+                    intervalSec in 1 until WORK_MANAGER_MINIMUM_INTERVAL_SECONDS
+                ) {
+                    val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
+                    if (cachedMetadata != null && cachedMetadata.url.isNotBlank()) {
+                        val isLastFetchSuccess = cachedMetadata.httpStatusCode == null || cachedMetadata.httpStatusCode == 200
+                        if (isLastFetchSuccess) {
+                            val ageMs = System.currentTimeMillis() - cachedMetadata.timestamp
+                            val jitterBufferMs = minOf(30_000L, (intervalSec * 1000L) / 4)
+                            val minIntervalMs = (intervalSec * 1000L) - jitterBufferMs
+                            if (ageMs < minIntervalMs) {
+                                Timber.tag(TAG).i(
+                                    "Skipping duplicate sub-15m periodic refresh: last update was ${ageMs / 1000}s ago " +
+                                        "(interval=${intervalSec}s, threshold=${minIntervalMs / 1000}s).",
+                                )
+                                return Result.success(
+                                    workDataOf(
+                                        KEY_REFRESH_RESULT to SUCCESS.name,
+                                        KEY_NEW_IMAGE_URL to cachedMetadata.url,
+                                    ),
+                                )
+                            }
+                        }
                     }
                 }
-            }
-        }
 
-        // Fetch TRMNL display image - current or next from playlist based on request type
-        // The `loadNextPluginImage` parameter is set by TrmnlWorkScheduler based on:
-        // - BYOS devices: always true (auto-advance playlist)
-        // - BYOD devices: based on isMasterDevice setting (true=master/auto-advance, false=slave/mirror)
-        // - TRMNL devices: always false (mirror current display)
-        // See https://github.com/usetrmnl/trmnl-android/issues/190
-        // See https://discord.com/channels/1281055965508141100/1331360842809348106/1382865608236077086
-        val trmnlDisplayInfo: TrmnlDisplayInfo =
-            if (loadNextPluginImage) {
-                displayRepository.getNextDisplayData(deviceConfig)
-            } else {
-                displayRepository.getCurrentDisplayData(deviceConfig)
+                // Fetch TRMNL display image - current or next from playlist based on request type
+                // The `loadNextPluginImage` parameter is set by TrmnlWorkScheduler based on:
+                // - BYOS devices: always true (auto-advance playlist)
+                // - BYOD devices: based on isMasterDevice setting (true=master/auto-advance, false=slave/mirror)
+                // - TRMNL devices: always false (mirror current display)
+                // See https://github.com/usetrmnl/trmnl-android/issues/190
+                // See https://discord.com/channels/1281055965508141100/1331360842809348106/1382865608236077086
+                if (loadNextPluginImage) {
+                    displayRepository.getNextDisplayData(deviceConfig)
+                } else {
+                    displayRepository.getCurrentDisplayData(deviceConfig)
+                }
             }
 
         // Check for rate limit errors (HTTP 429) - should retry with exponential backoff

@@ -20,8 +20,10 @@ import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.di.ApplicationContext
 import ink.trmnl.android.work.TrmnlImageRefreshWorker.Companion.PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE
 import ink.trmnl.android.work.TrmnlImageRefreshWorker.Companion.PARAM_REFRESH_WORK_TYPE
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
@@ -233,34 +235,40 @@ class TrmnlWorkScheduler(
      * Used by [Sub15MinRefreshTicker] when the configured refresh interval is under 15 minutes
      * and the display screen is active, ensuring playlist auto-advance rules are respected and
      * the refresh is logged as [RefreshWorkType.PERIODIC].
+     *
+     * Runs blocking DataStore/WorkManager lookups on [Dispatchers.IO] to avoid blocking the UI thread.
      */
-    fun triggerScheduledRefresh() {
-        val shouldAdvance = trmnlDeviceConfigDataStore.shouldAdvancePlaylistSync()
-        Timber.i("triggerScheduledRefresh: shouldAdvancePlaylist=$shouldAdvance, enqueueing periodic one-time worker")
-        startOneTimeImageRefreshWork(
-            loadNextPlaylistImage = shouldAdvance,
-            refreshWorkType = RefreshWorkType.PERIODIC,
-        )
-    }
+    suspend fun triggerScheduledRefresh() =
+        withContext(Dispatchers.IO) {
+            val shouldAdvance = trmnlDeviceConfigDataStore.shouldAdvancePlaylistSync()
+            Timber.i("triggerScheduledRefresh: shouldAdvancePlaylist=$shouldAdvance, enqueueing periodic one-time worker")
+            startOneTimeImageRefreshWork(
+                loadNextPlaylistImage = shouldAdvance,
+                refreshWorkType = RefreshWorkType.PERIODIC,
+            )
+        }
 
     /**
-     * Synchronously checks if either the periodic or one-time image refresh worker is currently [WorkInfo.State.RUNNING].
-     * Used to coordinate between [Sub15MinRefreshTicker] and background [WorkManager] jobs.
+     * Checks on [Dispatchers.IO] whether either the periodic or one-time image refresh worker
+     * is currently [WorkInfo.State.RUNNING].
+     * Used to coordinate between [Sub15MinRefreshTicker] and background [WorkManager] jobs
+     * without blocking the UI thread.
      */
-    fun isImageRefreshWorkRunningSync(): Boolean {
-        val workManager = WorkManager.getInstance(context)
-        val periodicRunning =
-            workManager
-                .getWorkInfosForUniqueWork(IMAGE_REFRESH_PERIODIC_WORK_NAME)
-                .get()
-                .any { it.state == WorkInfo.State.RUNNING }
-        val oneTimeRunning =
-            workManager
-                .getWorkInfosForUniqueWork(IMAGE_REFRESH_ONETIME_WORK_NAME)
-                .get()
-                .any { it.state == WorkInfo.State.RUNNING }
-        return periodicRunning || oneTimeRunning
-    }
+    suspend fun isImageRefreshWorkRunning(): Boolean =
+        withContext(Dispatchers.IO) {
+            val workManager = WorkManager.getInstance(context)
+            val periodicRunning =
+                workManager
+                    .getWorkInfosForUniqueWork(IMAGE_REFRESH_PERIODIC_WORK_NAME)
+                    .get()
+                    .any { it.state == WorkInfo.State.RUNNING }
+            val oneTimeRunning =
+                workManager
+                    .getWorkInfosForUniqueWork(IMAGE_REFRESH_ONETIME_WORK_NAME)
+                    .get()
+                    .any { it.state == WorkInfo.State.RUNNING }
+            periodicRunning || oneTimeRunning
+        }
 
     /**
      * Cancel the scheduled periodic image refresh work.

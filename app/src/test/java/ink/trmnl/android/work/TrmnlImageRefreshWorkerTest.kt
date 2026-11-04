@@ -29,6 +29,8 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
@@ -775,5 +777,73 @@ class TrmnlImageRefreshWorkerTest {
 
             assertThat(result).isInstanceOf(ListenableWorker.Result.Success::class.java)
             coVerify(exactly = 1) { displayRepository.getCurrentDisplayData(any()) }
+        }
+
+    @Test
+    fun `doWork serializes concurrent periodic workers via mutex so playlist advances only once`() =
+        runTest {
+            every { workerParameters.inputData } returns
+                workDataOf(
+                    PARAM_REFRESH_WORK_TYPE to RefreshWorkType.PERIODIC.name,
+                    PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to true,
+                )
+            every { trmnlDeviceConfigDataStore.deviceConfigFlow } returns MutableStateFlow(byosDeviceConfig)
+
+            val staleMetadata =
+                ImageMetadata(
+                    url = validImageUrl,
+                    refreshIntervalSecs = validRefreshRate,
+                    errorMessage = null,
+                    httpStatusCode = HTTP_200,
+                    timestamp = System.currentTimeMillis() - 700_000L,
+                )
+            val metadataFlow = MutableStateFlow<ImageMetadata?>(staleMetadata)
+            every { imageMetadataStore.imageMetadataFlow } returns metadataFlow
+
+            val successfulResponse =
+                TrmnlDisplayInfo(
+                    status = HTTP_200,
+                    trmnlDeviceType = TrmnlDeviceType.BYOS,
+                    imageUrl = "https://trmnl.com/images/next-image.png",
+                    imageFileName = "next-image.png",
+                    refreshIntervalSeconds = validRefreshRate,
+                )
+
+            coEvery { displayRepository.getNextDisplayData(any()) } coAnswers {
+                delay(100L)
+                // Simulate repository updating ImageMetadataStore before returning
+                metadataFlow.value =
+                    ImageMetadata(
+                        url = successfulResponse.imageUrl,
+                        refreshIntervalSecs = validRefreshRate,
+                        httpStatusCode = HTTP_200,
+                        timestamp = System.currentTimeMillis(),
+                    )
+                successfulResponse
+            }
+
+            val secondWorker =
+                TrmnlImageRefreshWorker(
+                    appContext = context,
+                    params = workerParameters,
+                    displayRepository = displayRepository,
+                    trmnlDeviceConfigDataStore = trmnlDeviceConfigDataStore,
+                    refreshLogManager = refreshLogManager,
+                    trmnlWorkScheduler = trmnlWorkScheduler,
+                    trmnlImageUpdateManager = trmnlImageUpdateManager,
+                    imageMetadataStore = imageMetadataStore,
+                )
+
+            // Launch both workers concurrently when metadata is initially stale
+            val deferred1 = async { worker.doWork() }
+            val deferred2 = async { secondWorker.doWork() }
+
+            val result1 = deferred1.await()
+            val result2 = deferred2.await()
+
+            assertThat(result1).isInstanceOf(ListenableWorker.Result.Success::class.java)
+            assertThat(result2).isInstanceOf(ListenableWorker.Result.Success::class.java)
+            // Only the first worker should call getNextDisplayData; the second sees the updated cache and skips!
+            coVerify(exactly = 1) { displayRepository.getNextDisplayData(any()) }
         }
 }
