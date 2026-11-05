@@ -76,7 +76,7 @@ internal fun OverlaySettingsView(
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         colors =
             CardDefaults.outlinedCardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
             ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)),
     ) {
@@ -138,22 +138,23 @@ internal fun OverlaySettingsView(
                         textAlign = TextAlign.Center,
                     )
                     Row(
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Info,
                             contentDescription = "Refresh rate notice",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp).padding(top = 2.dp),
+                            modifier = Modifier.size(14.dp),
                         )
                         Text(
                             text =
-                                "Background refresh is limited to " +
+                                "Background refresh is every " +
                                     "${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} min " +
-                                    "when app is closed to save battery.",
+                                    "when app is closed.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
                         )
                     }
                 }
