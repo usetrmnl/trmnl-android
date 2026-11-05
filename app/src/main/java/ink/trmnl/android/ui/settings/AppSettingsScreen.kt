@@ -1518,42 +1518,8 @@ private fun WorkScheduleStatusCard(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         val activeSchedule = state.activeDisplayRefreshSchedule
-                        if (activeSchedule != null) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Refresh,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                                Column {
-                                    Text(
-                                        text = "Next Refresh (Active Display)",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    Text(
-                                        text = activeSchedule.timeUntilNextRefresh,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Medium,
-                                    )
-                                }
-                            }
-
-                            Text(
-                                text = "Scheduled for: ${activeSchedule.nextRefreshOnDateTime}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 26.dp),
-                            )
-
-                            HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                            )
-                        }
+                        val displayTimeUntil = activeSchedule?.timeUntilNextRefresh ?: nextRefreshJobInfo.timeUntilNextRefresh
+                        val displayScheduledFor = activeSchedule?.nextRefreshOnDateTime ?: nextRefreshJobInfo.nextRefreshOnDateTime
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -1567,17 +1533,12 @@ private fun WorkScheduleStatusCard(
                             )
                             Column {
                                 Text(
-                                    text =
-                                        if (activeSchedule != null) {
-                                            "Next Refresh (Background WorkManager)"
-                                        } else {
-                                            "Next Refresh"
-                                        },
+                                    text = "Next Refresh",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Text(
-                                    text = nextRefreshJobInfo.timeUntilNextRefresh,
+                                    text = displayTimeUntil,
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
                                 )
@@ -1585,7 +1546,7 @@ private fun WorkScheduleStatusCard(
                         }
 
                         Text(
-                            text = "Scheduled for: ${nextRefreshJobInfo.nextRefreshOnDateTime}",
+                            text = "Scheduled for: $displayScheduledFor",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 26.dp),
