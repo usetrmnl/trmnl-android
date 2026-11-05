@@ -20,7 +20,10 @@ import ink.trmnl.android.util.isRateLimitError
 import ink.trmnl.android.work.RefreshWorkResult.FAILURE
 import ink.trmnl.android.work.RefreshWorkResult.SUCCESS
 import ink.trmnl.android.work.TrmnlWorkScheduler.Companion.IMAGE_REFRESH_PERIODIC_WORK_TAG
+import ink.trmnl.android.work.TrmnlWorkScheduler.Companion.WORK_MANAGER_MINIMUM_INTERVAL_SECONDS
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
 
 /**
@@ -48,6 +51,12 @@ class TrmnlImageRefreshWorker(
 ) : CoroutineWorker(appContext, params) {
     companion object {
         private const val TAG = "TrmnlWorker"
+
+        /**
+         * Shared mutex to serialize freshness checks, network fetches, and cache updates
+         * across concurrent periodic and one-time worker instances.
+         */
+        private val refreshMutex = Mutex()
 
         const val KEY_REFRESH_RESULT = "refresh_result"
         const val KEY_NEW_IMAGE_URL = "new_image_url"
@@ -79,123 +88,155 @@ class TrmnlImageRefreshWorker(
             )
         }
 
-        // Fetch TRMNL display image - current or next from playlist based on request type
-        // The `loadNextPluginImage` parameter is set by TrmnlWorkScheduler based on:
-        // - BYOS devices: always true (auto-advance playlist)
-        // - BYOD devices: based on isMasterDevice setting (true=master/auto-advance, false=slave/mirror)
-        // - TRMNL devices: always false (mirror current display)
-        // See https://github.com/usetrmnl/trmnl-android/issues/190
-        // See https://discord.com/channels/1281055965508141100/1331360842809348106/1382865608236077086
-        val trmnlDisplayInfo: TrmnlDisplayInfo =
-            if (loadNextPluginImage) {
-                displayRepository.getNextDisplayData(deviceConfig)
-            } else {
-                displayRepository.getCurrentDisplayData(deviceConfig)
+        // Serialize the sub-15m freshness check, API fetch, and result/cache handling across worker instances
+        // so concurrent periodic + one-time workers cannot double-advance playlists or clobber fresh metadata
+        // with a late HTTP 429 error-state cache update.
+        return refreshMutex.withLock {
+            val intervalSec = deviceConfig.refreshRateSecs
+            if (workTypeValue == RefreshWorkType.PERIODIC.name &&
+                intervalSec in 1 until WORK_MANAGER_MINIMUM_INTERVAL_SECONDS
+            ) {
+                val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
+                if (cachedMetadata != null && cachedMetadata.url.isNotBlank()) {
+                    val isLastFetchSuccess = cachedMetadata.httpStatusCode == null || cachedMetadata.httpStatusCode == 200
+                    if (isLastFetchSuccess) {
+                        val ageMs = System.currentTimeMillis() - cachedMetadata.timestamp
+                        val jitterBufferMs = minOf(30_000L, (intervalSec * 1000L) / 4)
+                        val minIntervalMs = (intervalSec * 1000L) - jitterBufferMs
+                        if (ageMs < minIntervalMs) {
+                            Timber.tag(TAG).i(
+                                "Skipping duplicate sub-15m periodic refresh: last update was ${ageMs / 1000}s ago " +
+                                    "(interval=${intervalSec}s, threshold=${minIntervalMs / 1000}s).",
+                            )
+                            return@withLock Result.success(
+                                workDataOf(
+                                    KEY_REFRESH_RESULT to SUCCESS.name,
+                                    KEY_NEW_IMAGE_URL to cachedMetadata.url,
+                                ),
+                            )
+                        }
+                    }
+                }
             }
 
-        // Check for rate limit errors (HTTP 429) - should retry with exponential backoff
-        if (trmnlDisplayInfo.status.isRateLimitError()) {
-            // NOTE: This usually happens for current display API. See details below:
-            // - https://discord.com/channels/1281055965508141100/1336424981495676978/1429827943902744618
-            Timber.tag(TAG).w("Rate limit exceeded (HTTP 429), will retry with exponential backoff")
-            refreshLogManager.addFailureLog(
-                error = "Rate limit exceeded (HTTP 429) - Too many requests. Will retry automatically.",
+            // Fetch TRMNL display image - current or next from playlist based on request type
+            // The `loadNextPluginImage` parameter is set by TrmnlWorkScheduler based on:
+            // - BYOS devices: always true (auto-advance playlist)
+            // - BYOD devices: based on isMasterDevice setting (true=master/auto-advance, false=slave/mirror)
+            // - TRMNL devices: always false (mirror current display)
+            // See https://github.com/usetrmnl/trmnl-android/issues/190
+            // See https://discord.com/channels/1281055965508141100/1331360842809348106/1382865608236077086
+            val trmnlDisplayInfo: TrmnlDisplayInfo =
+                if (loadNextPluginImage) {
+                    displayRepository.getNextDisplayData(deviceConfig)
+                } else {
+                    displayRepository.getCurrentDisplayData(deviceConfig)
+                }
+
+            // Check for rate limit errors (HTTP 429) - should retry with exponential backoff
+            if (trmnlDisplayInfo.status.isRateLimitError()) {
+                // NOTE: This usually happens for current display API. See details below:
+                // - https://discord.com/channels/1281055965508141100/1336424981495676978/1429827943902744618
+                Timber.tag(TAG).w("Rate limit exceeded (HTTP 429), will retry with exponential backoff")
+                refreshLogManager.addFailureLog(
+                    error = "Rate limit exceeded (HTTP 429) - Too many requests. Will retry automatically.",
+                    httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
+                )
+
+                // Show cached image during retry to improve UX
+                // Instead of showing a loading spinner for 30+ seconds, display the last successful image
+                // See https://github.com/usetrmnl/trmnl-android/issues/195
+                val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
+                if (cachedMetadata != null && cachedMetadata.url.isNotBlank()) {
+                    Timber.tag(TAG).i("Showing cached image during rate limit retry: ${cachedMetadata.url}")
+
+                    // Update cache with 429 status to signal rate limit to UI
+                    imageMetadataStore.saveImageMetadata(
+                        imageUrl = cachedMetadata.url,
+                        refreshIntervalSec = cachedMetadata.refreshIntervalSecs,
+                        httpStatusCode = 429,
+                    )
+
+                    trmnlImageUpdateManager.updateImage(
+                        imageUrl = cachedMetadata.url,
+                        refreshIntervalSecs = cachedMetadata.refreshIntervalSecs,
+                        errorMessage = null,
+                    )
+                } else {
+                    Timber.tag(TAG).w("No cached image available to show during rate limit retry")
+                }
+
+                // Return retry() to let WorkManager handle exponential backoff
+                return@withLock Result.retry()
+            }
+
+            // Check for other errors
+            if (trmnlDisplayInfo.status.isHttpError()) {
+                Timber.tag(TAG).w("Failed to fetch display data: ${trmnlDisplayInfo.error}")
+                refreshLogManager.addFailureLog(
+                    error = trmnlDisplayInfo.error ?: "Unknown server error",
+                    httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
+                )
+                return@withLock Result.failure(
+                    workDataOf(
+                        KEY_REFRESH_RESULT to FAILURE.name,
+                        KEY_ERROR_MESSAGE to (trmnlDisplayInfo.error ?: "Unknown server error"),
+                    ),
+                )
+            }
+
+            // Check if image URL is valid
+            if (trmnlDisplayInfo.imageUrl.isEmpty() || trmnlDisplayInfo.status.isHttpOk().not()) {
+                Timber.tag(TAG).w("No image URL provided in response. ${trmnlDisplayInfo.error}")
+                refreshLogManager.addFailureLog(
+                    error = "No image URL provided in response. ${trmnlDisplayInfo.error}",
+                    httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
+                )
+                return@withLock Result.failure(
+                    workDataOf(
+                        KEY_REFRESH_RESULT to FAILURE.name,
+                        KEY_ERROR_MESSAGE to "No image URL provided in response. ${trmnlDisplayInfo.error}",
+                    ),
+                )
+            }
+
+            // ✅ Log success and update image
+            refreshLogManager.addSuccessLog(
+                trmnlDeviceType = deviceConfig.type,
+                imageUrl = trmnlDisplayInfo.imageUrl,
+                imageName = trmnlDisplayInfo.imageFileName,
+                refreshIntervalSeconds = trmnlDisplayInfo.refreshIntervalSeconds,
+                imageRefreshWorkType = workTypeValue,
                 httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
             )
 
-            // Show cached image during retry to improve UX
-            // Instead of showing a loading spinner for 30+ seconds, display the last successful image
+            // NOTE: Image metadata caching is handled automatically by `TrmnlDisplayRepository`
+            // when the API call succeeds, so we don't need to save it again here.
             // See https://github.com/usetrmnl/trmnl-android/issues/195
-            val cachedMetadata = imageMetadataStore.imageMetadataFlow.firstOrNull()
-            if (cachedMetadata != null && cachedMetadata.url.isNotBlank()) {
-                Timber.tag(TAG).i("Showing cached image during rate limit retry: ${cachedMetadata.url}")
 
-                // Update cache with 429 status to signal rate limit to UI
-                imageMetadataStore.saveImageMetadata(
-                    imageUrl = cachedMetadata.url,
-                    refreshIntervalSec = cachedMetadata.refreshIntervalSecs,
-                    httpStatusCode = 429,
-                )
-
-                trmnlImageUpdateManager.updateImage(
-                    imageUrl = cachedMetadata.url,
-                    refreshIntervalSecs = cachedMetadata.refreshIntervalSecs,
-                    errorMessage = null,
-                )
-            } else {
-                Timber.tag(TAG).w("No cached image available to show during rate limit retry")
+            // Check if we should adapt refresh rate
+            val refreshRate = trmnlDisplayInfo.refreshIntervalSeconds
+            refreshRate?.let { newRefreshRateSec ->
+                if (trmnlDeviceConfigDataStore.shouldUpdateRefreshRate(newRefreshRateSec)) {
+                    Timber.tag(TAG).d("Refresh rate changed, updating periodic work and saving new rate")
+                    trmnlDeviceConfigDataStore.saveRefreshRateSeconds(newRefreshRateSec)
+                    trmnlWorkScheduler.scheduleImageRefreshWork(newRefreshRateSec)
+                } else {
+                    Timber.tag(TAG).d("Refresh rate is unchanged, not updating")
+                }
             }
 
-            // Return retry() to let WorkManager handle exponential backoff
-            return Result.retry()
-        }
+            // Workaround for periodic work not updating correctly (might be because of 🐛 bug in library)
+            conditionallyUpdateImageForPeriodicWork(tags, trmnlDisplayInfo.imageUrl, trmnlDisplayInfo.refreshIntervalSeconds)
 
-        // Check for other errors
-        if (trmnlDisplayInfo.status.isHttpError()) {
-            Timber.tag(TAG).w("Failed to fetch display data: ${trmnlDisplayInfo.error}")
-            refreshLogManager.addFailureLog(
-                error = trmnlDisplayInfo.error ?: "Unknown server error",
-                httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
-            )
-            return Result.failure(
+            Timber.tag(TAG).i("Image refresh successful for work($tags), got new URL: ${trmnlDisplayInfo.imageUrl}")
+            Result.success(
                 workDataOf(
-                    KEY_REFRESH_RESULT to FAILURE.name,
-                    KEY_ERROR_MESSAGE to (trmnlDisplayInfo.error ?: "Unknown server error"),
+                    KEY_REFRESH_RESULT to SUCCESS.name,
+                    KEY_NEW_IMAGE_URL to trmnlDisplayInfo.imageUrl,
                 ),
             )
         }
-
-        // Check if image URL is valid
-        if (trmnlDisplayInfo.imageUrl.isEmpty() || trmnlDisplayInfo.status.isHttpOk().not()) {
-            Timber.tag(TAG).w("No image URL provided in response. ${trmnlDisplayInfo.error}")
-            refreshLogManager.addFailureLog(
-                error = "No image URL provided in response. ${trmnlDisplayInfo.error}",
-                httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
-            )
-            return Result.failure(
-                workDataOf(
-                    KEY_REFRESH_RESULT to FAILURE.name,
-                    KEY_ERROR_MESSAGE to "No image URL provided in response. ${trmnlDisplayInfo.error}",
-                ),
-            )
-        }
-
-        // ✅ Log success and update image
-        refreshLogManager.addSuccessLog(
-            trmnlDeviceType = deviceConfig.type,
-            imageUrl = trmnlDisplayInfo.imageUrl,
-            imageName = trmnlDisplayInfo.imageFileName,
-            refreshIntervalSeconds = trmnlDisplayInfo.refreshIntervalSeconds,
-            imageRefreshWorkType = workTypeValue,
-            httpResponseMetadata = trmnlDisplayInfo.httpResponseMetadata,
-        )
-
-        // NOTE: Image metadata caching is handled automatically by `TrmnlDisplayRepository`
-        // when the API call succeeds, so we don't need to save it again here.
-        // See https://github.com/usetrmnl/trmnl-android/issues/195
-
-        // Check if we should adapt refresh rate
-        val refreshRate = trmnlDisplayInfo.refreshIntervalSeconds
-        refreshRate?.let { newRefreshRateSec ->
-            if (trmnlDeviceConfigDataStore.shouldUpdateRefreshRate(newRefreshRateSec)) {
-                Timber.tag(TAG).d("Refresh rate changed, updating periodic work and saving new rate")
-                trmnlDeviceConfigDataStore.saveRefreshRateSeconds(newRefreshRateSec)
-                trmnlWorkScheduler.scheduleImageRefreshWork(newRefreshRateSec)
-            } else {
-                Timber.tag(TAG).d("Refresh rate is unchanged, not updating")
-            }
-        }
-
-        // Workaround for periodic work not updating correctly (might be because of 🐛 bug in library)
-        conditionallyUpdateImageForPeriodicWork(tags, trmnlDisplayInfo.imageUrl, trmnlDisplayInfo.refreshIntervalSeconds)
-
-        Timber.tag(TAG).i("Image refresh successful for work($tags), got new URL: ${trmnlDisplayInfo.imageUrl}")
-        return Result.success(
-            workDataOf(
-                KEY_REFRESH_RESULT to SUCCESS.name,
-                KEY_NEW_IMAGE_URL to trmnlDisplayInfo.imageUrl,
-            ),
-        )
     }
 
     /**

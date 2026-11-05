@@ -20,8 +20,10 @@ import ink.trmnl.android.di.AppScope
 import ink.trmnl.android.di.ApplicationContext
 import ink.trmnl.android.work.TrmnlImageRefreshWorker.Companion.PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE
 import ink.trmnl.android.work.TrmnlImageRefreshWorker.Companion.PARAM_REFRESH_WORK_TYPE
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
@@ -114,19 +116,7 @@ class TrmnlWorkScheduler(
         // - TRMNL devices always mirror the official TRMNL device (stay on current screen)
         // See https://github.com/usetrmnl/trmnl-android/issues/190
         val deviceConfig = trmnlDeviceConfigDataStore.getDeviceConfigSync()
-        val shouldAdvancePlaylist =
-            when (deviceConfig?.type) {
-                ink.trmnl.android.model.TrmnlDeviceType.BYOS -> true
-
-                // Always auto-advance
-                ink.trmnl.android.model.TrmnlDeviceType.BYOD -> deviceConfig.isMasterDevice ?: true
-
-                // Default to master if not set
-                ink.trmnl.android.model.TrmnlDeviceType.TRMNL -> false
-
-                // Always mirror
-                null -> false
-            }
+        val shouldAdvancePlaylist = trmnlDeviceConfigDataStore.shouldAdvancePlaylistSync()
 
         Timber.d(
             "Device type: ${deviceConfig?.type}, isMasterDevice: ${deviceConfig?.isMasterDevice}, shouldAdvancePlaylist: $shouldAdvancePlaylist",
@@ -183,9 +173,15 @@ class TrmnlWorkScheduler(
      * @param loadNextPlaylistImage If true, advances to next playlist item using /api/display endpoint.
      *                              If false, reloads current screen using /api/current_screen endpoint.
      *                              Defaults to false.
+     * @param refreshWorkType Type of refresh work for logging and work policy (defaults to [RefreshWorkType.ONE_TIME]).
      */
-    fun startOneTimeImageRefreshWork(loadNextPlaylistImage: Boolean = false) {
-        Timber.d("Starting one-time image refresh work with loadNextPlaylistImage: $loadNextPlaylistImage")
+    fun startOneTimeImageRefreshWork(
+        loadNextPlaylistImage: Boolean = false,
+        refreshWorkType: RefreshWorkType = RefreshWorkType.ONE_TIME,
+    ) {
+        Timber.d(
+            "Starting one-time image refresh work: loadNextPlaylistImage=$loadNextPlaylistImage, refreshWorkType=$refreshWorkType",
+        )
 
         if (trmnlDeviceConfigDataStore.hasTokenSync().not()) {
             Timber.w("Token not set, skipping one-time image refresh work")
@@ -209,20 +205,70 @@ class TrmnlWorkScheduler(
                     TimeUnit.MILLISECONDS,
                 ).setInputData(
                     workDataOf(
-                        PARAM_REFRESH_WORK_TYPE to RefreshWorkType.ONE_TIME.name,
+                        PARAM_REFRESH_WORK_TYPE to refreshWorkType.name,
                         PARAM_LOAD_NEXT_PLAYLIST_DISPLAY_IMAGE to loadNextPlaylistImage,
                     ),
                 ).addTag(IMAGE_REFRESH_ONETIME_WORK_TAG)
                 .build()
 
+        // Use KEEP for scheduled periodic requests to avoid cancelling slow in-flight fetches
+        // or aborting exponential backoff retries when rate-limited.
+        // Use REPLACE for user-initiated one-time manual refreshes.
+        val existingWorkPolicy =
+            if (refreshWorkType == RefreshWorkType.PERIODIC) {
+                ExistingWorkPolicy.KEEP
+            } else {
+                ExistingWorkPolicy.REPLACE
+            }
+
         WorkManager
             .getInstance(context)
             .enqueueUniqueWork(
                 uniqueWorkName = IMAGE_REFRESH_ONETIME_WORK_NAME,
-                existingWorkPolicy = ExistingWorkPolicy.REPLACE,
+                existingWorkPolicy = existingWorkPolicy,
                 request = workRequest,
             )
     }
+
+    /**
+     * Triggers a scheduled periodic image refresh immediately as a unique one-time request.
+     * Used by [Sub15MinRefreshTicker] when the configured refresh interval is under 15 minutes
+     * and the display screen is active, ensuring playlist auto-advance rules are respected and
+     * the refresh is logged as [RefreshWorkType.PERIODIC].
+     *
+     * Runs blocking DataStore/WorkManager lookups on [Dispatchers.IO] to avoid blocking the UI thread.
+     */
+    suspend fun triggerScheduledRefresh() =
+        withContext(Dispatchers.IO) {
+            val shouldAdvance = trmnlDeviceConfigDataStore.shouldAdvancePlaylistSync()
+            Timber.i("triggerScheduledRefresh: shouldAdvancePlaylist=$shouldAdvance, enqueueing periodic one-time worker")
+            startOneTimeImageRefreshWork(
+                loadNextPlaylistImage = shouldAdvance,
+                refreshWorkType = RefreshWorkType.PERIODIC,
+            )
+        }
+
+    /**
+     * Checks on [Dispatchers.IO] whether either the periodic or one-time image refresh worker
+     * is currently [WorkInfo.State.RUNNING].
+     * Used to coordinate between [Sub15MinRefreshTicker] and background [WorkManager] jobs
+     * without blocking the UI thread.
+     */
+    suspend fun isImageRefreshWorkRunning(): Boolean =
+        withContext(Dispatchers.IO) {
+            val workManager = WorkManager.getInstance(context)
+            val periodicRunning =
+                workManager
+                    .getWorkInfosForUniqueWork(IMAGE_REFRESH_PERIODIC_WORK_NAME)
+                    .get()
+                    .any { it.state == WorkInfo.State.RUNNING }
+            val oneTimeRunning =
+                workManager
+                    .getWorkInfosForUniqueWork(IMAGE_REFRESH_ONETIME_WORK_NAME)
+                    .get()
+                    .any { it.state == WorkInfo.State.RUNNING }
+            periodicRunning || oneTimeRunning
+        }
 
     /**
      * Cancel the scheduled periodic image refresh work.

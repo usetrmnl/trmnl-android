@@ -56,7 +56,7 @@ fun WorkInfo.State?.toIcon(): ImageVector =
         null -> Icons.Default.Refresh
     }
 
-fun WorkInfo?.nextRunTime(): NextImageRefreshDisplayInfo? {
+fun WorkInfo?.nextRunTime(nowEpochMilli: Long = Instant.now().toEpochMilli()): NextImageRefreshDisplayInfo? {
     if (this == null) {
         return null
     }
@@ -68,13 +68,27 @@ fun WorkInfo?.nextRunTime(): NextImageRefreshDisplayInfo? {
             .atZone(ZoneId.systemDefault())
             .format(formatter)
 
-    val timeUntil = nextScheduleTimeMillis - Instant.now().toEpochMilli()
+    val timeUntil = nextScheduleTimeMillis - nowEpochMilli
     val timeUntilText =
         when {
-            timeUntil <= 0 -> "any moment now"
-            timeUntil < 60000 -> "in ${timeUntil / 1000} seconds"
-            timeUntil < 3600000 -> "in ${timeUntil / 60000} minutes"
-            else -> "in ${timeUntil / 3600000} hours"
+            timeUntil < 1000 -> {
+                "any moment now"
+            }
+
+            timeUntil < 60000 -> {
+                val seconds = timeUntil / 1000
+                "in $seconds ${if (seconds == 1L) "second" else "seconds"}"
+            }
+
+            timeUntil < 3600000 -> {
+                val minutes = timeUntil / 60000
+                "in $minutes ${if (minutes == 1L) "minute" else "minutes"}"
+            }
+
+            else -> {
+                val hours = timeUntil / 3600000
+                "in $hours ${if (hours == 1L) "hour" else "hours"}"
+            }
         }
     return NextImageRefreshDisplayInfo(
         workerState = state,

@@ -76,7 +76,7 @@ internal fun OverlaySettingsView(
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         colors =
             CardDefaults.outlinedCardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
             ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)),
     ) {
@@ -126,25 +126,37 @@ internal fun OverlaySettingsView(
                 configuredInterval > 0 &&
                 configuredInterval < TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_SECONDS
             ) {
-                Row(
+                Column(
                     modifier = Modifier.padding(horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Info,
-                        contentDescription = "Refresh rate notice",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(14.dp),
-                    )
                     Text(
-                        text =
-                            "Your TRMNL is set to ${formatRefreshInterval(configuredInterval)}, " +
-                                "but the background scheduler limits refresh to every 15 min to save battery.",
+                        text = "Refreshes every ${formatRefreshInterval(configuredInterval)} while active on screen.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                     )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = "Refresh rate notice",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Text(
+                            text =
+                                "Background refresh is every " +
+                                    "${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} min " +
+                                    "when app is closed.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
             }
 

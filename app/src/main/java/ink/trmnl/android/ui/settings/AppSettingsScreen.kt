@@ -119,8 +119,12 @@ import ink.trmnl.android.util.normalizeMacAddress
 import ink.trmnl.android.util.toColor
 import ink.trmnl.android.util.toDisplayString
 import ink.trmnl.android.util.toIcon
+import ink.trmnl.android.work.ActiveDisplayRefreshSchedule
+import ink.trmnl.android.work.Sub15MinRefreshTicker
 import ink.trmnl.android.work.TrmnlImageUpdateManager
 import ink.trmnl.android.work.TrmnlWorkScheduler
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
@@ -157,6 +161,7 @@ data class AppSettingsScreen(
         val isDeviceSetupLoading: Boolean = false,
         val deviceSetupMessage: String? = null,
         val nextRefreshJobInfo: NextImageRefreshDisplayInfo? = null,
+        val activeDisplayRefreshSchedule: ActiveDisplayRefreshSchedule? = null,
         val savedDeviceModel: DeviceModelSelection? = null,
         val configuredRefreshIntervalSec: Long? = null,
         val eventSink: (Event) -> Unit,
@@ -280,6 +285,7 @@ class AppSettingsPresenter(
     private val deviceConfigStore: TrmnlDeviceConfigDataStore,
     private val trmnlWorkScheduler: TrmnlWorkScheduler,
     private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
+    private val sub15MinRefreshTicker: Sub15MinRefreshTicker,
 ) : Presenter<AppSettingsScreen.State> {
     @Composable
     override fun present(): AppSettingsScreen.State {
@@ -297,8 +303,18 @@ class AppSettingsPresenter(
         val focusManager = LocalFocusManager.current
 
         val nextRefreshInfo by produceState<NextImageRefreshDisplayInfo?>(null) {
-            trmnlWorkScheduler.getScheduledWorkInfo().collect { workInfo ->
-                value = workInfo?.nextRunTime()
+            trmnlWorkScheduler.getScheduledWorkInfo().collectLatest { workInfo ->
+                if (workInfo == null) {
+                    value = null
+                } else {
+                    while (true) {
+                        val info = workInfo.nextRunTime()
+                        value = info
+                        val remainingMs = (info?.nextRefreshTimeMillis ?: 0L) - System.currentTimeMillis()
+                        val delayMs = if (remainingMs in 1..60_000L) 1_000L else 5_000L
+                        delay(delayMs)
+                    }
+                }
             }
         }
 
@@ -306,6 +322,16 @@ class AppSettingsPresenter(
         val savedRefreshRate by produceState<Long?>(initialValue = null) {
             deviceConfigStore.refreshRateSecondsFlow.collect { rate ->
                 value = rate
+            }
+        }
+
+        // Observe sub-15-minute active display refresh schedule (null when interval >= 15m)
+        val activeDisplayRefreshSchedule by produceState<ActiveDisplayRefreshSchedule?>(
+            initialValue = null,
+            key1 = savedRefreshRate,
+        ) {
+            sub15MinRefreshTicker.observeNextRefreshSchedule(savedRefreshRate).collect { schedule ->
+                value = schedule
             }
         }
 
@@ -380,6 +406,7 @@ class AppSettingsPresenter(
             isDeviceSetupLoading = isDeviceSetupLoading,
             deviceSetupMessage = deviceSetupMessage,
             nextRefreshJobInfo = nextRefreshInfo,
+            activeDisplayRefreshSchedule = activeDisplayRefreshSchedule,
             savedDeviceModel = savedDeviceModel,
             configuredRefreshIntervalSec = savedRefreshRate,
             eventSink = { event ->
@@ -1490,6 +1517,10 @@ private fun WorkScheduleStatusCard(
                         modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
+                        val activeSchedule = state.activeDisplayRefreshSchedule
+                        val displayTimeUntil = activeSchedule?.timeUntilNextRefresh ?: nextRefreshJobInfo.timeUntilNextRefresh
+                        val displayScheduledFor = activeSchedule?.nextRefreshOnDateTime ?: nextRefreshJobInfo.nextRefreshOnDateTime
+
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1507,7 +1538,7 @@ private fun WorkScheduleStatusCard(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Text(
-                                    text = nextRefreshJobInfo.timeUntilNextRefresh,
+                                    text = displayTimeUntil,
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
                                 )
@@ -1515,7 +1546,7 @@ private fun WorkScheduleStatusCard(
                         }
 
                         Text(
-                            text = "Scheduled for: ${nextRefreshJobInfo.nextRefreshOnDateTime}",
+                            text = "Scheduled for: $displayScheduledFor",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 26.dp),
@@ -1542,11 +1573,13 @@ private fun WorkScheduleStatusCard(
                                 )
                                 Text(
                                     text =
-                                        "Refreshes every ${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} min. " +
-                                            "To optimize battery life, the app uses Android WorkManager, " +
-                                            "which requires at least ${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} " +
+                                        "Refreshes every ${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} min in background. " +
+                                            "To optimize battery life, Android WorkManager requires at least " +
+                                            "${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} " +
                                             "minutes between background refreshes. " +
-                                            "Your TRMNL is set to ${formatRefreshInterval(configuredInterval)}.",
+                                            "While active on screen, your TRMNL refreshes every ${formatRefreshInterval(
+                                                configuredInterval,
+                                            )}.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -1771,6 +1804,8 @@ private fun PreviewWorkScheduleStatusCardScheduled() {
 @Composable
 private fun PreviewWorkScheduleStatusCardClamped() {
     val formatter = DateTimeFormatter.ofPattern("MMM dd 'at' hh:mm:ss a")
+    val activeNextRunTimeMillis = Instant.now().plusSeconds(4 * 60).toEpochMilli()
+    val activeNextRunTimeFormatted = Instant.ofEpochMilli(activeNextRunTimeMillis).atZone(ZoneId.systemDefault()).format(formatter)
     val nextRunTimeMillis = Instant.now().plusSeconds(15 * 60).toEpochMilli()
     val nextRunTimeFormatted = Instant.ofEpochMilli(nextRunTimeMillis).atZone(ZoneId.systemDefault()).format(formatter)
 
@@ -1789,6 +1824,12 @@ private fun PreviewWorkScheduleStatusCardClamped() {
                             timeUntilNextRefresh = "in 15 minutes",
                             nextRefreshOnDateTime = nextRunTimeFormatted,
                             nextRefreshTimeMillis = nextRunTimeMillis,
+                        ),
+                    activeDisplayRefreshSchedule =
+                        ActiveDisplayRefreshSchedule(
+                            timeUntilNextRefresh = "in 4 minutes",
+                            nextRefreshOnDateTime = activeNextRunTimeFormatted,
+                            nextRefreshTimeMillis = activeNextRunTimeMillis,
                         ),
                     configuredRefreshIntervalSec = 300L,
                     eventSink = {},

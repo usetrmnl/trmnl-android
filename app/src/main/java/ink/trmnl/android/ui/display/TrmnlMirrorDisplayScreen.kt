@@ -1,5 +1,7 @@
 package ink.trmnl.android.ui.display
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -64,6 +66,7 @@ import ink.trmnl.android.util.CoilRequestUtils
 import ink.trmnl.android.util.HTTP_429
 import ink.trmnl.android.util.ImageSaver
 import ink.trmnl.android.util.nextRunTime
+import ink.trmnl.android.work.Sub15MinRefreshTicker
 import ink.trmnl.android.work.TrmnlImageUpdateManager
 import ink.trmnl.android.work.TrmnlWorkScheduler
 import kotlinx.coroutines.delay
@@ -143,6 +146,7 @@ class TrmnlMirrorDisplayPresenter(
     private val imageMetadataStore: ImageMetadataStore,
     private val trmnlImageUpdateManager: TrmnlImageUpdateManager,
     private val rateLimitInterceptor: RateLimitInterceptor,
+    private val sub15MinRefreshTicker: Sub15MinRefreshTicker,
 ) : Presenter<TrmnlMirrorDisplayScreen.State> {
     @Composable
     override fun present(): TrmnlMirrorDisplayScreen.State {
@@ -228,11 +232,34 @@ class TrmnlMirrorDisplayPresenter(
             }
         }
 
-        LaunchedEffect(overlayControlsVisible) {
-            trmnlWorkScheduler.getScheduledWorkInfo().collect { workInfo ->
-                workInfo?.nextRunTime()?.let {
-                    nextRefreshTime = it.timeUntilNextRefresh
-                } ?: "No scheduled work found. Please set API token."
+        val activity = LocalActivity.current as? ComponentActivity
+        LaunchedEffect(configuredRefreshInterval) {
+            val interval = configuredRefreshInterval
+            if (interval != null && sub15MinRefreshTicker.isSub15MinInterval(interval)) {
+                sub15MinRefreshTicker.runWhenResumed(
+                    lifecycle = activity?.lifecycle,
+                    intervalSeconds = interval,
+                    isLoading = { isLoading },
+                    onRefreshTriggered = {
+                        // Keep displaying an existing cached image during automatic refreshes;
+                        // only enter the full-screen loading spinner when there is no image to show.
+                        if (imageUrl.isNullOrBlank()) {
+                            isLoading = true
+                        }
+                    },
+                    onNextRefreshTimeUpdate = { nextRefreshTime = it },
+                )
+            }
+        }
+
+        LaunchedEffect(overlayControlsVisible, configuredRefreshInterval) {
+            val interval = configuredRefreshInterval
+            if (interval == null || !sub15MinRefreshTicker.isSub15MinInterval(interval)) {
+                trmnlWorkScheduler.getScheduledWorkInfo().collect { workInfo ->
+                    workInfo?.nextRunTime()?.let {
+                        nextRefreshTime = it.timeUntilNextRefresh
+                    } ?: "No scheduled work found. Please set API token."
+                }
             }
         }
 
