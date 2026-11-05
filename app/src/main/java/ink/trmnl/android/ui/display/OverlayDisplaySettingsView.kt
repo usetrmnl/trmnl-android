@@ -126,25 +126,36 @@ internal fun OverlaySettingsView(
                 configuredInterval > 0 &&
                 configuredInterval < TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_SECONDS
             ) {
-                Row(
+                Column(
                     modifier = Modifier.padding(horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Info,
-                        contentDescription = "Refresh rate notice",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(14.dp),
-                    )
                     Text(
-                        text =
-                            "Refreshes every ${formatRefreshInterval(configuredInterval)} while active on screen. " +
-                                "Background refresh is limited to 15 min when app is closed to save battery.",
+                        text = "Refreshes every ${formatRefreshInterval(configuredInterval)} while active on screen.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                     )
+                    Row(
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = "Refresh rate notice",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp).padding(top = 2.dp),
+                        )
+                        Text(
+                            text =
+                                "Background refresh is limited to " +
+                                    "${TrmnlWorkScheduler.WORK_MANAGER_MINIMUM_INTERVAL_MINUTES} min " +
+                                    "when app is closed to save battery.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
 
